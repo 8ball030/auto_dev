@@ -11,7 +11,7 @@ from functools import lru_cache
 from itertools import starmap
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Iterable, Optional, TypeGuard, Union, cast
+from typing import Any, Callable, Iterable, List, Optional, TypeGuard, Union, cast
 from urllib.parse import urlparse
 
 import requests
@@ -20,7 +20,7 @@ from solidity_parser import parser  # type: ignore
 
 # utility functions and classes
 def map_starmap(func: Callable[..., Any], iterable_of_kwargs: Iterable[dict]) -> map:
-    """Map keyword arguments onto a callable."""
+    """Map an iterable of keyword arguments onto a callable."""
 
     return map(lambda kv: func(**kv), iterable_of_kwargs)
 
@@ -65,7 +65,7 @@ class EnumStrAndReprMixin:
 
 @dataclass
 class SkipDefaultFieldsReprMixin:
-    """Display only non-default value fields of a dataclass."""
+    """Display only non-empty & non-default value fields of a dataclass."""
 
     def __repr__(self) -> str:
         def condition(field: Field[Any]) -> TypeGuard[bool]:
@@ -128,7 +128,8 @@ class Response:
 @dataclass
 class ABI:
     """Representation of the Application Binary Interface (ABI)."""
-    methods: list[Method]
+
+    methods: List[Method]
 
 
 @dataclass(repr=False)
@@ -136,9 +137,9 @@ class Method(SkipDefaultFieldsReprMixin):
     """Representation of a smart contract ABI element."""
 
     type: ABIType
-    inputs: Optional[list[Input]] = None  # optional for constructor
+    inputs: Optional[List[Input]] = None  # optional for constructor
     name: Optional[str] = None
-    outputs: Optional[list] = None
+    outputs: Optional[List[Output]] = None
     stateMutability: Optional[StateMutability] = None
     anonymous: Optional[bool] = None  # only for events
 
@@ -147,7 +148,9 @@ class Method(SkipDefaultFieldsReprMixin):
         if (attr := self.stateMutability) is not None:
             self.stateMutability = StateMutability[attr.upper()]
         if self.inputs is not None:
-            self.inputs = list(starmap(Input, self.inputs))
+            self.inputs = list(map_starmap(Input, self.inputs))
+        if self.outputs is not None:
+            self.outputs = list(map_starmap(Output, self.outputs))
 
 
 @dataclass(repr=False)
@@ -165,12 +168,23 @@ class Input(SkipDefaultFieldsReprMixin):
     baseType: Optional[str] = field(repr=False, default=None)
 
 
+@dataclass(repr=False)
+class Output(SkipDefaultFieldsReprMixin):
+    """Representation of output an ABI type returns."""
+
+    internalType: str
+    type: str
+    name: str = ""
+
+
 # Contract data specific
+
+
 @dataclass
 class ContractSourceCode:
     """Representation of the smart contract source code."""
 
-    data: list[ContractData]
+    data: List[ContractData]
 
 
 @dataclass(repr=False)
@@ -217,7 +231,7 @@ class SourceCode(SkipDefaultFieldsReprMixin):
     language: str
     version: Optional[str] = field(repr=False, default=None)
     settings: Optional[dict] = field(repr=False, default=None)
-    sources: Optional[list[Source]] = field(repr=False, default=None)
+    sources: Optional[List[Source]] = field(repr=False, default=None)
 
     def __post_init__(self):
         if self.sources is not None:
@@ -230,24 +244,23 @@ class Source:
 
     path: Union[str, Path]
     code: str = field(repr=False, init=False)
-    node: dict = field(repr=False, init=False)
+    node: parser.Node = field(repr=False, init=False)
     imports: list[Import] = field(init=False, repr=False)
     pragmas: list[Pragma] = field(init=False, repr=False)
+
+    def __init__(self, path: str, data: dict):
+        self.path = Path(path)
+        self.code = data["content"]
+        self.node = parser.parse(self.code)
+        obj = parser.objectify(self.node)
+        self.pragmas = list(map_starmap(Pragma, obj.pragmas))
+        self.imports = list(map_starmap(Import, obj.imports))
+        self.contracts = obj.contracts  # not included in asdict
 
     def pprint(self):
         """Pretty print the contract."""
 
         pprint(self.node)
-
-    def __init__(self, path: str, data: dict):
-        self.path = Path(path)
-        self.code = data["content"]
-        node = parser.parse(self.code)
-        obj = parser.objectify(node)
-        self.node = dict(node)
-        self.pragmas = list(map_starmap(Pragma, obj.pragmas))
-        self.imports = list(map_starmap(Import, obj.imports))
-        self.contracts = obj.contracts  # not included in asdict
 
 
 @dataclass
@@ -276,14 +289,12 @@ class Pragma:
 def process_response(response: Response) -> Union[ABI, ContractSourceCode]:
     """Process a PolygonAPI response."""
 
-    match response.action:
-        case Contract.Action.GET_ABI:
-            return ABI(list(map_starmap(Method, json.loads(response.result))))
-        case Contract.Action.GET_SOURCE_CODE:
-            result = cast(list[dict], response.result)
-            return ContractSourceCode(list(map_starmap(ContractData, result)))
-        case _:
-            raise ValueError(f"Incorrect response type: {response}")
+    if response.action == Contract.Action.GET_ABI:
+        return ABI(list(map_starmap(Method, json.loads(response.result))))
+    if response.action == Contract.Action.GET_SOURCE_CODE:
+        result = cast(list[dict], response.result)
+        return ContractSourceCode(list(map_starmap(ContractData, result)))
+    raise ValueError(f"Incorrect response type: {response}")
 
 
 class Contract:
@@ -302,9 +313,7 @@ class Contract:
         GET_CONTRACT_CREATION = "getcontractcreation"
 
     @lru_cache()
-    def get_contract_data(
-        self, *addresses: str, action: Action
-    ) -> dict[Address, Response]:
+    def get_contract_data(self, *addresses: str, action: Action) -> dict[Address, Response]:
         """Request smart contract data from the API."""
 
         responses = {}
@@ -314,7 +323,7 @@ class Contract:
             response = requests.get(
                 f"{self.api.api_endpoint.geturl()}/",
                 params=asdict(fields),
-                timeout=self.api.timeout,
+                timeout=self.api.request_timeout,
             )
             responses[address] = Response(**response.json(), action=action)
             print(f"Obtained {action} for {address}")
@@ -332,8 +341,7 @@ class Contract:
         """Get smart contract source code."""
 
         responses = self.get_contract_data(
-            *addresses, action=Contract.Action.GET_SOURCE_CODE
-        )
+            *addresses, action=Contract.Action.GET_SOURCE_CODE)
         contract_source_code = list(map(process_response, responses.values()))
         return cast(list[ContractSourceCode], contract_source_code)
 
@@ -350,19 +358,19 @@ class Contract:
     def check_verify_status(self, *addresses: str):
         """Check smart contract verification status."""
 
-        raise NotADirectoryError()
+        raise NotImplementedError()
 
     def verify_proxy_contract(self, *addresses: str):
         """Verify proxy contract."""
 
-        raise NotADirectoryError()
+        raise NotImplementedError()
 
 
 class PolygonAPI:
     """PolygonAPI"""
 
     api_endpoint = urlparse("https://api.polygonscan.com/api")
-    timeout = 3
+    request_timeout = 3
 
     def __init__(self, polygon_api_key: Optional[str] = None):
         api_key = polygon_api_key or os.environ.get("POLYGONSCAN_API_KEY")
