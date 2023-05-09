@@ -11,15 +11,16 @@ from functools import lru_cache
 from itertools import starmap
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Iterable, List, Optional, TypeGuard, Union, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 from urllib.parse import urlparse
 
 import requests
 from solidity_parser import parser  # type: ignore
+from typing_extensions import TypeGuard
 
 
 # utility functions and classes
-def map_starmap(func: Callable[..., Any], iterable_of_kwargs: Iterable[dict]) -> map:
+def map_starmap(func: Callable[..., Any], iterable_of_kwargs: Iterable[Dict[str, Any]]) -> map:
     """Map an iterable of keyword arguments onto a callable."""
 
     return map(lambda kv: func(**kv), iterable_of_kwargs)
@@ -29,6 +30,19 @@ def clean_code(source_code: str) -> str:
     """Replace double curly braces for single in the solidity source code for json.loads"""
 
     return source_code.replace("{{", "{").replace("}}", "}")
+
+
+def camel_to_snake(name: str) -> str:
+    """Convert CamelCase to snake_case."""
+
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+
+def keys_to_snake_case(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert all keys to snake_case."""
+
+    return dict(zip(map(camel_to_snake, data.keys()), data.values()))
 
 
 class Address:
@@ -140,17 +154,19 @@ class Method(SkipDefaultFieldsReprMixin):
     inputs: Optional[List[Input]] = None  # optional for constructor
     name: Optional[str] = None
     outputs: Optional[List[Output]] = None
-    stateMutability: Optional[StateMutability] = None
+    state_mutability: Optional[StateMutability] = None
     anonymous: Optional[bool] = None  # only for events
 
     def __post_init__(self):
         self.type = ABIType[str(self.type).upper()]
-        if (attr := self.stateMutability) is not None:
-            self.stateMutability = StateMutability[attr.upper()]
+        if (attr := self.state_mutability) is not None:
+            self.state_mutability = StateMutability[attr.upper()]
         if self.inputs is not None:
-            self.inputs = list(map_starmap(Input, self.inputs))
+            inputs = map(keys_to_snake_case, self.inputs)
+            self.inputs = list(map_starmap(Input, inputs))
         if self.outputs is not None:
-            self.outputs = list(map_starmap(Output, self.outputs))
+            outputs = map(keys_to_snake_case, self.outputs)
+            self.outputs = list(map_starmap(Output, outputs))
 
 
 @dataclass(repr=False)
@@ -163,16 +179,16 @@ class Input(SkipDefaultFieldsReprMixin):
     # only for events
     indexed: Optional[bool] = field(repr=False, default=None)
     # only for functions
-    components: Optional[list[Input]] = field(repr=False, default=None)
-    internalType: Optional[str] = field(repr=False, default=None)
-    baseType: Optional[str] = field(repr=False, default=None)
+    components: Optional[List[Input]] = field(repr=False, default=None)
+    internal_type: Optional[str] = field(repr=False, default=None)
+    base_type: Optional[str] = field(repr=False, default=None)
 
 
 @dataclass(repr=False)
 class Output(SkipDefaultFieldsReprMixin):
     """Representation of output an ABI type returns."""
 
-    internalType: str
+    internal_type: str
     type: str
     name: str = ""
 
@@ -191,37 +207,38 @@ class ContractSourceCode:
 class ContractData(SkipDefaultFieldsReprMixin):  # noqa
     """Representation of the idividual contract's data."""
 
-    SourceCode: SourceCode = field(repr=False)
-    ABI: Optional[ABI] = field(repr=False, default=None)
-    ContractName: Optional[str] = None
-    CompilerVersion: Optional[str] = field(repr=False, default=None)
-    OptimizationUsed: Optional[bool] = field(repr=False, default=None)
-    Runs: Optional[int] = field(repr=False, default=None)
-    ConstructorArguments: Optional[str] = field(repr=False, default=None)
-    EVMVersion: Optional[str] = field(repr=False, default=None)
-    Library: Optional[str] = field(repr=False, default=None)
-    LicenseType: Optional[str] = field(repr=False, default=None)
-    Proxy: Optional[bool] = None
-    Implementation: Optional[str] = field(repr=False, default=None)
-    SwarmSource: Optional[str] = field(repr=False, default=None)
-    SourceCodeHash: Optional[str] = field(repr=False, default=None)
-    SourceCodeMetaData: Optional[str] = field(repr=False, default=None)
-    AST: Optional[str] = field(repr=False, default=None)
-    SourceList: Optional[list[str]] = field(repr=False, default=None)
-    DeveloperDoc: Optional[str] = field(repr=False, default=None)
-    UserDoc: Optional[str] = field(repr=False, default=None)
+    source_code: SourceCode = field(repr=False)
+    abi: Optional[ABI] = field(repr=False, default=None)
+    contract_name: Optional[str] = None
+    compiler_version: Optional[str] = field(repr=False, default=None)
+    optimization_used: Optional[bool] = field(repr=False, default=None)
+    runs: Optional[int] = field(repr=False, default=None)
+    constructor_arguments: Optional[str] = field(repr=False, default=None)
+    evm_version: Optional[str] = field(repr=False, default=None)
+    library: Optional[str] = field(repr=False, default=None)
+    license_type: Optional[str] = field(repr=False, default=None)
+    proxy: Optional[bool] = None
+    implementation: Optional[str] = field(repr=False, default=None)
+    swarm_source: Optional[str] = field(repr=False, default=None)
+    source_code_hash: Optional[str] = field(repr=False, default=None)
+    source_code_meta_data: Optional[str] = field(repr=False, default=None)
+    ast: Optional[str] = field(repr=False, default=None)
+    source_list: Optional[List[str]] = field(repr=False, default=None)
+    developer_doc: Optional[str] = field(repr=False, default=None)
+    user_doc: Optional[str] = field(repr=False, default=None)
 
     def __post_init__(self):
-        if self.OptimizationUsed is not None:
-            self.OptimizationUsed = self.OptimizationUsed == "1"
-        if self.Proxy is not None:
-            self.Proxy = self.Proxy == "1"
-        if self.Runs is not None:
-            self.Runs = int(self.Runs)
-        if self.ABI is not None:  # most to post_init ABI
-            self.ABI = ABI(list(map_starmap(Method, json.loads(self.ABI))))
-        code = clean_code(self.SourceCode)
-        self.SourceCode = SourceCode(**json.loads(code))
+        if self.optimization_used is not None:
+            self.optimization_used = self.optimization_used == "1"
+        if self.proxy is not None:
+            self.proxy = self.proxy == "1"
+        if self.runs is not None:
+            self.runs = int(self.runs)
+        if self.abi is not None:
+            method_data = map(keys_to_snake_case, json.loads(self.abi))
+            self.abi = ABI(list(map_starmap(Method, method_data)))
+        code = clean_code(self.source_code)
+        self.source_code = SourceCode(**json.loads(code))
 
 
 @dataclass
@@ -230,7 +247,7 @@ class SourceCode(SkipDefaultFieldsReprMixin):
 
     language: str
     version: Optional[str] = field(repr=False, default=None)
-    settings: Optional[dict] = field(repr=False, default=None)
+    settings: Optional[Dict] = field(repr=False, default=None)
     sources: Optional[List[Source]] = field(repr=False, default=None)
 
     def __post_init__(self):
@@ -245,16 +262,17 @@ class Source:
     path: Union[str, Path]
     code: str = field(repr=False, init=False)
     node: parser.Node = field(repr=False, init=False)
-    imports: list[Import] = field(init=False, repr=False)
-    pragmas: list[Pragma] = field(init=False, repr=False)
+    imports: List[Import] = field(init=False, repr=False)
+    pragmas: List[Pragma] = field(init=False, repr=False)
 
-    def __init__(self, path: str, data: dict):
+    def __init__(self, path: str, data: Dict):
         self.path = Path(path)
         self.code = data["content"]
         self.node = parser.parse(self.code)
         obj = parser.objectify(self.node)
         self.pragmas = list(map_starmap(Pragma, obj.pragmas))
-        self.imports = list(map_starmap(Import, obj.imports))
+        imports = map(keys_to_snake_case, obj.imports)
+        self.imports = list(map_starmap(Import, imports))
         self.contracts = obj.contracts  # not included in asdict
 
     def pprint(self):
@@ -263,21 +281,21 @@ class Source:
         pprint(self.node)
 
 
-@dataclass
+@ dataclass
 class Import:
     """Representation of the Solidity import statement"""
 
     path: Union[str, Path]
     type: str = "ImportDirective"
-    symbolAliases: dict = field(default_factory=dict)
-    unitAlias: Optional[dict] = None
+    symbol_aliases: Dict = field(default_factory=dict)
+    unit_alias: Optional[Dict] = None
 
     def __post_init__(self):
         if isinstance(self.path, str):
             self.path = Path(self.path)
 
 
-@dataclass
+@ dataclass
 class Pragma:
     """Representation of Solidity compiler directives."""
 
@@ -292,7 +310,7 @@ def process_response(response: Response) -> Union[ABI, ContractSourceCode]:
     if response.action == Contract.Action.GET_ABI:
         return ABI(list(map_starmap(Method, json.loads(response.result))))
     if response.action == Contract.Action.GET_SOURCE_CODE:
-        result = cast(list[dict], response.result)
+        result = map(keys_to_snake_case, cast(List[Dict], response.result))
         return ContractSourceCode(list(map_starmap(ContractData, result)))
     raise ValueError(f"Incorrect response type: {response}")
 
@@ -312,7 +330,7 @@ class Contract:
         GET_SOURCE_CODE = "getsourcecode"
         GET_CONTRACT_CREATION = "getcontractcreation"
 
-    @lru_cache()
+    @ lru_cache()
     def get_contract_data(self, *addresses: str, action: Action) -> dict[Address, Response]:
         """Request smart contract data from the API."""
 
@@ -329,21 +347,21 @@ class Contract:
             print(f"Obtained {action} for {address}")
         return responses
 
-    def get_abi(self, *addresses: str) -> list[ABI]:
+    def get_abi(self, *addresses: str) -> List[ABI]:
         """Get smart contract Application Binary Interface (ABI)."""
 
         responses = self.get_contract_data(
             *addresses, action=Contract.Action.GET_ABI)
         abis = list(map(process_response, responses.values()))
-        return cast(list[ABI], abis)
+        return cast(List[ABI], abis)
 
-    def get_source_code(self, *addresses: str) -> list[ContractSourceCode]:
+    def get_source_code(self, *addresses: str) -> List[ContractSourceCode]:
         """Get smart contract source code."""
 
         responses = self.get_contract_data(
             *addresses, action=Contract.Action.GET_SOURCE_CODE)
         contract_source_code = list(map(process_response, responses.values()))
-        return cast(list[ContractSourceCode], contract_source_code)
+        return cast(List[ContractSourceCode], contract_source_code)
 
     def get_contract_creation(self, *addresses: str):
         """Get smart contract creation details."""

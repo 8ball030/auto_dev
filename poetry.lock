@@ -2206,4 +2206,4 @@ test = ["black", "isort", "mypy", "pylama", "pytest-cov"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7.2,<4.0"
-content-hash = "317067cdbf05f1273ba75fb63e9d4f813752baf242e05ff63801a0b05f07f7c6"
+content-hash = "90b337bc98a2fcec909fa91c25fd23bbf223ca0dc227374142802515bb55c2c2"
