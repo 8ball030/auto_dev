@@ -6,11 +6,14 @@ Simple cli to allow users to perform the following actions against an autonomy r
 - build
 """
 
+from typing import List
+
 import rich_click as click
 from rich.progress import track
 
 from auto_dev.test import test_path
 
+from .compare_contracts import compare_contracts
 from .lint import check_path
 from .utils import get_logger, get_packages
 
@@ -48,7 +51,8 @@ def lint(verbose, path):
     try:
         packages = get_packages() if not path else [path]
     except Exception as error:
-        raise click.ClickException(f"Unable to get packages are you in the right directory? {error}")
+        raise click.ClickException(
+            f"Unable to get packages are you in the right directory? {error}")
 
     results = {}
     for package in track(range(len(packages)), description="Linting..."):
@@ -83,7 +87,8 @@ def test(verbose, path):
     try:
         packages = get_packages() if not path else [path]
     except Exception as error:
-        raise click.ClickException(f"Unable to get packages are you in the right directory? {error}")
+        raise click.ClickException(
+            f"Unable to get packages are you in the right directory? {error}")
     results = {}
     for package in track(range(len(packages)), description="Testing..."):
         logger.debug("Processing package: './%s'", packages[package])
@@ -107,6 +112,27 @@ def build():
     """
     click.echo("Building...")
     click.echo("Building complete!")
+
+
+@cli.command()
+@click.option(
+    "-c",
+    "--contracts",
+    is_flag=False,
+    nargs=2,
+    help="""Two contract addresses to compare.
+    e.g. `adev compare-polygon-contracts -v -c\
+ 0x421FF03Fe1085bce50ec5Bf06c5907119d87672F\
+ 0x1c312b14c129eabc4796b0165a2c470b659e5f01`."""
+)
+@click.option("-v", "--verbose", is_flag=True, default=False)
+def compare_polygon_contracts(contracts: List[str], verbose: bool):
+    """
+    Runs the smart contract comparison tooling.
+    """
+    logger.info("Comparing Polygon smart contracts")
+    compare_contracts(*contracts, verbose=verbose)
+    logger.info("Contract comparison completed successfully!")
 
 
 if __name__ == "__main__":

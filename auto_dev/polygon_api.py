@@ -193,9 +193,7 @@ class Output(SkipDefaultFieldsReprMixin):
     name: str = ""
 
 
-# Contract data specific
-
-
+# Contract specific
 @dataclass
 class ContractSourceCode:
     """Representation of the smart contract source code."""
@@ -308,7 +306,8 @@ def process_response(response: Response) -> Union[ABI, ContractSourceCode]:
     """Process a PolygonAPI response."""
 
     if response.action == Contract.Action.GET_ABI:
-        return ABI(list(map_starmap(Method, json.loads(response.result))))
+        method_data = map(keys_to_snake_case, json.loads(response.result))
+        return ABI(list(map_starmap(Method, method_data)))
     if response.action == Contract.Action.GET_SOURCE_CODE:
         result = map(keys_to_snake_case, cast(List[Dict], response.result))
         return ContractSourceCode(list(map_starmap(ContractData, result)))
