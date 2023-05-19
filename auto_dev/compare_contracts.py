@@ -87,7 +87,7 @@ def compare_contracts(contract_a: str, contract_b: str, verbose: bool = False) -
     source_codes = api.contract.get_source_code(*addresses)
     if diff := data_diff(*map(asdict, source_codes)):
         logger.warning("Differences in SourceCode found")
-        logger.info(f"--- {contract_b}")
-        logger.info(f"+++ {contract_a}")
         if verbose:
+            logger.info(f"--- {contract_b}")
+            logger.info(f"+++ {contract_a}")
             print_diff_details(diff)

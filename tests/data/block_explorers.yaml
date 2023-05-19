@@ -1,0 +1,14 @@
+# mainnet
+ethereum: 
+  chainid: 1
+  block_explorer: https://etherscan.io/
+polygon: https://polygonscan.com/
+  chainid: 137
+  block_explorer: https://etherscan.io/
+binance: https://bscscan.com/
+avalanche: https://avaxscan.com/
+fantom: https://ftmscan.com/
+
+# testnet
+goerli: https://goerli.etherscan.io/
+mumbai: https://mumbai.polygonscan.com/
