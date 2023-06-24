@@ -108,6 +108,19 @@ def build():
     click.echo("Building...")
     click.echo("Building complete!")
 
+@cli.group()
+def contract():
+    """
+    Contract management
+    """
+
+@contract.command()
+def generate_tests():
+    """
+    Generates tests for contracts
+    """
+    click.echo("Generating tests...")
+    click.echo("Generating tests complete!")
 
 if __name__ == "__main__":
     cli()
