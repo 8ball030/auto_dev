@@ -17,11 +17,13 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import rich_click as click
+from aea.cli.utils.config import get_or_create_cli_config
 
 from auto_dev.base import build_cli
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.constants import DEFAULT_ENCODING, TEMPLATE_FOLDER
 
+AEA_CLI_CONFIG = get_or_create_cli_config()
 
 cli = build_cli()
 
@@ -148,7 +150,7 @@ def format_versions(versions: List[str]) -> str:
 
 render_args = {
     "project_name": "test",
-    "author": "8ball030",
+    "author": AEA_CLI_CONFIG["author"],
     "email": "8ball030@gmail.com",
     "description": "test",
     "version": "0.1.0",
