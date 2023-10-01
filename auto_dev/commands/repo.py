@@ -22,6 +22,7 @@ from auto_dev.base import build_cli
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.constants import DEFAULT_ENCODING, TEMPLATE_FOLDER
 
+
 cli = build_cli()
 
 PYTHON_GIT_IGNORE = """
@@ -127,7 +128,10 @@ def get_supported_repo_types(render_args) -> dict:
             import_path = f"auto_dev.data.repo.templates.{template_path.parent.name}.{template_path.stem}"
             template = importlib.import_module(import_path)
             file_output = template.TEMPLATE.format(**render_args)
-            output_path = Path(template_path.stem + template.EXTENSION)
+            name = template_path.stem + template.EXTENSION
+            if template_path.stem == "gitignore":
+                name = "." + name
+            output_path = Path(name)
             dir_path = f"{template.DIR.format(**render_args)}{output_path.name}"
             scaffold_file = ScaffoldFile(path=dir_path, content=file_output, render_args=render_args)
             scaffold_files[template_path.stem] = scaffold_file
