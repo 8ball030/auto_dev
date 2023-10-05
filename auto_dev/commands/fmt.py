@@ -44,8 +44,15 @@ cli = build_cli()
     type=click.Path(exists=True, file_okay=False),
     default=None,
 )
+@click.option(
+    "-co",
+    "--changed-only",
+    help="Only lint the files that have changed.",
+    is_flag=True,
+    default=False,
+)
 @click.pass_context
-def fmt(ctx, path):
+def fmt(ctx, path, changed_only):
     """
     Runs the formatting tooling
     """
@@ -53,7 +60,7 @@ def fmt(ctx, path):
     num_processes = ctx.obj["NUM_PROCESSES"]
     logger = ctx.obj["LOGGER"]
     logger.info("Formatting Open Autonomy Packages")
-    paths = get_paths(path)
+    paths = get_paths(path, changed_only)
     logger.info(f"Formatting {len(paths)} files...")
     if num_processes > 1:
         results = multi_thread_fmt(paths, verbose, num_processes)

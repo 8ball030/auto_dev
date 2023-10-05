@@ -27,11 +27,11 @@ def format_versions(versions: List[str]) -> str:
     return f"\n{version_prefix}".join(versions)
 
 
-def execute_commands(*commands: str, verbose: bool, logger) -> None:
+def execute_commands(*commands: str, verbose: bool, logger, shell: bool = False) -> None:
     """Execute commands."""
     for command in commands:
         cli_executor = CommandExecutor(command=command.split(" "))
-        result = cli_executor.execute(verbose=verbose)
+        result = cli_executor.execute(stream=True, verbose=verbose, shell=shell)
         if not result:
             logger.error(f"Command failed: {command}")
             sys.exit(1)
@@ -45,7 +45,6 @@ render_args = {
     "email": "8ball030@gmail.com",
     "description": "",
     "version": "0.1.0",
-    "python_versions": format_versions(["3.7", "3.8", "3.9", "3.10"]),
 }
 
 TEMPLATES = {f.name: f for f in Path(TEMPLATE_FOLDER).glob("*")}
@@ -68,13 +67,18 @@ class RepoScaffolder:
         for file in template_folder.rglob("*"):
             if not file.is_file():
                 continue
+
             rel_path = file.relative_to(template_folder)
             content = file.read_text(encoding=DEFAULT_ENCODING)
-            updated_content = content.format(**self.scaffold_kwargs)
 
-            target_file_path = new_repo_dir / rel_path.with_suffix("")
+            if file.suffix == ".template":
+                content = content.format(**self.scaffold_kwargs)
+                target_file_path = new_repo_dir / rel_path.with_suffix("")
+            else:
+                target_file_path = new_repo_dir / rel_path
+            self.logger.info(f"Scaffolding `{str(target_file_path)}`")
             target_file_path.parent.mkdir(parents=True, exist_ok=True)
-            target_file_path.write_text(updated_content)
+            target_file_path.write_text(content)
 
 
 @cli.command()
@@ -100,16 +104,21 @@ def repo(ctx, name, type_of_repo):
     Path(name).mkdir(exist_ok=False)
 
     with change_dir(name):
-        Path(name).mkdir()
-        (Path(name) / "__init__.py").touch()
 
         execute_commands("git init", "git checkout -b main", verbose=verbose, logger=logger)
         assert (Path.cwd() / ".git").exists()
-        if type_of_repo == "autonomy":
-            execute_commands("autonomy packages init", verbose=verbose, logger=logger)
 
         scaffolder = RepoScaffolder(type_of_repo, logger, verbose)
         scaffolder.scaffold()
+        if type_of_repo == "autonomy":
+            logger.info("Installing host deps. This may take a while!")
+            execute_commands(
+                "bash ./install.sh",
+                verbose=verbose,
+                logger=logger,
+            )
+            logger.info("Initialising autonomy packages.")
+            execute_commands("autonomy packages init", verbose=verbose, logger=logger)
         logger.info(f"{type_of_repo.capitalize()} successfully setup.")
 
 

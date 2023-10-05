@@ -1,0 +1,17 @@
+**/__pycache__/**
+keys.json
+.coverage
+.pytest_cache
+.vscode
+.history
+.idea
+.mypy_cache
+
+service/
+agent/
+ethereum_private_key.txt
+**/agent_*_private_key.yaml
+**/*_private_key.txt
+**/keys.json
+
+.env

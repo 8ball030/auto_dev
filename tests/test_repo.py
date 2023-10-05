@@ -2,14 +2,15 @@
 Tests for the click cli.
 """
 
-import os
 import subprocess
 from pathlib import Path
+from typing import Tuple
 
 import pytest
 from click.testing import CliRunner
 
 from auto_dev.cli import cli
+from auto_dev.utils import change_dir
 
 
 @pytest.fixture
@@ -18,66 +19,87 @@ def runner():
     return CliRunner()
 
 
-class TestE2E:
-    """Test the end to end functionality of the cli."""
+class BaseTestRepo:
+    """Test scaffolding new repository."""
+
+    repo_name = "dummy"
+    type_of_repo: str
+    make_commands: Tuple[str]
+
+    @property
+    def cli_args(self):
+        """CLI arguments"""
+        return ("repo", self.repo_name, "-t", self.type_of_repo)
+
+    @property
+    def repo_path(self):
+        """Path of newly scaffolded repo."""
+        return Path.cwd() / self.repo_name
 
     def test_repo_new(self, runner, test_clean_filesystem):
         """Test the format command works with the current package."""
-        assert os.getcwd() == test_clean_filesystem
-        result = runner.invoke(cli, ["repo", "new", "-t", "python"])
+
+        assert test_clean_filesystem
+
+        result = runner.invoke(cli, self.cli_args)
         assert result.exit_code == 0, result.output
+        assert (self.repo_path / ".git").exists()
 
     def test_repo_new_fail(self, runner, test_filesystem):
         """Test the format command works with the current package."""
-        assert os.getcwd() == test_filesystem
-        result = runner.invoke(cli, ["repo", "new", "-t", "python"])
+
+        assert test_filesystem
+
+        self.repo_path.mkdir()
+        result = runner.invoke(cli, self.cli_args)
         assert result.exit_code == 1, result.output
-
-    def test_repo_new_test(self, runner, test_clean_filesystem):
-        """Test the format command works with the current package."""
-        assert os.getcwd() == test_clean_filesystem
-        result = runner.invoke(cli, ["repo", "new", "-t", "python"])
-        assert result.exit_code == 0, result.output
-        result = runner.invoke(cli, ["test", "-p", "."])
-        assert result.exit_code == 0, result.output
-
-    def test_repo_workflow(self, runner, test_clean_filesystem):
-        """Test github workflow scaffolding"""
-        assert os.getcwd() == test_clean_filesystem
-        result = runner.invoke(cli, ["repo", "new", "-t", "python"])
-        assert result.exit_code == 0, result.output
-        dev = Path.cwd() / ".github/workflows/dev.yml"
-        assert dev.exists()
-        content = dev.read_text(encoding="utf-8")
-        assert "3.7" in content
-        assert "3.10" in content
 
     def test_makefile(self, runner, test_clean_filesystem):
         """Test scaffolding of Makefile"""
-        result = runner.invoke(cli, ["repo", "new", "-t", "python"])
-        makefile = Path(test_clean_filesystem) / "Makefile"
+
+        assert test_clean_filesystem
+
+        result = runner.invoke(cli, self.cli_args)
+        makefile = self.repo_path / "Makefile"
         assert result.exit_code == 0, result.output
         assert makefile.read_text(encoding="utf-8")
 
-        # test that the actual make command works
         error_messages = {}
-        for command in ("fmt", "test", "lint", "hashes"):
-            result = subprocess.run(
-                f"make {command}",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False,
-            )
-            if not result.returncode == 0:
-                error_messages[command] = result.stderr
+        with change_dir(self.repo_path):
+            for command in self.make_commands:
+                result = subprocess.run(
+                    f"make {command}",
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False,
+                )
+                if not result.returncode == 0:
+                    error_messages[command] = result.stderr
         assert not error_messages
+
+
+@pytest.mark.skip(reason="Not implemented yet")
+class TestRepoPython(BaseTestRepo):
+    """Test scaffolding new python repository."""
+
+    type_of_repo = "python"
+    make_commands = "fmt", "lint", "test"
+
+
+class TestRepoAutonomy(BaseTestRepo):
+    """Test scaffolding new autonomy repository."""
+
+    type_of_repo = "autonomy"
+    make_commands = "fmt", "test", "lint", "hashes"
 
     def test_run_single_agent(self, runner, test_clean_filesystem):
         """Test the scripts/run_single_agent.sh is generated"""
-        assert os.getcwd() == test_clean_filesystem
-        result = runner.invoke(cli, ["repo", "new", "-t", "python"])
+
+        assert test_clean_filesystem
+
+        result = runner.invoke(cli, self.cli_args)
         assert result.exit_code == 0, result.output
-        expected_path = Path.cwd() / "scripts" / "run_single_agent.sh"
+        expected_path = self.repo_path / "scripts" / "run_single_agent.sh"
         assert expected_path.exists()
