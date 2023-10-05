@@ -1,5 +1,0 @@
-"""Dummy test"""
-
-def test_it():
-    """Test it!"""
-    assert True

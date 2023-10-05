@@ -1,3 +1,5 @@
+# Makefile
+
 .PHONY: clean
 clean: clean-build clean-pyc clean-test clean-docs
 
@@ -43,15 +45,15 @@ clean-test:
 .PHONY: hashes
 hashes: clean
 	poetry run autonomy packages lock
-	poetry run adev -v -n 0 lint -p .
+	poetry run adev -v -n 0 lint
 
 lint:
-	poetry run adev -v -n 0 lint -p .
+	poetry run adev -v -n 0 lint -co
 
 fmt: 
-	poetry run adev -n 0 fmt -p .
+	poetry run adev -n 0 fmt -co
 
 test:
-	poetry run adev -v test -p .
+	poetry run adev -v test
 
 all: fmt lint test hashes
