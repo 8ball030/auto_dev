@@ -1,64 +1,55 @@
-"""
-Template for the py project toml file
-"""
-# pylint: disable=W1401
-
-EXTENSION = ".toml"
-DIR = "./"
-TEMPLATE = """
-
-[tool]
 [tool.poetry]
 name = "{project_name}"
-version = "0.2.9"
-homepage = "https://github.com/{author}/{project_name}"
-description = "A collection of tooling to enable open source development of autonomy tools"
+version = "0.1.0"
+description = ""
 authors = ["{author}"]
-readme = "readme.md"
-license =  "Apache-2.0"
-classifiers=[
-    'Development Status :: 2 - Pre-Alpha',
-    'Intended Audience :: Developers',
+readme = "README.md"
+license = "Apache-2.0"
+classifiers = [
     'License :: OSI Approved :: Apache Software License',
     'Natural Language :: English',
     'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
 ]
-packages = [
-    {{ include = "{project_name}" }},
-]
-
 
 [tool.poetry.dependencies]
-python = ">=3.7.2,<=3.11"
+python = ">=3.9,<=3.11"
+cython = "<3.0.0"
+open-aea-ledger-solana = "^1.34.0"
+open-aea-ledger-cosmos = "^1.34.0"
+open-aea-ledger-ethereum = "^1.34.0"
+open-aea-cli-ipfs = "^1.34.0"
+open-aea-test-autonomy = "0.10.7"
+open-autonomy = "~0.10"
+autonomy-dev = {{extras = ["all"], version = "^0.2.2"}}
+pyyaml = "==5.4.1"
+
+
+
 
 [tool.poetry.dev-dependencies]
 
 
 [tool.poetry.extras]
-dev = ["pre-commit", "virtualenv", "pip", "twine", "toml", "bump2version"]
+dev = ["pre-commit", "virtualenv", "pip", "toml", "bump2version"]
 doc = [
     "mkdocs",
     "mkdocs-include-markdown-plugin",
     "mkdocs-material",
     "mkdocstrings",
     "mkdocs-material-extension",
-    "mkdocs-autorefs"
-    ]
+    "mkdocs-autorefs",
+]
 
-[tool.poetry.scripts]
-adev = 'auto_dev.cli:cli'
-
-[tool.poetry.group.dev.dependencies]
-twine = "^4.0.2"
 
 [tool.black]
 line-length = 120
 skip-string-normalization = true
-target-version = ['py37', 'py38', 'py39']
+target-version = ['py38', 'py39', 'py310']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -83,11 +74,8 @@ use_parentheses = true
 ensure_newline_before_comments = true
 line_length = 120
 skip_gitignore = true
-# you can skip files as below
-#skip_glob = docs/conf.py
+
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0", "setuptools"]
-
-"""

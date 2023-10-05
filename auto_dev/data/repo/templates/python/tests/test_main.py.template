@@ -1,0 +1,5 @@
+"""Dummy test"""
+
+def test_main():
+    """Test main"""
+    assert True

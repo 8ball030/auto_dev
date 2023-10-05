@@ -112,3 +112,16 @@ def isolated_filesystem(copy_cwd: bool = False):
                     shutil.copytree(file_path, Path(temp_dir, file_name))
         yield str(Path(temp_dir))
     os.chdir(original_path)
+
+
+@contextmanager
+def change_dir(target_path):
+    """
+    Temporarily change the working directory.
+    """
+    original_path = os.getcwd()
+    try:
+        os.chdir(target_path)
+        yield
+    finally:
+        os.chdir(original_path)
