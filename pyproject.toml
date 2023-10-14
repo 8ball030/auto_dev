@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "autonomy_dev"
-version = "0.2.14"
+version = "0.2.28"
 homepage = "https://github.com/8ball030/auto_dev"
 description = "A collection of tooling to enable open source development of autonomy tools"
 authors = ["8Baller <8ball030@gmail.com>"]
