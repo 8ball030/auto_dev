@@ -4,14 +4,21 @@ We test the functions from utils
 
 import json
 import shutil
-from typing import List
 from pathlib import Path
+from typing import List
 
-import yaml
 import pytest
+import yaml
 
-from auto_dev.constants import DEFAULT_ENCODING, AGENT_TEMPLATE_FOLDER
-from auto_dev.utils import get_logger, get_packages, get_paths, has_package_code_changed, DotAccessibleClass, YAMLConfigManager
+from auto_dev.constants import AGENT_TEMPLATE_FOLDER, DEFAULT_ENCODING
+from auto_dev.utils import (
+    DotAccessibleClass,
+    YAMLConfigManager,
+    get_logger,
+    get_packages,
+    get_paths,
+    has_package_code_changed,
+)
 
 TEST_PACKAGES_JSON = {
     "packages/packages.json": """
@@ -124,27 +131,32 @@ def test_get_paths(test_packages_filesystem):
 class TestYAMLConfigManager:
     """TestYAMLConfigManager"""
 
+    templates: DotAccessibleClass
+    expected: str
+
     def setup(self):
         """Setup"""
-
         self.templates = DotAccessibleClass({f.name: f for f in Path(AGENT_TEMPLATE_FOLDER).glob("*")})
         self.expected = "\n---\n".join(self.raw_configs)
 
     @property
     def str_paths(self) -> List[str]:
+        """string paths"""
         return [self.templates.abci_connection, self.templates.prometheus_connection]
 
     @property
     def paths(self) -> List[Path]:
+        """Paths"""
         return list(map(Path, self.str_paths))
 
     @property
     def raw_configs(self) -> List[str]:
+        """Raw config content"""
         return [path.read_text(encoding=DEFAULT_ENCODING) for path in self.paths]
 
     def test_yaml_config_manager_append_from_different_types(self):
         """Test YAMLConfigManager.append"""
-        
+
         for configs in (self.str_paths, self.paths, self.raw_configs):
             manager = YAMLConfigManager()
             for config in configs:
@@ -167,11 +179,11 @@ class TestYAMLConfigManager:
 
         invalid_yaml = "invalid_yaml_here: ]]]"
         with pytest.raises(yaml.YAMLError):
-            manager = YAMLConfigManager(invalid_yaml)
+            YAMLConfigManager(invalid_yaml)
 
     def test_yaml_config_manager_nonexistent_paths(self):
         """Test initializing YAMLConfigManager with non-existent file paths."""
 
         nonexistent_paths = ["nonexistent1.yaml", "nonexistent2.yaml"]
         with pytest.raises(FileNotFoundError):
-            manager = YAMLConfigManager(*nonexistent_paths)
+            YAMLConfigManager(*nonexistent_paths)

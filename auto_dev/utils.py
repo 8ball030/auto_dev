@@ -6,14 +6,13 @@ import logging
 import os
 import shutil
 import subprocess
-from typing import Optional, Union, Iterable
-from contextlib import contextmanager
 from collections import deque
+from contextlib import contextmanager
 from functools import reduce
 from glob import glob
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional
+from typing import Iterable, Optional, Union
 
 import yaml
 from rich.logging import RichHandler
@@ -198,7 +197,10 @@ class YAMLConfigManager:
         return len(self._config)
 
     def __str__(self):
-        return "---\n".join(yaml.safe_dump(item.to_dict(), default_flow_style=False, sort_keys=False) for item in self._config).strip()
+        def dump(item):
+            return yaml.safe_dump(item.to_dict(), default_flow_style=False, sort_keys=False)
+
+        return "---\n".join(map(dump, self._config)).strip()
 
     def __repr__(self):
         return str(self)
