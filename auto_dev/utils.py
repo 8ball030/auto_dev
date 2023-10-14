@@ -6,16 +6,24 @@ import logging
 import os
 import shutil
 import subprocess
+from typing import Optional, Union, Iterable
 from contextlib import contextmanager
+from collections import deque
 from functools import reduce
 from glob import glob
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Optional
 
+import yaml
 from rich.logging import RichHandler
 
 from .constants import AUTONOMY_PACKAGES_FILE, DEFAULT_ENCODING
+
+
+def consume(iterable: Iterable):
+    """Consume an iterable"""
+    deque(iterable, maxlen=0)
 
 
 def get_logger(name=__name__, log_level="INFO"):
@@ -125,3 +133,72 @@ def change_dir(target_path):
         yield
     finally:
         os.chdir(original_path)
+
+
+class DotAccessibleClass:
+    """DotAccessibleClass"""
+
+    def __init__(self, dictionary):
+        for key, value in dictionary.items():
+            if isinstance(value, dict):
+                setattr(self, key, DotAccessibleClass(value))
+            else:
+                setattr(self, key, value)
+
+    def to_dict(self):
+        """Convert the object back to a nested dictionary."""
+        result = {}
+        for key, value in self.__dict__.items():
+            if isinstance(value, DotAccessibleClass):
+                result[key] = value.to_dict()
+            else:
+                result[key] = value
+        return result
+
+    def __str__(self):
+        return str(self.to_dict())
+
+    def __repr__(self):
+        return str(self)
+
+
+class YAMLConfigManager:
+    """YAMLConfigManager"""
+
+    def __init__(self, *config: Optional[Union[Path, str]]):
+        self._config = []
+        consume(map(self._load_yaml, config))
+
+    def _load_yaml(self, config: Union[Path, str]):
+        """Load yaml"""
+
+        if isinstance(config, str):
+            yaml_config = list(yaml.safe_load_all(config))
+            if yaml_config and yaml_config[0] == config:
+                config = Path(config)
+
+        if isinstance(config, Path):
+            content = config.read_text(encoding=DEFAULT_ENCODING)
+            yaml_config = list(yaml.safe_load_all(content))
+
+        self._config.extend(map(DotAccessibleClass, yaml_config))
+
+    def append(self, config: Union["YAMLConfigManager", Path, str]):
+        """Append a config."""
+
+        if isinstance(config, type(self)):
+            self._config.append(config)
+        else:
+            self._load_yaml(config)
+
+    def __getitem__(self, index: int):
+        return self._config[index]
+
+    def __len__(self):
+        return len(self._config)
+
+    def __str__(self):
+        return "---\n".join(yaml.safe_dump(item.to_dict(), default_flow_style=False, sort_keys=False) for item in self._config).strip()
+
+    def __repr__(self):
+        return str(self)
