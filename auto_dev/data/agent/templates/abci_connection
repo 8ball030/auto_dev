@@ -1,0 +1,7 @@
+public_id: valory/abci:0.1.0
+type: connection
+config:
+  host: ${str:localhost}
+  port: ${int:26658}
+  use_tendermint: ${bool:false}
+  target_skill_id: ${str}

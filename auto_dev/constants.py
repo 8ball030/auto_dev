@@ -14,6 +14,8 @@ AUTONOMY_PACKAGES_FILE = "packages/packages.json"
 AUTO_DEV_FOLDER = os.path.join(os.path.dirname(__file__))
 PLUGIN_FOLDER = os.path.join(AUTO_DEV_FOLDER, "commands")
 TEMPLATE_FOLDER = os.path.join(AUTO_DEV_FOLDER, "data", "repo", "templates")
+AGENT_TEMPLATE_FOLDER = os.path.join(AUTO_DEV_FOLDER, "data", "agent", "templates")
+
 
 SAMPLE_PACKAGES_JSON = {
     "packages/packages.json": """

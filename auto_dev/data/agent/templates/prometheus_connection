@@ -1,0 +1,5 @@
+public_id: fetchai/prometheus:0.8.0
+type: connection
+config:
+  port: 8888
+  host: 0.0.0.0
