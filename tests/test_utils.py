@@ -4,12 +4,14 @@ We test the functions from utils
 
 import json
 import shutil
+from typing import List
 from pathlib import Path
 
+import yaml
 import pytest
 
-from auto_dev.constants import DEFAULT_ENCODING
-from auto_dev.utils import get_logger, get_packages, get_paths, has_package_code_changed
+from auto_dev.constants import DEFAULT_ENCODING, AGENT_TEMPLATE_FOLDER
+from auto_dev.utils import get_logger, get_packages, get_paths, has_package_code_changed, DotAccessibleClass, YAMLConfigManager
 
 TEST_PACKAGES_JSON = {
     "packages/packages.json": """
@@ -117,3 +119,59 @@ def test_get_paths(test_packages_filesystem):
     """
     assert test_packages_filesystem == str(Path.cwd())
     assert len(get_paths()) == 0
+
+
+class TestYAMLConfigManager:
+    """TestYAMLConfigManager"""
+
+    def setup(self):
+        """Setup"""
+
+        self.templates = DotAccessibleClass({f.name: f for f in Path(AGENT_TEMPLATE_FOLDER).glob("*")})
+        self.expected = "\n---\n".join(self.raw_configs)
+
+    @property
+    def str_paths(self) -> List[str]:
+        return [self.templates.abci_connection, self.templates.prometheus_connection]
+
+    @property
+    def paths(self) -> List[Path]:
+        return list(map(Path, self.str_paths))
+
+    @property
+    def raw_configs(self) -> List[str]:
+        return [path.read_text(encoding=DEFAULT_ENCODING) for path in self.paths]
+
+    def test_yaml_config_manager_append_from_different_types(self):
+        """Test YAMLConfigManager.append"""
+        
+        for configs in (self.str_paths, self.paths, self.raw_configs):
+            manager = YAMLConfigManager()
+            for config in configs:
+                manager.append(config)
+            assert len(manager) == 2
+            assert str(manager) == self.expected
+
+    def test_yaml_config_manipulation(self):
+        """Test yaml config manipulation"""
+
+        manager = YAMLConfigManager(*self.str_paths)
+        abci_config = manager[0]
+        assert abci_config.config.port == "${int:26658}"
+
+        abci_config.config.port = "1234"
+        assert "1234" in str(abci_config)
+
+    def test_yaml_config_manager_invalid_yaml(self):
+        """Test initializing YAMLConfigManager with invalid YAML content."""
+
+        invalid_yaml = "invalid_yaml_here: ]]]"
+        with pytest.raises(yaml.YAMLError):
+            manager = YAMLConfigManager(invalid_yaml)
+
+    def test_yaml_config_manager_nonexistent_paths(self):
+        """Test initializing YAMLConfigManager with non-existent file paths."""
+
+        nonexistent_paths = ["nonexistent1.yaml", "nonexistent2.yaml"]
+        with pytest.raises(FileNotFoundError):
+            manager = YAMLConfigManager(*nonexistent_paths)
