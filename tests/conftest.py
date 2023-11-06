@@ -51,12 +51,10 @@ def cli_runner():
 
 
 @pytest.fixture
-def dummy_agent_tim(test_filesystem, monkeypatch) -> Path:
+def dummy_agent_tim(test_filesystem) -> Path:
     """Fixture for dummy agent tim."""
 
-    monkeypatch.syspath_prepend(test_filesystem)
     assert Path.cwd() == Path(test_filesystem)
-    (Path.cwd() / "packages").mkdir()
 
     agent = "tim"
     command = f"aea create {agent}"

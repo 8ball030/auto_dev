@@ -24,7 +24,7 @@ HEADER = """
 """
 
 DOCSTRING = """
-\"\"\"This module contains the tests of the {proper_name} connection module.\"\"\"
+This module contains the tests of the {proper_name} connection module.
 # pylint: skip-file
 """
 
