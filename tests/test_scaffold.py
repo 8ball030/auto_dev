@@ -8,8 +8,6 @@ import pytest
 from aea.cli import cli as aea_cli
 
 from auto_dev.cli import cli
-from auto_dev.constants import DEFAULT_ENCODING
-from auto_dev.protocols.scaffolder import read_protocol
 
 FSM_SPEC = Path("auto_dev/data/fsm/fsm_specification.yaml").absolute()
 
@@ -35,22 +33,6 @@ def test_scaffold_fsm_with_aea_run(cli_runner, spec, dummy_agent_tim):
     result = cli_runner.invoke(aea_cli, ["run"])
     assert result.exit_code == 1
     assert "An error occurred during instantiation of connection valory" in result.output
-
-
-def test_scaffold_protocol(cli_runner, dummy_agent_tim, caplog):
-    """Test scaffold protocol"""
-
-    path = Path.cwd() / ".." / "tests" / "data" / "dummy_protocol.yaml"
-    command = ["scaffold", "protocol", str(path)]
-    result = cli_runner.invoke(cli, command)
-
-    assert result.exit_code == 0, result.output
-    assert f"New protocol scaffolded at {dummy_agent_tim}" in caplog.text
-
-    protocol = read_protocol(str(path))
-    original_content = path.read_text(encoding=DEFAULT_ENCODING)
-    readme_path = dummy_agent_tim / "protocols" / protocol.metadata["name"] / "README.md"
-    assert original_content in readme_path.read_text(encoding=DEFAULT_ENCODING)
 
 
 class TestScaffoldConnection:

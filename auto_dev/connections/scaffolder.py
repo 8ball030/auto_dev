@@ -4,19 +4,22 @@ import shutil
 import sys
 import tempfile
 import textwrap
+from collections import namedtuple
 from pathlib import Path
 
 import yaml
 from aea import AEA_DIR
+from aea.protocols.generator.base import ProtocolGenerator
 
 from auto_dev.cli_executor import CommandExecutor
-from auto_dev.constants import AEA_CONFIG
+from auto_dev.constants import AEA_CONFIG, DEFAULT_ENCODING
 from auto_dev.data.connections.template import CONNECTION_TEMPLATE
 from auto_dev.data.connections.test_template import TEST_CONNECTION_TEMPLATE
-from auto_dev.protocols.scaffolder import ProtocolSpecification, read_protocol
-from auto_dev.utils import folder_swapper, get_logger
+from auto_dev.utils import folder_swapper, get_logger, remove_prefix
 
 INDENT = "    "
+
+ProtocolSpecification = namedtuple('ProtocolSpecification', ['metadata', 'custom_types', 'speech_acts'])
 
 
 HANDLER_TEMPLATE = """
@@ -35,6 +38,24 @@ def {handler}(self, message: {protocol}Message, dialogue: {protocol}Dialogue) ->
 def to_camel(name: str, sep="") -> str:
     """Snake to camelcase."""
     return sep.join(map(str.capitalize, name.split("_")))
+
+
+def read_protocol(filepath: str) -> ProtocolSpecification:
+    """Read protocol specification."""
+
+    content = Path(filepath).read_text(encoding=DEFAULT_ENCODING)
+    if "```" in content:
+        if content.count("```") != 2:
+            raise ValueError("Expecting a single code block")
+        content = remove_prefix(content.split('```')[1], "yaml")
+
+    # use ProtocolGenerator to validate the specification
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        Path(temp_file.name).write_text(content, encoding=DEFAULT_ENCODING)
+        ProtocolGenerator(temp_file.name)
+
+    metadata, custom_types, speech_acts = yaml.safe_load_all(content)
+    return ProtocolSpecification(metadata, custom_types, speech_acts)
 
 
 def get_handlers(protocol: ProtocolSpecification) -> str:
