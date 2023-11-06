@@ -239,10 +239,10 @@ class {name_camelcase}AsyncChannel(BaseAsyncChannel):  # pylint: disable=too-man
             try:
                 self._connection = ...  # TODO: e.g. self.engine.connect()
                 self.logger.info("{proper_name} has connected.")
-            except Exception as e:  # pragma: nocover # pylint: disable=broad-except
+            except Exception:  # pragma: nocover # pylint: disable=broad-except
                 self.is_stopped = True
                 self._in_queue = None
-                raise ConnectionError(f"Failed to start {proper_name}: {{e}}")
+                self.logger.exception("Failed to start {proper_name}.")
 
     async def disconnect(self) -> None:
         \"\"\"Disconnect channel.\"\"\"
@@ -279,6 +279,7 @@ class {name_camelcase}Connection(Connection):
 
         self.channel = {name_camelcase}AsyncChannel(
             self.address,
+            database_type,
             connection_id=self.connection_id,
             **custom_kwargs,
         )

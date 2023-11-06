@@ -6,10 +6,8 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
-import rich_click as click
 
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.utils import (
@@ -18,7 +16,6 @@ from auto_dev.utils import (
     get_packages,
     get_paths,
     has_package_code_changed,
-    load_aea_ctx,
     remove_prefix,
     remove_suffix,
 )
@@ -192,30 +189,3 @@ class TestFolderSwapper:
 
         assert self.a_file_path.is_file()
         assert not self.b_file_path.exists()
-
-
-def test_load_aea_ctx(dummy_agent_tim):
-    """Test load_aea_ctx"""
-
-    assert dummy_agent_tim
-    mock_func = lambda ctx, *args, **kwargs: (ctx, args, kwargs)  # pylint: disable=C3001
-    mock_context = MagicMock(spec=click.Context)
-
-    decorated_func = load_aea_ctx(mock_func)
-    result = decorated_func(mock_context, "arg1", "arg2", kwarg1="value1", kwarg2="value2")
-
-    ctx, args, kwargs = result
-    assert ctx.aea_ctx.agent_config.name == "tim"
-    assert args == ("arg1", "arg2")
-    assert kwargs == {"kwarg1": "value1", "kwarg2": "value2"}
-
-
-def test_load_aea_ctx_without_config_fails():
-    """Test load_aea_ctx fails without aea-config.yaml in local directory."""
-
-    mock_func = lambda ctx, *args, **kwargs: (ctx, args, kwargs)  # pylint: disable=C3001
-    mock_context = MagicMock(spec=click.Context)
-
-    decorated_func = load_aea_ctx(mock_func)
-    with pytest.raises(FileNotFoundError):
-        decorated_func(mock_context, "arg1", "arg2", kwarg1="value1", kwarg2="value2")

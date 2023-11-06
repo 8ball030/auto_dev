@@ -11,13 +11,8 @@ from contextlib import contextmanager
 from functools import reduce
 from glob import glob
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Optional, Union
 
-import rich_click as click
-import yaml
-from aea.cli.utils.config import get_registry_path_from_cli_config
-from aea.cli.utils.context import Context
-from aea.configurations.base import AgentConfig
 from rich.logging import RichHandler
 
 from .constants import AUTONOMY_PACKAGES_FILE, DEFAULT_ENCODING
@@ -205,26 +200,3 @@ def remove_suffix(text: str, suffix: str) -> str:
     """str.removesuffix"""
 
     return text[: -len(suffix)] if suffix and text.endswith(suffix) else text
-
-
-def load_aea_ctx(func: Callable[[click.Context, ..., Any], Any]) -> Callable[[click.Context, ..., Any], Any]:
-    """Load aea Context and AgentConfig if aea-config.yaml exists"""
-
-    def wrapper(ctx: click.Context, *args, **kwargs):
-
-        aea_config = Path("aea-config.yaml")
-        if not aea_config.exists():
-            raise FileNotFoundError(f"Could not find {aea_config}")
-
-        registry_path = get_registry_path_from_cli_config()
-        ctx.aea_ctx = Context(cwd=".", verbosity="INFO", registry_path=registry_path)
-
-        agent_config_yaml = yaml.safe_load(aea_config.read_text(encoding=DEFAULT_ENCODING))
-        agent_config_json = json.loads(json.dumps(agent_config_yaml))
-        ctx.aea_ctx.agent_config = AgentConfig.from_json(agent_config_json)
-
-        return func(ctx, *args, **kwargs)
-
-    wrapper.__name__ = func.__name__
-
-    return wrapper

@@ -68,10 +68,7 @@ class ProtocolScaffolder:
             raise ValueError(f"Protocol scaffolding failed: {result.stderr}")
 
         protocol = read_protocol(self.protocol_specification_path)
-        protocol_author = protocol.metadata["author"]
         protocol_name = protocol.metadata["name"]
-        protocol_version = protocol.metadata["version"]
-
         protocol_path = Path.cwd() / "protocols" / protocol_name
         readme = protocol_path / "README.md"
         protocol_definition = Path(self.protocol_specification_path).read_text(encoding=DEFAULT_ENCODING)
@@ -81,11 +78,6 @@ class ProtocolScaffolder:
         }
         content = README_TEMPLATE.format(**kwargs)
         readme.write_text(content.strip(), encoding=DEFAULT_ENCODING)
-
-        command = f"aea fingerprint protocol {protocol_author}/{protocol_name}:{protocol_version}"
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-        if not result.returncode == 0:
-            raise ValueError(f"Protocol fingerprinting failed: {result.stderr}")
 
         connection_path = Path.cwd() / "protocols" / protocol_name
         self.logger.info(f"New protocol scaffolded at {connection_path}")

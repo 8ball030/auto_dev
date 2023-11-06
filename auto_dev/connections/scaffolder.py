@@ -6,14 +6,11 @@ import tempfile
 import textwrap
 from pathlib import Path
 
-import rich_click as click
 import yaml
 from aea import AEA_DIR
-from aea.configurations.data_types import PublicId
-from aea.helpers.yaml_utils import yaml_dump
 
 from auto_dev.cli_executor import CommandExecutor
-from auto_dev.constants import AEA_CONFIG, DEFAULT_ENCODING
+from auto_dev.constants import AEA_CONFIG
 from auto_dev.data.connections.template import CONNECTION_TEMPLATE
 from auto_dev.data.connections.test_template import TEST_CONNECTION_TEMPLATE
 from auto_dev.protocols.scaffolder import ProtocolSpecification, read_protocol
@@ -149,35 +146,14 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
 class ConnectionScaffolder:
     """ConnectionScaffolder"""
 
-    def __init__(self, ctx: click.Context, name, protocol_id: PublicId):
+    def __init__(self, name, protocol, logger, verbose: bool = True):
         """Initialize ConnectionScaffolder."""
 
-        # `aea add protocol`, currently works only with `adev scaffold protocol crud_protocol.yaml`
-        protocol_specification_path = Path("protocols") / protocol_id.name / "README.md"
-        if not protocol_specification_path.exists():
-            raise click.ClickException(f"{protocol_specification_path} not found.")
-
-        self.ctx = ctx
         self.name = name
-        self.logger = ctx.obj["LOGGER"] or get_logger()
-        self.verbose = ctx.obj["VERBOSE"]
-        self.protocol_id = protocol_id
-        self.protocol = read_protocol(protocol_specification_path)
-        self.logger.info(f"Read protocol specification: {protocol_specification_path}")
-
-    def update_config(self):
-        """Update connection.yaml"""
-
-        connection_path = Path.cwd() / "connections" / self.name
-        connection_yaml = connection_path / "connection.yaml"
-        with open(connection_yaml, "r", encoding=DEFAULT_ENCODING) as infile:
-            connection_config = self.ctx.aea_ctx.connection_loader.load(infile)
-        connection_config.protocols.add(self.protocol_id)
-        connection_config.class_name = f"{to_camel(self.name)}Connection"
-        connection_config.description = self.protocol.metadata["description"].replace("protocol", "connection")
-        with open(connection_yaml, "w", encoding=DEFAULT_ENCODING) as outfile:  # # pylint: disable=R1732
-            yaml_dump(connection_config.ordered_json, outfile)
-        self.logger.info(f"Updated {connection_yaml}")
+        self.logger = logger or get_logger()
+        self.verbose = verbose
+        self.protocol = read_protocol(protocol)
+        self.logger.info(f"Read protocol specification: {protocol}")
 
     def generate(self) -> None:
         """Generate connection."""
@@ -192,5 +168,3 @@ class ConnectionScaffolder:
             if not result:
                 self.logger.error(f"Command failed: {command}")
                 sys.exit(1)
-
-        self.update_config()

@@ -56,43 +56,41 @@ def test_scaffold_protocol(cli_runner, dummy_agent_tim, caplog):
 class TestScaffoldConnection:
     """Test scaffold connection."""
 
-    @classmethod
-    def setup_class(cls):
-        """Setup class"""
-
-        cls.protocol_id = "zarathustra/sql_crud:0.1.0"
-        cls.protocol_path = "../tests/data/crud_protocol.yaml"
-
     def test_no_name_provided(self, cli_runner, dummy_agent_tim):
         """Test no name provided."""
 
         assert Path.cwd() == Path(dummy_agent_tim)
 
-        result = cli_runner.invoke(cli, f"scaffold protocol {self.protocol_path}")
-        assert result.exit_code == 0, result.output
-
         result = cli_runner.invoke(cli, ["scaffold", "connection"])
         assert result.exit_code == 2, result.output
         assert "Missing argument 'NAME'" in result.output
 
+    def test_scaffold_with_spec_yaml(self, cli_runner, dummy_agent_tim, caplog):
+        """Test scaffold protocol specification in YAML."""
+
+        path = Path.cwd() / ".." / "tests" / "data" / "dummy_protocol.yaml"
+        result = cli_runner.invoke(cli, ["scaffold", "connection", "my_connection", "--protocol", str(path)])
+        assert result.exit_code == 0, result.output
+        assert f"Read protocol specification: {path}" in caplog.text
+        assert f"New connection scaffolded at {dummy_agent_tim}" in caplog.text
+
     def test_scaffold_with_spec_readme(self, cli_runner, dummy_agent_tim, caplog):
         """Test scaffold protocol specification in README."""
 
-        result = cli_runner.invoke(cli, f"scaffold protocol {self.protocol_path}")
+        path = Path.cwd() / ".." / "tests" / "data" / "dummy_protocol.md"
+        result = cli_runner.invoke(cli, ["scaffold", "connection", "my_connection", "--protocol", str(path)])
         assert result.exit_code == 0, result.output
-
-        result = cli_runner.invoke(cli, ["scaffold", "connection", "my_connection", "--protocol", self.protocol_id])
-        assert result.exit_code == 0, result.output
-        assert f"Read protocol specification: {self.protocol_path}" in caplog.text
+        assert f"Read protocol specification: {path}" in caplog.text
         assert f"New connection scaffolded at {dummy_agent_tim}" in caplog.text
 
     def test_scaffold_with_python(self, cli_runner, dummy_agent_tim, caplog):
         """Test scaffold with python run for correct imports."""
 
-        result = cli_runner.invoke(cli, f"scaffold protocol {self.protocol_path}")
+        path = Path.cwd() / ".." / "tests" / "data" / "dummy_protocol.yaml"
+        result = cli_runner.invoke(aea_cli, ["generate", "protocol", str(path)])
         assert result.exit_code == 0, result.output
 
-        result = cli_runner.invoke(cli, ["scaffold", "connection", "my_connection", "--protocol", self.protocol_id])
+        result = cli_runner.invoke(cli, ["scaffold", "connection", "my_connection", "--protocol", str(path)])
         assert result.exit_code == 0, result.output
         assert f"New connection scaffolded at {dummy_agent_tim}" in caplog.text
 
