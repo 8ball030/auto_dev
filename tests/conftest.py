@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.constants import AUTONOMY_PACKAGES_FILE, DEFAULT_ENCODING, SAMPLE_PACKAGE_FILE, SAMPLE_PACKAGES_JSON
@@ -48,7 +47,7 @@ def test_packages_filesystem(test_filesystem):
 @pytest.fixture
 def cli_runner():
     """Fixture for invoking command-line interfaces."""
-    return CliRunner()
+    return CommandExecutor
 
 
 @pytest.fixture

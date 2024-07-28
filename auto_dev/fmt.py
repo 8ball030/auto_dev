@@ -16,9 +16,12 @@ class Formatter:
     def __init__(self, verbose):
         self.verbose = verbose
 
-    def format(self, path):
+    def format(self, path, fix=True):
         """Format the path."""
-        with isolated_filesystem(True):
+        if not fix:
+            with isolated_filesystem(True):
+                result = self.format_path(path, verbose=self.verbose)
+        else:
             result = self.format_path(path, verbose=self.verbose)
         return result
 
