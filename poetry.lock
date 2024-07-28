@@ -2755,13 +2755,13 @@ web3 = ">=6.0.0,<7"
 
 [[package]]
 name = "open-aea-ledger-solana"
-version = "1.52.0"
+version = "1.54.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of solana."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_solana-1.52.0-py3-none-any.whl", hash = "sha256:7c5cd6d21cd0dd251009351ccdd21e2e2bf18b7582e3fb7bf3694a0aae4d922e"},
-    {file = "open_aea_ledger_solana-1.52.0.tar.gz", hash = "sha256:908960935981eaffeb9be86cf1146452589949a8bf604d66df065026fb7880e4"},
+    {file = "open_aea_ledger_solana-1.54.0-py3-none-any.whl", hash = "sha256:54e7feffae9abc681457cedc07d091167786bdbde66fb0998200d6d102525a9b"},
+    {file = "open_aea_ledger_solana-1.54.0.tar.gz", hash = "sha256:29c770e01af8396cdf242fdf09c6da210e820caf6cfaadf37e987230461a3281"},
 ]
 
 [package.dependencies]
@@ -4676,4 +4676,4 @@ doc = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "c96ecd213e4e5e1d9edb075c7e5ee99bd10df590cc724419ef06f8415eb443ca"
+content-hash = "f697f42ba54947230e61405154925cf7c41e49008a1301e4de535a1efa59f0dc"
