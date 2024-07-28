@@ -73,7 +73,7 @@ pycryptodome = "==3.19.1"
 autoflake8 = "^0.4.1"
 rich-click = "^1.8.2"
 tbump = "^6.11.0"
-requests = "2.32.2"
+requests = "2.31.0"
 
 [tool.poetry.dev-dependencies]
 responses = "^0.23.1"
