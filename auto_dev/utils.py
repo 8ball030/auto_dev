@@ -101,6 +101,7 @@ def get_paths(path: Optional[str] = None, changed_only: bool = False):
             if regex in file_path:
                 return file_path.replace(regex, "")
         return file_path
+
     python_files = [f for f in packages if "__pycache__" not in f and f.endswith(".py")]
     python_files = [filter_git_interferace_files(f) for f in python_files]
     return python_files

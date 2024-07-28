@@ -7,6 +7,7 @@ from multiprocessing import Pool
 from rich.progress import track
 
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.utils import isolated_filesystem
 
 
 class Formatter:
@@ -17,7 +18,9 @@ class Formatter:
 
     def format(self, path):
         """Format the path."""
-        return self.format_path(path, verbose=self.verbose)
+        with isolated_filesystem(True):
+            result = self.format_path(path, verbose=self.verbose)
+        return result
 
     def format_path(self, path, verbose=False):
         """Format the path."""
