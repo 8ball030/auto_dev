@@ -61,7 +61,7 @@ class Releaser:
             sys.exit(1)
         return result
 
-    def release(self):
+    def release(self, auto_approve=False):
         """
         We run the release.
         """
@@ -69,10 +69,12 @@ class Releaser:
         self.logger.info(f"Current version is {self.current_version()}. 🚀")
         self.logger.info(f"New version will be {self.get_new_version()}. 🚀")
         new_version = self.get_new_version()
-        confirmation = input(f"Are you sure you want to release {new_version}? [y/N]")
-        if confirmation.lower() != "y":
-            self.logger.info("Release aborted. 😎")
-            return False
+
+        if not auto_approve:
+            confirmation = input(f"Are you sure you want to release {new_version}? [y/N]")
+            if confirmation.lower() != "y":
+                self.logger.info("Release aborted. 😎")
+                return False
         if not self.pre_release():
             self.logger.error("Pre release failed. 😭")
             return False
@@ -118,11 +120,17 @@ cli = build_cli()
     default=False,
     help="Verbose mode.",
 )
+@click.option(
+    "--auto-approve",
+    default=False,
+    help="Auto approve the release.",
+)
 @click.pass_context
 def release(
     ctx: click.Context,
     dep_path: Path,
     verbose: bool = False,
+    auto_approve: bool = False,
 ) -> None:
     """
     We release the package.
@@ -134,7 +142,7 @@ def release(
     logger = ctx.obj["LOGGER"]
     logger.info("Releasing the package... 🚀")
     releaser = Releaser(dep_path=dep_path, verbose=verbose, logger=logger)
-    if not releaser.release():
+    if not releaser.release(auto_approve=auto_approve):
         logger.error("Release failed. 😭")
         raise click.Abort()
     logger.info("Done. 😎")

@@ -9,6 +9,7 @@ from rich.progress import track
 
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.utils import isolated_filesystem
 
 
 class Formatter:
@@ -18,10 +19,15 @@ class Formatter:
         self.verbose = verbose
         self.remote = remote
 
-    def format(self, path):
+    def format(self, path, fix=True):
         """Format the path."""
         func = self._format_path if not self.remote else self._remote_format_path
-        return func(path, verbose=self.verbose)
+        if not fix:
+            with isolated_filesystem(True):
+                result = func(path, verbose=self.verbose)
+        else:
+            result = func(path, verbose=self.verbose)
+        return result
 
     def _remote_format_path(self, path, verbose=False):
         """Format the path."""
