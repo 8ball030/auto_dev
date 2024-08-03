@@ -11,7 +11,7 @@ from web3 import Web3
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.contracts.contract_functions import ContractFunction, FunctionType
 from auto_dev.contracts.function import Function
-from auto_dev.utils import snake_to_camel
+from auto_dev.utils import snake_to_camel, write_to_file
 
 
 class Contract:
@@ -65,16 +65,15 @@ class Contract:
         if build_path.exists():
             raise ValueError(f"Build file {build_path} already exists.")
         build_path.parent.mkdir(parents=False)
-        with build_path.open("w", encoding=DEFAULT_ENCODING) as file_pointer:
-            output = {
-                "abi": self.abi,
-                "_format": "",
-                "bytecode": "",
-                "sourceName": "",
-                "deployedBytecode": "",
-                "deployedLinkReferences": "",
-            }
-            json.dump(output, file_pointer, indent=4)
+        output = {
+            "abi": self.abi,
+            "_format": "",
+            "bytecode": "",
+            "sourceName": "",
+            "deployedBytecode": "",
+            "deployedLinkReferences": "",
+        }
+        write_to_file(str(build_path), output, file_type="json")
 
     def update_contract_yaml(self):
         """
@@ -87,8 +86,7 @@ class Contract:
             contract_yaml = yaml.safe_load(file_pointer)
         contract_yaml["contract_interface_paths"]["ethereum"] = f"build/{self.name}.json"
         contract_yaml["class_name"] = snake_to_camel(self.name)
-        with contract_yaml_path.open("w", encoding=DEFAULT_ENCODING) as file_pointer:
-            yaml.dump(contract_yaml, file_pointer, sort_keys=False)
+        write_to_file(str(contract_yaml_path), contract_yaml, file_type="yaml")
 
     def update_contract_py(self):
         """
@@ -119,8 +117,7 @@ class Contract:
         write_functions = "\n".join([function.to_string() for function in self.write_functions])
         contract_py += read_functions + write_functions
 
-        with contract_py_path.open("w", encoding=DEFAULT_ENCODING) as file_pointer:
-            file_pointer.write(contract_py)
+        write_to_file(str(contract_py_path), contract_py, file_type="text")
 
     def update_contract_init__(self):
         """
@@ -128,9 +125,8 @@ class Contract:
         """
         init_py_path = self.path / "__init__.py"
         public_id = f"PublicId.from_str('{self.author}/{self.name}:0.1.0')"
-        with init_py_path.open("a", encoding=DEFAULT_ENCODING) as file_pointer:
-            file_pointer.write("\nfrom aea.configurations.base import PublicId\n")
-            file_pointer.write(f"\nPUBLIC_ID = {public_id}\n")
+        content = f"\nfrom aea.configurations.base import PublicId\n\nPUBLIC_ID = {public_id}\n"
+        write_to_file(str(init_py_path), content, file_type="text")
 
     def update_all(self):
         """

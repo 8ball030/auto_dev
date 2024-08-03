@@ -17,7 +17,7 @@ from auto_dev.constants import AEA_CONFIG, DEFAULT_ENCODING
 from auto_dev.data.connections.template import CONNECTION_TEMPLATE
 from auto_dev.data.connections.test_template import TEST_CONNECTION_TEMPLATE
 from auto_dev.protocols.scaffolder import ProtocolSpecification, read_protocol
-from auto_dev.utils import folder_swapper, get_logger
+from auto_dev.utils import folder_swapper, get_logger, write_to_file
 
 INDENT = "    "
 
@@ -212,13 +212,12 @@ class ConnectionScaffolder:
         """Update README.md"""
 
         connection_path = Path.cwd() / "connections" / self.name
-        file_path = connection_path / "readme.md"
+        file_path = connection_path / "README.md"
         kwargs = {
             "name": " ".join(map(str.capitalize, self.name.split("_"))),
         }
         content = README_TEMPLATE.format(**kwargs)
-        file_path.write_text(content)
-        file_path.rename(file_path.parent / "README.md")
+        write_to_file(str(file_path), content, file_type="text")
 
     def generate(self) -> None:
         """Generate connection."""

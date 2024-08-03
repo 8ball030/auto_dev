@@ -19,8 +19,15 @@ cli = build_cli()
     type=click.Path(exists=True, file_okay=False),
     default=None,
 )
+@click.option(
+    "-w",
+    "--watch",
+    help="Watch the files for changes.",
+    is_flag=True,
+    default=False,
+)
 @click.pass_context
-def test(ctx, path):
+def test(ctx, path, watch):
     """
     Runs the test tooling
     """
@@ -33,7 +40,7 @@ def test(ctx, path):
         raise click.ClickException(f"Unable to get packages are you in the right directory? {error}")
     results = {}
     for package in track(range(len(packages)), description="Testing..."):
-        result = test_path(str(packages[package]), verbose=verbose)
+        result = test_path(str(packages[package]), verbose=verbose, watch=watch)
         results[packages[package]] = result
         logger.info(f"{'👌' if result else '❗'} - {packages[package]}")
 

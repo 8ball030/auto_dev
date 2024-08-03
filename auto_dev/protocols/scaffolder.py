@@ -12,8 +12,8 @@ from typing import Dict
 import yaml
 from aea.protocols.generator.base import ProtocolGenerator
 
-from auto_dev.commands.fmt import Formatter
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.fmt import Formatter
 from auto_dev.utils import camel_to_snake, get_logger, remove_prefix
 
 ProtocolSpecification = namedtuple('ProtocolSpecification', ['metadata', 'custom_types', 'speech_acts'])

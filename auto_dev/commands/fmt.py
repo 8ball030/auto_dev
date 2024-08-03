@@ -2,36 +2,12 @@
 This module contains the logic for the fmt command.
 """
 
-from multiprocessing import Pool
 
 import rich_click as click
-from rich.progress import track
 
 from auto_dev.base import build_cli
-from auto_dev.fmt import Formatter
+from auto_dev.fmt import multi_thread_fmt, single_thread_fmt
 from auto_dev.utils import get_paths
-
-
-def single_thread_fmt(paths, verbose, logger):
-    """Run the formatting in a single thread."""
-    results = {}
-    formatter = Formatter(verbose)
-    for package in track(range(len(paths)), description="Formatting..."):
-        path = paths[package]
-        if verbose:
-            logger.info(f"Formatting: {path}")
-        result = formatter.format(path)
-        results[package] = result
-    return results
-
-
-def multi_thread_fmt(paths, verbose, num_processes):
-    """Run the formatting in multiple threads."""
-    formatter = Formatter(verbose)
-    with Pool(num_processes) as pool:
-        results = pool.map(formatter.format, paths)
-    return dict(zip(paths, results))
-
 
 cli = build_cli()
 
@@ -41,7 +17,7 @@ cli = build_cli()
     "-p",
     "--path",
     help="Path to code to format. If not provided will format all packages.",
-    type=click.Path(exists=True, file_okay=False),
+    type=click.Path(exists=True, file_okay=True, dir_okay=True),
     default=None,
 )
 @click.option(
@@ -59,13 +35,15 @@ def fmt(ctx, path, changed_only):
     verbose = ctx.obj["VERBOSE"]
     num_processes = ctx.obj["NUM_PROCESSES"]
     logger = ctx.obj["LOGGER"]
-    logger.info("Formatting Open Autonomy Packages")
+    remote = ctx.obj["REMOTE"]
+    logger.info("Formatting Open Autonomy Packages...")
+    logger.info(f"Remote: {remote}")
     paths = get_paths(path, changed_only)
     logger.info(f"Formatting {len(paths)} files...")
     if num_processes > 1:
-        results = multi_thread_fmt(paths, verbose, num_processes)
+        results = multi_thread_fmt(paths, verbose, num_processes, remote=remote)
     else:
-        results = single_thread_fmt(paths, verbose, logger)
+        results = single_thread_fmt(paths, verbose, logger, remote=remote)
     passed = sum(results.values())
     failed = len(results) - passed
     logger.info(f"Formatting completed with {passed} passed and {failed} failed")

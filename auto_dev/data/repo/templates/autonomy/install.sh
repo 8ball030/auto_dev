@@ -114,21 +114,14 @@ function verify() {
 
 function install_poetry_deps() {
     local os
-    local executable
+    local pip_executable
+    local poetry_executable
 
-    os=$(uname)
-    if [ "$os" = "Darwin" ]; then
-        CACHE_DIR="/Users/$(whoami)/Library/Caches/pypoetry/virtualenvs"
-    else
-        CACHE_DIR="/home/$(whoami)/.cache/pypoetry/virtualenvs"
-    fi
-    # We create a virtual environment to install the dependencies
-    executable=$(echo $(echo $CACHE_DIR/$(poetry env list |head -n 1| awk '{print $1}'))/bin/pip)
 
     echo "Installing package dependencies via poetry..."
-    poetry install > /dev/null || exit 1
+    poetry install 
     echo checking if aea is installed
-    poetry run aea --version > /dev/null || exit 1
+    poetry run aea --version
     echo "Done installing dependencies"
 }
 # Main execution

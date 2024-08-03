@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import rich_click as click
+import yaml
 
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.utils import (
@@ -21,6 +22,7 @@ from auto_dev.utils import (
     load_aea_ctx,
     remove_prefix,
     remove_suffix,
+    write_to_file,
 )
 
 TEST_PACKAGES_JSON = {
@@ -219,3 +221,60 @@ def test_load_aea_ctx_without_config_fails():
     decorated_func = load_aea_ctx(mock_func)
     with pytest.raises(FileNotFoundError):
         decorated_func(mock_context, "arg1", "arg2", kwarg1="value1", kwarg2="value2")
+
+
+@pytest.fixture
+def temp_dir(tmp_path):
+    """Temp dir fixture"""
+    return tmp_path
+
+
+def test_write_to_file_text(temp_dir):
+    """Test write_to_file writes a text file."""
+    file_path = temp_dir / "test.txt"
+    content = "Hello, world!"
+    write_to_file(str(file_path), content, "text")
+
+    assert file_path.exists()
+    with open(file_path, "r", encoding=DEFAULT_ENCODING) as f:
+        assert f.read() == content
+
+
+def test_write_to_file_yaml(temp_dir):
+    """Test write_to_file writes a YAML file."""
+    file_path = temp_dir / "test.yaml"
+    content = {"key": "value", "list": [1, 2, 3]}
+    write_to_file(str(file_path), content, "yaml")
+
+    assert file_path.exists()
+    with open(file_path, "r", encoding=DEFAULT_ENCODING) as f:
+        assert yaml.safe_load(f) == content
+
+
+def test_write_to_file_json(temp_dir):
+    """Test write_to_file writes a JSON file."""
+    file_path = temp_dir / "test.json"
+    content = {"key": "value", "list": [1, 2, 3]}
+    write_to_file(str(file_path), content, "json")
+
+    assert file_path.exists()
+    with open(file_path, "r", encoding=DEFAULT_ENCODING) as f:
+        assert json.load(f) == content
+
+
+def test_write_to_file_invalid_type(temp_dir):
+    """Test write_to_file raises an exception when the file type is invalid."""
+    file_path = temp_dir / "test.invalid"
+    content = "Some content"
+
+    with pytest.raises(ValueError, match="Invalid file_type: invalid"):
+        write_to_file(str(file_path), content, "invalid")
+
+
+def test_write_to_file_exception(temp_dir):
+    """Test write_to_file raises an exception when the file path is invalid."""
+    file_path = temp_dir / "nonexistent_dir" / "test.txt"
+    content = "Some content"
+
+    with pytest.raises(ValueError, match="Error writing to file"):
+        write_to_file(str(file_path), content, "text")

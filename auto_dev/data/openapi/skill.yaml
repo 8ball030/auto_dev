@@ -1,0 +1,48 @@
+name: innovation_station_api
+author: eightballer
+version: 0.1.0
+type: skill
+description: A skill that provides an API for the Innovation Station. It pulls a frontend
+  by hash from ipfs and then creates an api. When jobs are posted to the api, it will
+  create a task and send it to the LLM workflow to create a new component.
+license: Apache-2.0
+aea_version: '>=1.0.0, <2.0.0'
+fingerprint:
+  __init__.py: bafybeignso5r673wgfgmdjwnhcba3viyhxlx3aam6y67e374gq4kj7n23i
+  behaviours.py: bafybeifwrfjpojll4znnobn54rmvtjlj5kpps6spta5xnebgn7y2l3gxwe
+  data.py: bafybeihy5edig732gbdrlv2eomnaeq25lof4zuqvinqhpbbpg673el5opi
+  dialogues.py: bafybeihpitrmlmwukpdtpj7c7ieyr67i2res54ig3xuk4qyrspj6ahmfr4
+  examples/ccxt_protocol.txt: bafybeierslod5hokqlmv6owgp5cfy6q36vhajfcgykhnjnab6fb5f25xdy
+  examples/ccxt_protocol.yaml: bafybeierslod5hokqlmv6owgp5cfy6q36vhajfcgykhnjnab6fb5f25xdy
+  examples/ohlcv_protocol.txt: bafybeiadohai3emoipafl5zfwckltw77hqtrt5u3mzmzvmkbhmveu4vhti
+  examples/ohlcv_protocol.yaml: bafybeiadohai3emoipafl5zfwckltw77hqtrt5u3mzmzvmkbhmveu4vhti
+  examples/order_protocol.yaml: bafybeib5hnptnxk3ahuanz6sjyydftxgzn7hahbinvlfv5qluakhiglnvu
+  examples/spot_asset_protocol.yaml: bafybeih3mcnc3bt55kqqr5653cvnx72mcnekn7ay6wtdailitifknse424
+  examples/ticker_protocol.yaml: bafybeidscn6uj6avy3frdeh4ilycm6lxxtclsfyn35br7h5jhce4z4mtlu
+  handlers.py: bafybeidtw2fvt2mz2wfn6pcqw66wt4oewwihkkz72tumfzeygy3m45qqze
+  llm_workflows/protocol.py: bafybeihc7pqqsuyqfae5sqdjwrwhvb6g3wrmjyib2uqj52dx7eurdf5khu
+  strategy.py: bafybeia2wbd7z6elao3szz2o75vn4kijb4rjwyzjqaohpodriadnxi4yci
+fingerprint_ignore_patterns: []
+connections: []
+contracts: []
+protocols:
+- eightballer/http:0.1.0:bafybeia2yjjpa57ihbfru54lvq3rru5vtaomyor3fn4zz4ziiaum5yywje
+skills: []
+dependencies:
+  llm-workflow:
+    version: '>=0.0.2'
+  openai:
+    version: '>=0.28.0'
+is_abstract: false
+behaviours: {}
+models:
+  strategy:
+    args: {}
+    class_name: Strategy
+  http_dialogues:
+    args: {}
+    class_name: HttpDialogues
+handlers:
+  http_handler:
+    args: {}
+    class_name: HttpHandler

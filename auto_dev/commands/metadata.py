@@ -29,6 +29,7 @@ from rich import print_json
 
 from auto_dev.base import build_cli
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.utils import write_to_file
 
 cli = build_cli()
 
@@ -49,14 +50,6 @@ def read_json_file(file_path):
     with open(file_path, 'r', encoding=DEFAULT_ENCODING) as file:
         data = json.load(file)
     return data
-
-
-def write_json_file(file_path, data):
-    """
-    Writes a json file.
-    """
-    with open(file_path, 'w', encoding=DEFAULT_ENCODING) as file:
-        json.dump(data, file, separators=(',', ':'))
 
 
 def get_metadata(root, name, hash_, target_id):
@@ -167,7 +160,7 @@ def generate(root, target_name, target_id, strict, all):  # pylint: disable=rede
         if strict and not render_metadata(target_metadata):
             click.echo("Metadata generation failed. Please fix the errors above and try again.")
             sys.exit(1)
-        write_json_file(root + f"/mints/{target_id}.json", metadata)
+        write_to_file(root + f"/mints/{target_id}.json", metadata, file_type="json")
         click.echo(f"Metadata generated successfully! Saved to: {root}/mints/{target_id}.json")
 
 

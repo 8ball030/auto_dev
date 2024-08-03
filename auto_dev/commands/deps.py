@@ -28,7 +28,6 @@ The ipfshash is the hash of the package.
 We want to be able to update the hash of the package.       
 
 """
-import json
 import logging
 import shutil
 from pathlib import Path
@@ -39,6 +38,7 @@ import yaml
 
 from auto_dev.base import build_cli
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.utils import write_to_file
 
 PARENT = Path("repo_1")
 CHILD = Path("repo_2")
@@ -59,8 +59,7 @@ def write_package_json(repo: Path, package_dict: Dict[str, Dict[str, str]]) -> N
     We write the package json.
     """
     package_json = repo / "packages" / "packages.json"
-    with open(package_json, "w", encoding=DEFAULT_ENCODING) as file_pointer:
-        json.dump(package_dict, file_pointer, indent=4)
+    write_to_file(str(package_json), package_dict, file_type="json")
 
 
 def get_package_hashes(repo: Path) -> Dict[str, str]:

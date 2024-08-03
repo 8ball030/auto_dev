@@ -11,7 +11,7 @@ import yaml
 
 from auto_dev.base import build_cli
 from auto_dev.constants import DEFAULT_ENCODING
-from auto_dev.utils import get_logger
+from auto_dev.utils import get_logger, write_to_file
 
 logger = get_logger()
 
@@ -181,12 +181,6 @@ class BaseScaffolder:
         self.logger = get_logger()
         self.load()
 
-    def write(self):
-        """Write"""
-        with open(AEA_CONFIG, "w", encoding=DEFAULT_ENCODING) as file:
-            yaml.dump_all(self.aea_config, file, default_flow_style=False, sort_keys=False)
-        self.load()
-
 
 class LoggingScaffolder(BaseScaffolder):
     """Logging scaffolder."""
@@ -220,7 +214,8 @@ class LoggingScaffolder(BaseScaffolder):
             config = list(config)[0]
         logging_config = self.generate(handlers)
         self.aea_config[0].update(logging_config)
-        self.write()
+        write_to_file(AEA_CONFIG, self.aea_config, file_type="yaml")
+        self.load()
         return logging_config
 
 
@@ -264,7 +259,8 @@ class ConnectionScaffolder(BaseScaffolder):
             if config:
                 self.aea_config.append(config)
 
-        self.write()
+        write_to_file(AEA_CONFIG, self.aea_config, file_type="yaml")
+        self.load()
 
 
 @augment.command()

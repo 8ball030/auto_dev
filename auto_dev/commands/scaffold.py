@@ -22,8 +22,9 @@ from auto_dev.connections.scaffolder import ConnectionScaffolder
 from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING
 from auto_dev.contracts.block_explorer import BlockExplorer
 from auto_dev.contracts.contract_scafolder import ContractScaffolder
+from auto_dev.handler.scaffolder import HandlerScaffolder
 from auto_dev.protocols.scaffolder import ProtocolScaffolder
-from auto_dev.utils import camel_to_snake, load_aea_ctx, remove_suffix
+from auto_dev.utils import camel_to_snake, change_dir, load_aea_ctx, remove_suffix
 
 cli = build_cli()
 
@@ -169,6 +170,33 @@ def connection(  # pylint: disable=R0914
 
     connection_path = Path.cwd() / "connections" / name
     logger.info(f"New connection scaffolded at {connection_path}")
+
+
+@scaffold.command()
+@click.argument("spec_file", type=click.Path(exists=True))
+@click.option("--author", default="eightballer", help="Author of the skill")
+@click.option("--output", default="my_api_skill", help="Name of API skill")
+@click.pass_context
+def handler(ctx, spec_file, author, output):
+    """Generate an AEA handler from an OpenAPI 3 specification."""
+
+    logger = ctx.obj["LOGGER"]
+    verbose = ctx.obj["VERBOSE"]
+
+    scaffolder = HandlerScaffolder(spec_file, author, output, logger=logger, verbose=verbose)
+    handler_code = scaffolder.generate()
+
+    with change_dir(f"skills/{output}"):
+        output_path = Path('handlers.py')
+        scaffolder.save_handler(output_path, handler_code)
+        skill_yaml_file = "skill.yaml"
+
+        scaffolder.update_skill_yaml(skill_yaml_file)
+        scaffolder.move_and_update_my_model()
+        scaffolder.remove_behaviours()
+        scaffolder.create_dialogues()
+
+    return 0
 
 
 if __name__ == "__main__":
