@@ -105,8 +105,18 @@ def get_paths(path: Optional[str] = None, changed_only: bool = False):
                 return file_path.replace(regex, "")
         return file_path
 
+    def filter_protobuf_files(file_path: str):
+        regexs = [
+            '_pb2.py',
+        ]
+        for regex in regexs:
+            if regex in file_path:
+                return True
+        return False
+
     python_files = [f for f in packages if "__pycache__" not in f and f.endswith(".py")]
     python_files = [filter_git_interferace_files(f) for f in python_files]
+    python_files = [f for f in python_files if not filter_protobuf_files(f)]
     return python_files
 
 
