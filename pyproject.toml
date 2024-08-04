@@ -45,7 +45,7 @@ line_length = 120
 skip_gitignore = true
 
 [tool.poetry.dependencies]
-python = ">=3.9,<=3.11"
+python = ">=3.9,<=3.11.9"
 open-autonomy = "==0.14.12"
 open-aea-test-autonomy = "==0.14.12"
 open-aea-ledger-ethereum = "==1.52.0"
