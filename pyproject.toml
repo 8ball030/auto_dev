@@ -48,7 +48,7 @@ skip_gitignore = true
 python = ">=3.9,<3.12"
 open-autonomy = "==0.14.12"
 open-aea-test-autonomy = "==0.14.12"
-open-aea-ledger-ethereum = "==1.52.0"
+open-aea-ledger-ethereum = "==1.54.0"
 open-aea-ledger-solana= "==1.52.0"
 open-aea-ledger-cosmos = "==1.52.0"
 open-aea-cli-ipfs = "==1.52.0"
