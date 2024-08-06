@@ -73,7 +73,7 @@ pycryptodome = "==3.20.0"
 autoflake8 = "^0.4.1"
 rich-click = "^1.8.2"
 tbump = "^6.11.0"
-requests = "2.28.1"
+requests = "2.32.3"
 pytest-xdist = "^3.6.1"
 
 [tool.poetry.dev-dependencies]
