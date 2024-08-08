@@ -107,7 +107,7 @@ def repo(ctx, name, type_of_repo):
             logger.info("Installing host deps. This may take a while!")
             execute_commands(
                 "bash ./install.sh",
-                verbose=False,
+                verbose=True,
                 logger=logger,
             )
             logger.info("Initialising autonomy packages.")
