@@ -237,13 +237,13 @@ class HandlerScaffolder:
 
         self.generate_handler()
 
-        skill_route = Path('vendor') / self.config.author / self.public_id.name / 'skill.yaml' if not self.config.new_skill else Path('skills') / self.config.output / 'skill.yaml'
+        skill_route = Path('vendor') / self.config.author / self.public_id.name  if not self.config.new_skill else Path('skills') / self.config.output
         if not skill_route.exists():
             self.logger.error(f"Skill not found at: {skill_route}. Exiting.")
             sys.exit(1)
         with self._change_dir():
-            self.save_handler(Path(self.config.output) / "handlers.py")
-            self.update_skill_yaml(Path(self.config.output) / "skill.yaml")
+            self.save_handler(skill_route / "handlers.py")
+            self.update_skill_yaml(skill_route / "skill.yaml")
             self.move_and_update_my_model()
             self.remove_behaviours()
             self.create_dialogues()
