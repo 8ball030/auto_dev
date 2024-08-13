@@ -50,7 +50,7 @@ typing_extensions = ">=3.10.0.2"
 protobuf = "<4.25.0,>=4.21.6"
 hypothesis = "==6.111.0"
 toml = "==0.10.2"
-tomte = {version = "==0.2.17", extras = ["cli", "tests", "ledgers", "black"]}
+tomte = {version = "==0.2.17", extras = ["cli", "tests", "ledgers",]}
 
 py-multibase = "==1.0.3"
 py-multicodec = "==0.2.1"
@@ -62,7 +62,6 @@ eth-utils = "==2.3.1"
 eth-abi = "==5.1.0"
 pycryptodome = "==3.20.0"
 
-autoflake8 = "^0.4.1"
 rich-click = "^1.8.2"
 tbump = "^6.11.0"
 requests = "2.28.1"
@@ -83,12 +82,7 @@ mkdocs-autorefs = "^1.0.1"
 all = [
   "pytest",
   "tbump",
-  "black",
-  "isort",
   "ruff",
-  "mypy",
-  "pylama",
-  "pylint",
   "autoflake8",
   "pytest-cov",
   "open-autonomy",
@@ -109,13 +103,6 @@ doc = [
 
 [tool.poetry.scripts]
 adev = "auto_dev.cli:cli"
-
-[tool.poetry.dependencies.pylama]
-extras = ["all"]
-version = "^8.4.1"
-
-
-
 
 
 [tool.ruff]
