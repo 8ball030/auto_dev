@@ -2,6 +2,7 @@
 # ruff: noqa: E501
 
 from pathlib import Path
+import sys
 
 import yaml
 from aea.configurations.base import PublicId
@@ -236,9 +237,13 @@ class HandlerScaffolder:
 
         self.generate_handler()
 
+        skill_route = Path('vendor') / self.config.author / self.public_id.name / 'skill.yaml' if not self.config.new_skill else Path('skills') / self.config.output / 'skill.yaml'
+        if not skill_route.exists():
+            self.logger.error(f"Skill not found at: {skill_route}. Exiting.")
+            sys.exit(1)
         with self._change_dir():
-            self.save_handler(self.config.output / "handlers.py")
-            self.update_skill_yaml()
+            self.save_handler(Path(self.config.output) / "handlers.py")
+            self.update_skill_yaml(Path(self.config.output) / "skill.yaml")
             self.move_and_update_my_model()
             self.remove_behaviours()
             self.create_dialogues()
@@ -252,8 +257,8 @@ class HandlerScaffolder:
 
     def create_new_skill(self) -> None:
         """Create a new skill."""
-        skill_cmd = f"aea scaffold skill {self.output}".split(" ")
-        if not CommandExecutor(skill_cmd).execute(verbose=self.verbose):
+        skill_cmd = f"aea scaffold skill {self.config.output}".split(" ")
+        if not CommandExecutor(skill_cmd).execute(verbose=self.config.verbose):
             msg = "Failed to scaffold skill."
             raise ValueError(msg)
 
