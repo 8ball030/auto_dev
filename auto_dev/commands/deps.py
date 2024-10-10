@@ -564,9 +564,16 @@ def get_update_command(poetry_dependencies: Dependency) -> str:
 
 
 @deps.command()
+@click.option(
+    "--auto-approve",
+    default=False,
+    help="Auto approve the changes.",
+    is_flag=True,
+)
 @click.pass_context
 def verify(
     ctx: click.Context,
+    auto_approve: bool = False,
 ) -> None:
     """
     We verify the packages.json file.
@@ -579,25 +586,26 @@ def verify(
     click.echo("Verifying autonomy dependencies... 📝")
 
     version_set_loader = VersionSetLoader()
-
     version_set_loader.load_config()
+    if (Path("packages") / "packages.json").exists():
+        version_set_loader.load_config()
+        for dependency in track(version_set_loader.autonomy_dependencies.upstream_dependency):
+            click.echo(f"   Verifying:   {dependency.name}")
+            remote_packages = dependency.get_all_autonomy_packages()
+            local_packages = get_package_json(Path())["third_party"]
+            diffs = {}
+            for package_name, package_hash in remote_packages.items():
+                if package_name in local_packages:
+                    if package_hash != local_packages[package_name]:
+                        diffs[package_name] = package_hash
 
-    for dependency in track(version_set_loader.autonomy_dependencies.upstream_dependency):
-        click.echo(f"   Verifying:   {dependency.name}")
-        remote_packages = dependency.get_all_autonomy_packages()
-        local_packages = get_package_json(Path())["third_party"]
-        diffs = {}
-        for package_name, package_hash in remote_packages.items():
-            if package_name in local_packages:
-                if package_hash != local_packages[package_name]:
-                    diffs[package_name] = package_hash
-
-        if diffs:
-            print_json(data=diffs)
-            click.confirm("Do you want to update the package?\n", abort=True)
-            update_package_json(repo=Path(), proposed_dependency_updates=diffs)
-            remove_old_package(repo=Path(), proposed_dependency_updates=diffs)
-            changes.append(dependency.name)
+            if diffs:
+                print_json(data=diffs)
+                if not auto_approve:
+                    click.confirm("Do you want to update the package?\n", abort=True)
+                update_package_json(repo=Path(), proposed_dependency_updates=diffs)
+                remove_old_package(repo=Path(), proposed_dependency_updates=diffs)
+                changes.append(dependency.name)
 
     click.echo("Verifying poetry dependencies... 📝")
     cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies)
@@ -606,11 +614,11 @@ def verify(
     if issues:
         click.echo(f"Please run the following command to update the poetry dependencies.")
         click.echo(f"{cmd}\n")
-        confirm = click.confirm("Do you want to update the poetry dependencies now?", abort=True)
-        if confirm:
-            os.system(cmd)  # noqa
-            click.echo("Done. 😎")
-            sys.exit(0)
+        if not auto_approve:
+            click.confirm("Do you want to update the poetry dependencies now?", abort=True)
+        os.system(cmd)  # noqa
+        changes.append("poetry dependencies")
+
     handle_output(issues, changes)
 
 
