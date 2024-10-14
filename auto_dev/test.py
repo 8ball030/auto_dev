@@ -2,7 +2,8 @@
 
 from multiprocessing import cpu_count
 
-from auto_dev.cli_executor import CommandExecutor
+# We execute using the pytest command.
+import pytest
 
 
 def test_path(
@@ -15,17 +16,17 @@ def test_path(
     :param path: The path to check.
     """
     extra_args = []
+
+    if verbose:
+        extra_args.append("-v")
+
+    if watch:
+        extra_args.append("-w")
+
     if multiple:
-        extra_args = ["-n", str(cpu_count())]
-    command = CommandExecutor(
-        [
-            "poetry",
-            "run",
-            "pytest",
-            str(path),
-            "-vv",
-        ]
-        + (["-w"] if watch else [])
-        + extra_args
-    )
-    return command.execute(verbose=verbose, stream=True)
+        extra_args.append("-n")
+        extra_args.append(str(cpu_count()))
+
+    args = [path] + extra_args
+    res = pytest.main(args)
+    return bool(res == 0)

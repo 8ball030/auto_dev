@@ -137,7 +137,7 @@ function install_poetry_deps() {
 
     echo "Installing package dependencies via poetry..."
     echo "Using poetry executable: $poetry_executable"
-    poetry install > /dev/null || exit 1
+    poetry install --no-root > /dev/null || exit 1
     echo "Checking if aea is installed"
     poetry run aea --version
     echo "Done installing dependencies"
