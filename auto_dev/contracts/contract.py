@@ -13,6 +13,9 @@ from auto_dev.contracts.function import Function
 from auto_dev.contracts.contract_functions import FunctionType, ContractFunction
 
 
+DEFAULT_NULL_ADDRESS = "0x0000000000000000000000000000000000000000"
+
+
 class Contract:
     """Class to scaffold a contract."""
 
@@ -43,7 +46,9 @@ class Contract:
                 msg = f"Function {function} has unknown state mutability: {mutability}"
                 raise ValueError(msg)
 
-    def __init__(self, author: str, name: str, abi: dict, address: str, web3: Web3 | None = None):
+    def __init__(
+        self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Web3 | None = None
+    ):
         """Initialise the contract."""
         self.author = author
         self.name = name

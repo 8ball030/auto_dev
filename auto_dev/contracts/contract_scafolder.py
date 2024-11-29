@@ -23,6 +23,8 @@ class ContractScaffolder:
         """Scaffold a contract from a file."""
         with open(path, encoding=DEFAULT_ENCODING) as file:
             abi = json.load(file)
+            if isinstance(abi, dict):
+                abi = abi["abi"]
         return Contract(abi=abi, name=name, address=address, author=self.author)
 
     def from_block_explorer(self, address: str, name: str):
