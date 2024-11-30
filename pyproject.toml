@@ -48,7 +48,7 @@ web3 = "<7,>=6.0.0"
 ipfshttpclient = "==0.8.0a2"
 typing_extensions = ">=3.10.0.2"
 protobuf = "<4.25.0,>=4.21.6"
-hypothesis = "==6.114.1"
+hypothesis = "==6.122.0"
 toml = "==0.10.2"
 tomte = {version = "==0.2.17", extras = ["cli", "tests", "ledgers", "black"]}
 
