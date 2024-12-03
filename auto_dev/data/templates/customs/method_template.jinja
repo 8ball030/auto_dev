@@ -1,49 +1,51 @@
-    def {{ method_name }}(self, message: ApiHttpMessage{% for param in path_params_snake_case %}, {{ param }}{% endfor %}{% if method|lower in ['post', 'put', 'patch', 'delete'] %}, body{% endif %}):
+    {%- if use_daos %}
+    @handle_exception
+    {%- endif %}
+    def {{ method_name }}(self, message: ApiHttpMessage{% for param in path_params_snake_case %}, {{ param }}{% endfor %}{% if method|lower in ['post', 'put', 'patch'] %}, body{% endif %}):
         {% raw %}"""{% endraw %}Handle {{ method|upper }} request for {{ path }}.{% raw %}"""{% endraw %}
 {%- if path_params_snake_case %}
         self.context.logger.debug(f"Path parameters: {% for param in path_params_snake_case %}{{ param }}={{ '{' }}{{ param }}{{ '}' }}{% if not loop.last %}, {% endif %}{% endfor %}")
 {%- endif %}
-{%- if method|lower in ['post', 'put', 'patch', 'delete'] %}
+{%- if method|lower in ['post', 'put', 'patch'] %}
         self.context.logger.debug(f"Request body: {body}")
 {% endif %}
-        try:
-            {%- if method|lower == 'get' and not path_params %}
-            result = {{ schema|lower|replace(' ', '_') }}_dao.get_all()
-            {%- elif method|lower == 'get' and path_params %}
-            result = {{ schema|lower|replace(' ', '_') }}_dao.get_by_id({{ path_params_snake_case[0] }})
+{%- if not schema %}
+        # TODO: Implement {{ method|upper }} logic for {{ path }}
+        # TODO: Use this template to return a response with a status code and status text
+        # return ApiHttpMessage(
+        #     performative=ApiHttpMessage.Performative.RESPONSE,
+        #     status_code=status_code,
+        #     status_text=status_text,
+        #     headers="",
+        #     version=message.version,
+        #     body=b""
+        # )
+        raise NotImplementedError
+{%- elif use_daos %}
+        {%- if method|lower == 'get' and not path_params %}
+        result = {{ schema|lower|replace(' ', '_') }}_dao.get_all()
+        {%- elif method|lower == 'get' and path_params %}
+        result = {{ schema|lower|replace(' ', '_') }}_dao.get_by_id({{ path_params_snake_case[0] }})
 
-            if result is None:
-                error_message = json.dumps({"error": f"{{ schema|replace(' ', '_') }} with {{ path_params[0] }} {{ '{' ~ path_params_snake_case[0] ~ '}' }} not found"})
-                return ApiHttpMessage(
-                    performative=ApiHttpMessage.Performative.RESPONSE,
-                    status_code=404,
-                    status_text="Not Found",
-                    headers="",
-                    version=message.version,
-                    body=error_message.encode(),
-                )   
-            {%- elif method|lower == 'post' and operation_type == 'insert' %}
-            {{ schema|lower|replace(' ', '_') }}_body = json.loads(body)
-            result = {{ schema|lower|replace(' ', '_') }}_dao.insert({{ schema|lower|replace(' ', '_') }}_body)
-            {%- elif method|lower == 'post' and operation_type == 'update' %}
-            {{ schema|lower|replace(' ', '_') }}_body = json.loads(body)
-            result = {{ schema|lower|replace(' ', '_') }}_dao.update({{ path_params_snake_case[0] }}, **{{ schema|lower|replace(' ', '_') }}_body)
-            {%- else %}
-            # TODO: Implement {{ method|upper }} logic for {{ path }}
-            raise NotImplementedError
-            {%- endif %}
+        if result is None:
+            return self.create_response(message, 404, "Not Found", {"error": f"{{ schema|replace(' ', '_') }} with {{ path_params[0] }} {{ '{' ~ path_params_snake_case[0] ~ '}' }} not found"})
+        {%- elif method|lower == 'post' and operation_type in ['insert', 'create'] %}
+        {{ schema|lower|replace(' ', '_') }}_body = json.loads(body)
+        result = {{ schema|lower|replace(' ', '_') }}_dao.insert({{ schema|lower|replace(' ', '_') }}_body)
+        {%- elif method|lower == 'post' and operation_type == 'update' %}
+        {{ schema|lower|replace(' ', '_') }}_body = json.loads(body)
+        result = {{ schema|lower|replace(' ', '_') }}_dao.update({{ path_params_snake_case[0] }}, **{{ schema|lower|replace(' ', '_') }}_body)
+        {%- elif method|lower == 'delete' %}
+        result = {{ schema|lower|replace(' ', '_') }}_dao.delete({{ path_params_snake_case[0] }})
+        {%- else %}
+        # TODO: Implement {{ method|upper }} logic for {{ path }}
+        raise NotImplementedError
+        {%- endif %}
 
-            self.context.logger.info("Successfully processed {{ method|upper }} request for {{ path }}")
-            self.context.logger.debug(f"Result: {result}")
-            return ApiHttpMessage(
-                performative=ApiHttpMessage.Performative.RESPONSE,
-                status_code={{ status_code }},
-                status_text="{{ status_text }}",
-                headers="",
-                version=message.version,
-                body=json.dumps(result).encode()
-            )
-{% for error_code, error_info in error_responses.items() %}
+        self.context.logger.info("Successfully processed {{ method|upper }} request for {{ path }}")
+        self.context.logger.debug(f"Result: {result}")
+        return self.create_response(message, {{ status_code }}, "{{ status_text }}", result)
+{%- for error_code, error_info in error_responses.items() %}
         except {{ error_info.exception }}:
             self.context.logger.exception("{{ error_info.message }}")
             return ApiHttpMessage(
@@ -54,15 +56,17 @@
                 version=message.version,
                 body=json.dumps({"error": "{{ error_info.message }}"}).encode("utf-8")
             )
-{% endfor %}
-        except Exception as e:
-            self.context.logger.exception("Unhandled exception")
-            error_message = json.dumps({"error": str(e)})
-            return ApiHttpMessage(
-                performative=ApiHttpMessage.Performative.RESPONSE,
-                status_code=500,
-                headers="",
-                version=message.version,
-                status_text="Internal Server Error",
-                body=error_message.encode(),
-            )
+{%- endfor %}
+{%- else %}
+        # TODO: Implement {{ method|upper }} logic for {{ path }}
+        # TODO: Use this template to return a response with a status code and status text
+        # return ApiHttpMessage(
+        #     performative=ApiHttpMessage.Performative.RESPONSE,
+        #     status_code=status_code,
+        #     status_text=status_text,
+        #     headers="",
+        #     version=message.version,
+        #     body=b""
+        # )
+        raise NotImplementedError
+{%- endif %}
