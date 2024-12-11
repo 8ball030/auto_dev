@@ -19,3 +19,7 @@ class AuthenticationError(Exception):
 
 class UserInputError(Exception):
     """User input error."""
+
+
+class ScaffolderError(Exception):
+    """Scaffolder error."""

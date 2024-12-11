@@ -5,8 +5,8 @@ import re
 from pydantic import ValidationError
 
 from auto_dev.utils import validate_openapi_spec
+from auto_dev.exceptions import ScaffolderError
 from auto_dev.commands.metadata import read_yaml_file
-from auto_dev.handler.exceptions import ScaffolderError
 from auto_dev.handler.openapi_models import Schema, OpenAPI, Operation, Reference
 
 

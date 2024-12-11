@@ -14,9 +14,9 @@ from aea.configurations.base import PublicId
 from auto_dev.enums import FileType
 from auto_dev.utils import change_dir, get_logger, write_to_file, camel_to_snake
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
+from auto_dev.exceptions import ScaffolderError
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.commands.metadata import read_yaml_file
-from auto_dev.handler.exceptions import ScaffolderError
 from auto_dev.handler.openapi_utils import load_openapi_spec, parse_schema_like, get_crud_classification
 from auto_dev.handler.openapi_models import Schema, OpenAPI, PathItem, Operation, Reference
 
