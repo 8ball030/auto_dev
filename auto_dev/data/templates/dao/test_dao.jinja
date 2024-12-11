@@ -1,16 +1,20 @@
 """Test DAOs."""
 
+import sys
 import random
 import shutil
 from pathlib import Path
 
 import pytest
 
-{% for i in range(model_names|length) %}
-from packages.{{author_name}}.customs.{{package_name}}.daos.{{ dao_file_names[i] }} import {{ model_names[i] }}DAO
-{% endfor %}
 
 DAOS_PATH = Path(__file__).parent.parent / "daos"
+sys.path.append(str(DAOS_PATH.parent))
+
+{% for i in range(model_names|length) %}
+from daos.{{ dao_file_names[i] }} import {{ model_names[i] }}DAO
+{% endfor %}
+
 
 @pytest.fixture(scope="module")
 def _test_context():
