@@ -69,8 +69,9 @@ def publish_agent(public_id: PublicId, verbose: bool) -> None:
                 click.secho(f"Command failed: {command.command}", fg="red")
                 click.secho(f"Error: {command.stderr}", fg="red")
                 click.secho(f"stdout: {command.stdout}", fg="red")
-                return
+                return False
             click.secho("Agent published successfully.", fg="yellow")
+        return True
 
 
 @cli.command()
@@ -138,7 +139,10 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
         click.secho("Command executed successfully.", fg="yellow")
 
     if publish:
-        publish_agent(public_id, verbose)
+        success = publish_agent(public_id, verbose)
+        if not success:
+            click.secho(f"Agent {name} creation failed due to publish error.", fg="red")
+            return
 
     if clean_up:
         command = CommandExecutor(
