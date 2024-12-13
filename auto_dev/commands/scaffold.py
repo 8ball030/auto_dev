@@ -17,8 +17,8 @@ from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE, PROTOCOL_LANGU
 from aea.configurations.data_types import PublicId
 
 from auto_dev.base import build_cli
-from auto_dev.enums import BehaviourTypes
-from auto_dev.utils import load_aea_ctx, remove_suffix, camel_to_snake
+from auto_dev.enums import FileType, BehaviourTypes
+from auto_dev.utils import load_aea_ctx, remove_suffix, camel_to_snake, read_from_file
 from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.handlers.base import HandlerTypes, HandlerScaffolder
@@ -349,8 +349,26 @@ def dao(ctx, auto_confirm) -> None:
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
 
+    if not Path("component.yaml").exists():
+        msg = "component.yaml not found in the current directory."
+        raise ValueError(msg)
+
+    customs_config = read_from_file(Path("component.yaml"), FileType.YAML)
+    if customs_config is None:
+        msg = "Error: customs_config is None. Unable to process."
+        raise ValueError(msg)
+
+    api_spec_path = customs_config.get("api_spec")
+    if not api_spec_path:
+        msg = "Error: api_spec key not found in component.yaml"
+        raise ValueError(msg)
+
+    component_author = customs_config.get("author")
+    component_name = customs_config.get("name")
+    public_id = PublicId(component_author, component_name.split(":")[0])
+
     try:
-        scaffolder = DAOScaffolder(logger, verbose, auto_confirm)
+        scaffolder = DAOScaffolder(logger, verbose, auto_confirm, public_id)
         scaffolder.scaffold()
     except Exception as e:
         logger.exception(f"Error during DAO scaffolding and test generation: {e}")
