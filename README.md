@@ -21,6 +21,9 @@ adev repo scaffold fun_new_hack && \
 cd fun_new_hack && \
 adev create author/cool_agent \
     -t eightballer/frontend_agent # type of template to use.
+# sync to the local registry.
+yes 'third_party' | autonomy packages lock
+
 ```
 
 ```bash
@@ -33,7 +36,7 @@ adev create author/cool_agent \
 
 There are a number of useful command tools available.
 
-- Dev Tooling: 
+- Dev Tooling:
     A). linting `adev lint`
     B). formatting `adev fmt`
     C). dependency management `adev deps update`
