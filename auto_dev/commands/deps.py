@@ -575,11 +575,20 @@ def verify(
     ctx: click.Context,
     auto_approve: bool = False,
 ) -> None:
-    """
-    We verify the packages.json file.
+    """Verify the packages.json file.
+
+    Requires GITHUB_TOKEN env variable to be set.
+
     Example usage:
         adev deps verify
     """
+
+    if not os.getenv("GITHUB_TOKEN"):
+        ctx.obj["LOGGER"].error("Error: GITHUB_TOKEN environment variable is not set.")
+        ctx.obj["LOGGER"].error("Please set it with: export GITHUB_TOKEN=<your_token>")
+        ctx.obj["LOGGER"].error("You can generate a token at: https://github.com/settings/tokens")
+        sys.exit(1)
+
     ctx.obj["LOGGER"].info("Verifying the dependencies against the version set specified. 📝")
     issues = []
     changes = []
