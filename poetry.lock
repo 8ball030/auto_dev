@@ -2811,13 +2811,13 @@ pycryptodome = ">=3.10.1,<4.0.0"
 
 [[package]]
 name = "open-aea-ledger-ethereum"
-version = "1.57.0"
+version = "1.60.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of Ethereum."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_ethereum-1.57.0-py3-none-any.whl", hash = "sha256:8ad775344baa77fc6b8e5a92edfa6d7e32f3361a885113379733e7ce4e4d6405"},
-    {file = "open_aea_ledger_ethereum-1.57.0.tar.gz", hash = "sha256:7c16858ad751db3906ec72046c821ad5b057c5e47edbc951da99c52714fb8c5e"},
+    {file = "open_aea_ledger_ethereum-1.60.0-py3-none-any.whl", hash = "sha256:0026ae8faa987f651234d3d125998a445b414a65847a121fd033f49b99de0bf0"},
+    {file = "open_aea_ledger_ethereum-1.60.0.tar.gz", hash = "sha256:932219edff66500f29f17ab47d487f2995e4770456031cfbacfc0eea94571c6c"},
 ]
 
 [package.dependencies]
@@ -4991,4 +4991,4 @@ doc = ["mkdocstrings"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "127e2f899d8783e038f9abd1b6e3cf1a19fc9e7c33b6b9d8943d33fe1dec3817"
+content-hash = "7d00ff46ea2416cac5b2ffc21fc2a97ba6e074b55d488bfed794d0b0499d2045"
