@@ -5,24 +5,30 @@ repo_name: 8ball030/auto_dev
 #strict: true
 nav:
   - Home: index.md
-  - Installation: installation.md
-  - Usage: 
+  - Getting Started:
+    - Installation: installation.md
+    - Quick Start: usage.md
+  - User Guide:
     - Overview: usage.md
-    - FSM: fsm.md
-    - OpenAPI: openapi.md
+    - FSM Development: fsm.md
+    - OpenAPI Integration: openapi.md
   - API Reference:
     - Overview: api/index.md
     - auto_dev: api/auto_dev.md
-    - Commands: api/commands.md
     - Connections: api/connections.md
+    - DAO: dao.md
     - Contracts: api/contracts.md
     - FSM: api/fsm.md
     - Handler: api/handler.md
     - Protocols: api/protocols.md
     - Utils: api/utils.md
     - Constants: api/constants.md
-  - Contributing: contributing.md
-  - Changelog: changelog.md
+  - CLI Reference:
+    - Commands: commands/index.md
+  - Developer Guide:
+    - Contributing: contributing.md
+    - Deployment: deployment.md
+    - Changelog: changelog.md
 theme:
   name: material
   language: en
@@ -57,7 +63,13 @@ theme:
     - navigation.instant
     - navigation.tabs.sticky
     - navigation.expand
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.tracking
     - content.code.copy
+    - toc.follow
+    - toc.integrate
 markdown_extensions:
   - pymdownx.emoji
   - pymdownx.critic
@@ -84,10 +96,6 @@ markdown_extensions:
   - meta
   - pymdownx.superfences:
         # make exceptions to highlighting of code:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
 plugins:
   - include-markdown
   - search:
@@ -106,6 +114,16 @@ plugins:
 extra_css:
   - stylesheets/extra.css
 extra:
+  meta:
+    description: "Tooling to speed up open-autonomy development. A comprehensive toolkit for automating and enhancing open-autonomy development workflows."
+    keywords: "autonomy, tooling, open-autonomy, agents, mkdocs, development, automation, scaffolding, protocols, contracts"
+    og:title: "auto_dev – Autonomy Dev Tooling"
+    og:description: "Tooling to speed up open-autonomy development. Comprehensive toolkit for automating open-autonomy development workflows."
+    og:type: "website"
+    og:url: "https://8ball030.github.io/auto_dev"
+    twitter:card: "summary"
+    twitter:title: "auto_dev – Autonomy Dev Tooling"
+    twitter:description: "Tooling to speed up open-autonomy development. Comprehensive toolkit for automating open-autonomy development workflows."
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/8ball030/auto_dev

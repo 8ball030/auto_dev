@@ -5,7 +5,7 @@ This section provides detailed information about the auto_dev API. Use the navig
 ## Main Modules
 
 - [auto_dev](auto_dev.md): Core functionality
-- [Commands](commands.md): CLI commands
+- [Commands](../commands/index.md): CLI commands
 - [Connections](connections.md): Network connections
 - [Contracts](contracts.md): Smart contract interactions
 - [FSM](fsm.md): Finite State Machine implementation

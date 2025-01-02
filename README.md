@@ -26,6 +26,43 @@ yes 'third_party' | autonomy packages lock
 
 ```
 
+## Documentation
+
+For detailed information about using auto_dev, check out our documentation:
+
+You can access our documentation in two ways:
+- Online at [GitHub Pages](https://8ball030.github.io/auto_dev/)
+- Or through the following markdown files:
+  - [Installation Guide](docs/installation.md) - Complete setup instructions and environment configuration
+  - [Usage Guide](docs/usage.md) - Detailed examples and common workflows
+  - [CLI Reference](docs/commands/index.md) - Comprehensive command-line interface documentation
+  - [Deployment Guide](docs/deployment.md) - Instructions for local and production deployments
+
+For development setup and contribution guidelines, see the [Installation Guide](docs/installation.md#development-setup).
+
+### Local Documentation
+
+To run the documentation locally:
+1. Follow the [documentation setup guide](docs/installation.md#running-documentation-locally)
+2. Visit `http://127.0.0.1:8000/` in your browser
+3. Documentation will auto-reload as you make changes
+
+## Development
+
+For development tools and workflows:
+- [Code Formatting](docs/usage.md#development-workflow) - Learn about code formatting standards
+- [Testing](docs/usage.md#development-workflow) - Running and writing tests
+- [Contributing](docs/contributing.md) - Guidelines for contributing
+- [Deployment](docs/deployment.md) - Setting up development environments
+
+## Usage Examples
+
+Check out these guides for common use cases:
+- [Quick Start](docs/usage.md#quick-start-guide) - Get started quickly
+- [Protocol Scaffolding](docs/usage.md#common-workflows) - Generate protocol components
+- [Contract Integration](docs/usage.md#common-workflows) - Work with smart contracts
+- [Development Tools](docs/installation.md#development-tools) - Available development tools
+
 ```bash
 # run the agent and verify the endpoint
 

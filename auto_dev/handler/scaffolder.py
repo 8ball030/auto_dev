@@ -94,11 +94,7 @@ class HandlerScaffolder:
             return None
 
         success_response = next(
-            (
-                operation["responses"].get(code, {})
-                for code in ["201", "200"]
-                if code in operation["responses"]
-            ),
+            (operation["responses"].get(code, {}) for code in ["201", "200"] if code in operation["responses"]),
             {},
         )
         content = success_response.get("content", {}).get("application/json", {})
@@ -151,9 +147,7 @@ class HandlerScaffolder:
             raise SystemExit(1)
 
         self.handler_code = self._generate_handler_code(
-            persistent_schemas,
-            "\n\n".join(handler_methods),
-            self._get_path_params(openapi_spec)
+            persistent_schemas, "\n\n".join(handler_methods), self._get_path_params(openapi_spec)
         )
 
         if not self.handler_code:
@@ -164,9 +158,7 @@ class HandlerScaffolder:
 
     def _get_persistent_schemas(self, openapi_spec):
         schemas = openapi_spec.get("components", {}).get("schemas", {})
-        persistent_schemas = [
-            schema for schema, details in schemas.items() if details.get("x-persistent")
-        ]
+        persistent_schemas = [schema for schema, details in schemas.items() if details.get("x-persistent")]
         return persistent_schemas or self.identify_persistent_schemas(openapi_spec)
 
     def _confirm_schemas(self, persistent_schemas):
@@ -180,24 +172,30 @@ class HandlerScaffolder:
         for path, path_item in openapi_spec["paths"].items():
             for method, operation in path_item.items():
                 method_name = self.generate_method_name(method, path)
-                path_params = [param.strip("{}") for param in path.split("/") if param.startswith("{") and param.endswith("}")]
+                path_params = [
+                    param.strip("{}") for param in path.split("/") if param.startswith("{") and param.endswith("}")
+                ]
                 path_params_snake_case = [camel_to_snake(param) for param in path_params]
                 schema = self.extract_schema(operation, persistent_schemas)
                 operation_type = "other" if method.lower() != "post" else self.classify_post_operation(path, operation)
 
                 # Extract response information
                 response_info = self._extract_response_info(operation)
-                
+
                 # Extract error responses
                 error_responses = self._extract_error_responses(operation)
 
                 method_code = self.jinja_env.get_template("method_template.jinja").render(
-                    method_name=method_name, method=method, path=path,
-                    path_params=path_params, path_params_snake_case=path_params_snake_case,
-                    schema=schema, operation_type=operation_type,
-                    status_code=response_info['status_code'],
-                    status_text=response_info['status_text'],
-                    headers=response_info['headers'],
+                    method_name=method_name,
+                    method=method,
+                    path=path,
+                    path_params=path_params,
+                    path_params_snake_case=path_params_snake_case,
+                    schema=schema,
+                    operation_type=operation_type,
+                    status_code=response_info["status_code"],
+                    status_text=response_info["status_text"],
+                    headers=response_info["headers"],
                     error_responses=error_responses,
                 )
                 handler_methods.append(method_code)
@@ -402,10 +400,7 @@ class HandlerScaffolder:
                     for content in response.get("content", {}).values():
                         process_schema(content.get("schema", {}), "response")
 
-        return [
-            schema for schema, usage in schema_usage.items()
-            if "response" in usage or "nested_request" in usage
-        ]
+        return [schema for schema, usage in schema_usage.items() if "response" in usage or "nested_request" in usage]
 
     def _extract_response_info(self, operation):
         responses = operation.get("responses", {})
