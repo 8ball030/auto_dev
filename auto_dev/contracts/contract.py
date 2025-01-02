@@ -10,7 +10,11 @@ from auto_dev.enums import FileType
 from auto_dev.utils import write_to_file, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.contracts.function import Function
+from auto_dev.contracts.contract_events import ContractEvent
 from auto_dev.contracts.contract_functions import FunctionType, ContractFunction
+
+
+DEFAULT_NULL_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 
 class Contract:
@@ -23,6 +27,7 @@ class Contract:
     read_functions: list = []
     write_functions: list = []
     path: Path
+    events: list = []
 
     def parse_functions(self) -> None:
         """Get the functions from the abi."""
@@ -43,7 +48,9 @@ class Contract:
                 msg = f"Function {function} has unknown state mutability: {mutability}"
                 raise ValueError(msg)
 
-    def __init__(self, author: str, name: str, abi: dict, address: str, web3: Web3 | None = None):
+    def __init__(
+        self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Web3 | None = None
+    ):
         """Initialise the contract."""
         self.author = author
         self.name = name
@@ -107,9 +114,11 @@ class Contract:
 
         read_functions = "\n".join([function.to_string() for function in self.read_functions])
         write_functions = "\n".join([function.to_string() for function in self.write_functions])
-        contract_py += read_functions + write_functions
 
-        write_to_file(str(contract_py_path), contract_py, FileType.TEXT)
+        events = "\n".join([event.to_string() for event in self.events])
+        contract_str = "\n".join(contract_py.split("/n")[:36]) + read_functions + write_functions + events
+
+        write_to_file(str(contract_py_path), contract_str, FileType.TEXT)
 
     def update_contract_init__(self) -> None:
         """Append the Public."""
@@ -132,4 +141,11 @@ class Contract:
         """Scaffold the contract and ensure it is written to the file system."""
         self.write_abi_to_file()
         self.parse_functions()
+        self.parse_events()
         self.update_all()
+
+    def parse_events(self):
+        """
+        We need to parse the events from the abi.
+        """
+        self.events = [ContractEvent(**event) for event in self.abi if event["type"] == "event"]

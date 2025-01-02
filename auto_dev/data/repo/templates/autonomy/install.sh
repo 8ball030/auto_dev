@@ -96,13 +96,13 @@ install_tool() {
 
     if [ "$tool" = "protoc" ]; then
         if ! command -v protoc &> /dev/null; then
-            sudo mv bin/protoc $venv_dir/protoc
+            mv bin/protoc $venv_dir/protoc
         else
             echo "protoc is already installed, skipping..."
         fi
     elif [ "$tool" = "protolint" ]; then
         if ! command -v protolint &> /dev/null; then
-            sudo mv protolint $venv_dir/protolint
+            mv protolint $venv_dir/protolint
         else
             echo "protolint is already installed, skipping..."
         fi

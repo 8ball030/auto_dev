@@ -47,11 +47,6 @@ jobs:
           virtualenvs-create: true
           installer-parallel: true
 
-      # - name: Setup docker (missing on MacOS)
-      #   if: runner.os == 'macos'
-      #   run: |
-      #     brew install --cask docker
-
       - name: Install Adev
         run: |
           make install
@@ -68,4 +63,12 @@ jobs:
 
       - name: Tests
         run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@station.codes"
           poetry run adev -v test -p tests || poetry run adev -v test -p tests
+
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: ./coverage-report.txt
+

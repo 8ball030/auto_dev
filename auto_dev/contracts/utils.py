@@ -15,14 +15,15 @@ SOLIDITY_TYPE_TO_PYTHON_TYPE = {
 SOLIDITY_TO_PYTHON_TYPES = {
     "address": "str",
     "bool": "bool",
+    "bytes": "str",
     "bytes32": "str",
     "bytes4": "str",
-    "bytes": "str",
+    "int16": "int",
+    "int8": "int",
+    "string": "str",
+    "tuple": "tuple",
     "uint256": "int",
     "uint80": "int",
-    "int8": "int",
-    "tuple": "tuple",
-    "int16": "int",
 }
 
 

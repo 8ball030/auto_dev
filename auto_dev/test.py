@@ -1,9 +1,16 @@
 """Module for testing the project."""
 
+from pathlib import Path
 from multiprocessing import cpu_count
 
-# We execute using the pytest command.
 import pytest
+
+
+COVERAGE_COMMAND = f"""coverage report \
+                    -m \
+                    --omit='{str(Path('**') / 'tests' / '*.py')}' \
+                    {str(Path() / '**' / '*.py')} > 'coverage-report.txt'
+"""
 
 
 def test_path(

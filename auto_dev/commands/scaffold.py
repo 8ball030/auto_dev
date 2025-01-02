@@ -23,6 +23,7 @@ from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING, JINJA_TEMPLATE
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.handlers.base import HandlerTypes, HandlerScaffolder
 from auto_dev.dao.scaffolder import DAOScaffolder
+from auto_dev.contracts.contract import DEFAULT_NULL_ADDRESS
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.dialogues.scaffolder import DialogueTypes, DialogueScaffolder
 from auto_dev.protocols.scaffolder import ProtocolScaffolder
@@ -42,8 +43,8 @@ def scaffold() -> None:
 
 
 @scaffold.command()
-@click.argument("address", default=None, required=False)
 @click.argument("name", default=None, required=False)
+@click.option("--address", default=DEFAULT_NULL_ADDRESS, required=False, help="The address of the contract.")
 @click.option("--from-file", default=None, help="Ingest a file containing a list of addresses and names.")
 @click.option("--from-abi", default=None, help="Ingest an ABI file to scaffold a contract.")
 @click.option("--block-explorer-url", default="https://api.etherscan.io/api")
@@ -78,26 +79,31 @@ def contract(  # pylint: disable=R0914
         logger.info(f"Using ABI file: {from_abi}")
         scaffolder = ContractScaffolder(block_explorer=None)
         new_contract = scaffolder.from_abi(from_abi, address, name)
+
         logger.info(f"New contract scaffolded at {new_contract.path}")
-        return
 
-    logger.info(f"Using block explorer url: {block_explorer_url}")
-    logger.info(f"Scaffolding contract at address: {address} with name: {name}")
+    if block_explorer_api_key:
+        logger.info(f"Using block explorer url: {block_explorer_url}")
+        logger.info(f"Scaffolding contract at address: {address} with name: {name}")
 
-    block_explorer = BlockExplorer(block_explorer_url, block_explorer_api_key)
-    scaffolder = ContractScaffolder(block_explorer=block_explorer)
-    logger.info("Getting abi from block explorer.")
-    new_contract = scaffolder.from_block_explorer(address, name)
+        block_explorer = BlockExplorer(block_explorer_url, block_explorer_api_key)
+        scaffolder = ContractScaffolder(block_explorer=block_explorer)
+        logger.info("Getting abi from block explorer.")
+        new_contract = scaffolder.from_block_explorer(address, name)
     logger.info("Generating openaea contract with aea scaffolder.")
     contract_path = scaffolder.generate_openaea_contract(new_contract)
     logger.info("Writing abi to file, Updating contract.yaml with build path. Parsing functions.")
     new_contract.process()
-    logger.info("Read Functions:")
+    logger.info("Read Functions extracted:")
     for function in new_contract.read_functions:
         logger.info(f"    {function.name}")
-    logger.info("Write Functions:")
+    logger.info("Write Functions extracted:")
     for function in new_contract.write_functions:
         logger.info(f"    {function.name}")
+
+    logger.info("Events extracted:")
+    for event in new_contract.events:
+        logger.info(f"    {event.name}")
 
     logger.info(f"New contract scaffolded at {contract_path}")
 

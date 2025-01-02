@@ -8,6 +8,14 @@ fmt:
 
 test:
 	poetry run adev -v test -p tests
+	coverage_text=$(cat ./coverage-report.txt)
+	coverage_text_escaped=$(echo "$coverage_text" | sed 's/[&/\]/\\&/g')
+	awk -v new_content="$coverage_text_escaped" '
+	BEGIN { inside=0 }
+    /<!-- Pytest Coverage Comment:Begin -->/ { inside=1; print $0; print new_content; next }
+    /<!-- Pytest Coverage Comment:End -->/ { inside=0 }
+	{ if (!inside) print $0 }
+	' README.md > README.md.tmp && mv README.md.tmp README.md
 
 .PHONY: docs
 docs:

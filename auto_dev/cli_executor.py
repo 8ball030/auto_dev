@@ -26,7 +26,7 @@ class CommandExecutor:
         self.return_code = None
         self.exception = None
 
-    def execute(self, stream=False, verbose: bool = True, shell: bool = False):
+    def execute(self, stream=False, verbose: bool = True, shell: bool = False) -> bool:
         """Execute the command."""
         if stream:
             return self._execute_stream(verbose, shell)
