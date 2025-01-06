@@ -103,16 +103,28 @@ if ! aea -s install; then
     exit 1
 fi
 
+# Check if certs are needed
+NEEDS_CERTS=false
+if [[ -f "./aea-config.yaml" ]]; then
+    if [[ "$(yq eval '.. | select(has("cert_requests")).cert_requests | length' ./aea-config.yaml)" -gt 0 ]]; then
+        NEEDS_CERTS=true
+    fi
+fi
+
 # issue certificates for agent peer-to-peer communications
-if [[ ! -d "$CWD/certs" ]]; then
-    echo "Issuing certificates for agent peer-to-peer communications..."
-    if ! aea -s issue-certificates; then
-        echo "Error: Failed to issue certificates."
-        exit 1
+if [[ "$NEEDS_CERTS" == true ]]; then
+    if [[ ! -d "$CWD/certs" ]]; then
+        echo "Issuing certificates for agent peer-to-peer communications..."
+        if ! aea -s issue-certificates; then
+            echo "Error: Failed to issue certificates."
+            exit 1
+        fi
+    else
+        echo "Copying certificates from the parent directory..."
+        cp -r "$CWD/certs" ./.certs
     fi
 else
-    echo "Copying certificates from the parent directory..."
-    cp -r "$CWD/certs" ./.certs
+    echo "Skipping certificates - not required by this agent."
 fi
 
 # Wait for the Tendermint node to start
