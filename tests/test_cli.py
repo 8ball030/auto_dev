@@ -47,14 +47,14 @@ def test_create_invalid_name(cli_runner, test_filesystem):
     assert not agent_path.exists(), "Agent directory should not have been created"
 
 
-def test_create_valid_names(cli_runner, test_filesystem):
+def test_create_valid_names(cli_runner, test_packages_filesystem):
     """Test the create command succeeds with valid agent names."""
-    assert str(Path.cwd()) == test_filesystem
+    assert str(Path.cwd()) == test_packages_filesystem
 
     valid_names = ["my_agent", "_test_agent", "agent123", "valid_agent_name_123"]
 
     for name in valid_names:
-        cmd = ["adev", "-v", "create", f"{DEFAULT_AUTHOR}/{name}", "-t", "eightballer/base", "--force"]
+        cmd = ["adev", "-v", "create", f"{DEFAULT_AUTHOR}/{name}", "-t", "eightballer/base", "--no-clean-up",]
 
         runner = cli_runner(cmd)
         assert runner.execute()

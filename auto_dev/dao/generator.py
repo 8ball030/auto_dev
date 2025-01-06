@@ -9,13 +9,27 @@ from auto_dev.constants import JINJA_TEMPLATE_FOLDER
 
 
 class DAOGenerator:
-    """DAO generator class."""
+    """Generator class for DAO files."""
 
-    def __init__(self, models: dict[str, Any], paths: dict[str, Any]):
+    def __init__(
+        self,
+        models: dict[str, Any],
+        paths: dict[str, Any],
+        component_data: dict[str, Any],
+        author_name: str | None = None,
+        package_name: str | None = None,
+    ):
         self.models = models
         self.paths = paths
-        self.env = Environment(loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER, "dao")), autoescape=True)
-        self.template = self.env.get_template("dao_template.jinja")
+        self.component_data = component_data
+        self.author_name = author_name
+        self.package_name = package_name
+        self.env = Environment(
+            loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER, "dao")),
+            autoescape=True,
+            lstrip_blocks=True,
+            trim_blocks=True,
+        )
 
     def generate_dao_classes(self) -> dict[str, str]:
         """Generate DAO classes."""
@@ -27,10 +41,12 @@ class DAOGenerator:
     def _generate_dao_class(self, model_name: str, model_schema: dict[str, Any]) -> str:
         other_model_names = [name for name in self.models if name != model_name]
         properties = model_schema.get("properties", {})
-        return self.template.render(
+        return self.env.get_template("dao_template.jinja").render(
             model_name=model_name,
             model_schema=model_schema,
             other_model_names=other_model_names,
             properties=properties,
             base_dao_import="from base_dao import BaseDAO",
+            author=self.author_name,
+            package_name=self.package_name,
         )

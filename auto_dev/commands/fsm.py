@@ -5,9 +5,8 @@ from enum import Enum
 import rich_click as click
 
 from auto_dev.base import build_cli
-from auto_dev.utils import get_logger, snake_to_camel
+from auto_dev.utils import get_logger
 from auto_dev.fsm.fsm import FsmSpec
-from auto_dev.constants import DEFAULT_ENCODING
 
 
 logger = get_logger()
@@ -28,11 +27,16 @@ class FsmType(Enum):
     FSM_SPEC = "fsm_spec"
 
 
-INPUT_TO_FUNC = {FsmType.MERMAID.value: FsmSpec.from_mermaid_path, FsmType.FSM_SPEC.value: FsmSpec.from_yaml}
+INPUT_TO_FUNC = {FsmType.MERMAID.value: FsmSpec.from_mermaid_path, FsmType.FSM_SPEC.value: FsmSpec.from_path}
 
 
 @fsm.command()
-@click.argument("fsm_spec", type=click.File("r", encoding=DEFAULT_ENCODING))
+@click.argument(
+    "fsm_spec",
+    type=click.Path(
+        "r",
+    ),
+)
 @click.argument("fsm_name", type=str)
 @click.option(
     "--in-type", type=click.Choice([f.value for f in FsmType], case_sensitive=False), default=FsmType.FSM_SPEC.value

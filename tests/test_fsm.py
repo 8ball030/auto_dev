@@ -1,6 +1,9 @@
 """module contains tests for the fsm module."""
 
+from pathlib import Path
 from textwrap import dedent
+
+import pytest
 
 from auto_dev.fsm.fsm import FsmSpec
 
@@ -143,3 +146,25 @@ def test_from_mermaid_fsm():
     assert set(fsm_spec_from_mermaid.states) == set(fsm_spec.states)
     assert set(fsm_spec_from_mermaid.alphabet_in) == set(fsm_spec.alphabet_in)
     assert fsm_spec_from_mermaid.transition_func == fsm_spec.transition_func
+
+
+# We paramtrise by path
+@pytest.mark.parametrize(
+    "path,expected",
+    [
+        ("fsm_specification.yaml", EXAMPLE),
+    ],
+)
+def test_from_path(path, expected, test_clean_filesystem):
+    """Test that we can create a FsmSpec from a yaml string."""
+    assert test_clean_filesystem
+    Path(path).write_text(expected)
+    fsm_spec = FsmSpec.from_path(path)
+    assert fsm_spec.default_start_state == "RegistrationRound"
+    assert fsm_spec.states == [
+        "RegistrationRound",
+        "CollectRandomnessRound",
+        "PrintMessageRound",
+        "ResetAndPauseRound",
+        "SelectKeeperRound",
+    ]

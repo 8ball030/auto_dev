@@ -3,7 +3,8 @@
 import sys
 import subprocess
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest import TestCase
+from unittest.mock import Mock, MagicMock, patch
 
 import yaml
 import pytest
@@ -14,8 +15,18 @@ from auto_dev.cli import cli
 from auto_dev.utils import get_logger
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.dao.scaffolder import DAOScaffolder
-from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
+from auto_dev.handler.scaffolder import HandlerScaffolder, HandlerScaffoldBuilder
 from auto_dev.protocols.scaffolder import read_protocol
+from auto_dev.handler.openapi_models import (
+    Schema,
+    OpenAPI,
+    PathItem,
+    Response,
+    MediaType,
+    Operation,
+    Reference,
+    Components,
+)
 
 
 FSM_SPEC = Path("auto_dev/data/fsm/fsm_specification.yaml").absolute()
@@ -93,6 +104,7 @@ def test_scaffold_protocol(cli_runner, dummy_agent_tim, caplog):
     original_content = path.read_text(encoding=DEFAULT_ENCODING)
     readme_path = dummy_agent_tim / "protocols" / protocol.metadata["name"] / "README.md"
     assert original_content in readme_path.read_text(encoding=DEFAULT_ENCODING)
+
 
 @pytest.mark.skip(reason="Needs changes to scaffolder to handle directory structure")
 def test_scaffold_handler(dummy_agent_tim, openapi_test_case):
@@ -298,8 +310,7 @@ class TestDAOScaffolder:
         mock_generator.generate_dao_classes.return_value = {"TestDAO": "class TestDAO:..."}
         mock_dao_generator.return_value = mock_generator
 
-        with patch("auto_dev.dao.scaffolder.Path.mkdir"), \
-             patch("auto_dev.dao.scaffolder.write_to_file") as mock_write:
+        with patch("auto_dev.dao.scaffolder.Path.mkdir"), patch("auto_dev.dao.scaffolder.write_to_file") as mock_write:
             scaffolder.scaffold()
 
             scaffolder.logger.info.assert_any_call("Starting DAO scaffolding process")
@@ -364,3 +375,137 @@ components:
 
         scaffolder.scaffold()
         scaffolder.logger.info.assert_any_call("Exiting scaffolding process.")
+
+
+class TestHandlerScaffolder(TestCase):
+    """Test suite for HandlerScaffolder."""
+
+    def setUp(self):  # noqa: N802
+        """Set up test case."""
+        self.logger = Mock()
+        self.scaffolder = HandlerScaffolder(config=None, logger=self.logger)
+
+    def test_extract_schema_with_reference(self):
+        """Test schema extraction with reference."""
+        operation = Operation(
+            responses={
+                "200": Response(
+                    description="OK",
+                    content={
+                        "application/json": MediaType(media_type_schema=Reference(ref="#/components/schemas/Item"))
+                    },
+                )
+            }
+        )
+        schema_name = self.scaffolder.extract_schema(operation)
+        assert schema_name == "Item"
+
+    def test_extract_schema_with_inline_schema(self):
+        """Test schema extraction with inline schema."""
+        operation = Operation(
+            responses={
+                "200": Response(
+                    description="OK",
+                    content={"application/json": MediaType(media_type_schema=Schema(type="object", properties={}))},
+                )
+            }
+        )
+        schema_name = self.scaffolder.extract_schema(operation)
+        assert schema_name is None
+
+    def test_get_persistent_schemas(self):
+        """Test getting persistent schemas."""
+        self.scaffolder.config = Mock(use_daos=True)
+        openapi_spec = OpenAPI(
+            openapi="3.0.0",
+            info={"title": "Test API", "version": "1.0"},
+            paths={},
+            components=Components(
+                schemas={"Item": Schema(type="object", x_persistent=True), "NonPersistent": Schema(type="object")}
+            ),
+        )
+        schemas = self.scaffolder.get_persistent_schemas(openapi_spec)
+        assert schemas == ["Item"]
+
+    def test_identify_persistent_schemas(self):
+        """Test identifying persistent schemas."""
+        openapi_spec = OpenAPI(
+            openapi="3.0.0",
+            info={"title": "Test API", "version": "1.0"},
+            paths={
+                "/items": PathItem(
+                    get=Operation(
+                        responses={
+                            "200": Response(
+                                description="OK",
+                                content={
+                                    "application/json": MediaType(
+                                        media_type_schema=Reference(ref="#/components/schemas/Item")
+                                    )
+                                },
+                            )
+                        }
+                    )
+                )
+            },
+            components=Components(schemas={"Item": Schema(type="object"), "Ignored": Schema(type="object")}),
+        )
+        schemas = self.scaffolder.identify_persistent_schemas(openapi_spec)
+        assert schemas == ["Item"]
+
+
+class TestHandlerScaffoldBuilder(TestCase):
+    """Test suite for HandlerScaffoldBuilder."""
+
+    def test_create_scaffolder(self):
+        """Test creating a scaffolder."""
+        builder = HandlerScaffoldBuilder()
+        public_id = PublicId(author="author", name="skill", version="0.1.0")
+        scaffolder = builder.create_scaffolder(
+            spec_file_path="path/to/spec.yaml",
+            public_id=public_id,
+            logger=None,
+            verbose=True,
+            new_skill=True,
+            auto_confirm=False,
+            use_daos=False,
+        ).build()
+        assert isinstance(scaffolder, HandlerScaffolder)
+
+
+class TestHandlerScaffolderIntegration(TestCase):
+    """Test suite for HandlerScaffolderIntegration."""
+
+    @patch("auto_dev.handler.scaffolder.CommandExecutor")
+    @patch("auto_dev.handler.scaffolder.load_openapi_spec")
+    @patch("auto_dev.handler.scaffolder.HandlerScaffolder.save_handler")
+    @patch("auto_dev.handler.scaffolder.HandlerScaffolder._change_dir")
+    def test_scaffold_process(self, mock_change_dir, mock_save_handler, mock_load_spec, mock_cmd_executor):
+        """Test scaffold process."""
+        mock_cmd_executor.return_value.execute.return_value = True
+        mock_load_spec.return_value = MagicMock()
+        self.scaffolder = HandlerScaffolder(config=None, logger=Mock())
+        self.scaffolder.config = MagicMock(new_skill=True, output="output_skill", auto_confirm=True)
+        self.scaffolder.present_actions = MagicMock(return_value=True)
+        self.scaffolder.create_new_skill = MagicMock()
+        self.scaffolder.update_skill_yaml = MagicMock()
+        self.scaffolder.move_and_update_my_model = MagicMock()
+        self.scaffolder.remove_behaviours = MagicMock()
+        self.scaffolder.create_dialogues = MagicMock()
+        self.scaffolder.create_exceptions = MagicMock()
+        self.scaffolder.fingerprint = MagicMock()
+        self.scaffolder.aea_install = MagicMock()
+        self.scaffolder.generate_handler = MagicMock()
+        mock_change_dir.return_value = MagicMock()
+        self.scaffolder.scaffold()
+        self.scaffolder.present_actions.assert_called_once()
+        self.scaffolder.create_new_skill.assert_called_once()
+        self.scaffolder.generate_handler.assert_called_once()
+        mock_save_handler.assert_called_once()
+        self.scaffolder.update_skill_yaml.assert_called_once()
+        self.scaffolder.move_and_update_my_model.assert_called_once()
+        self.scaffolder.remove_behaviours.assert_called_once()
+        self.scaffolder.create_dialogues.assert_called_once()
+        self.scaffolder.create_exceptions.assert_called_once()
+        self.scaffolder.fingerprint.assert_called_once()
+        self.scaffolder.aea_install.assert_called_once()

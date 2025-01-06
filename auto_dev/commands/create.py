@@ -86,7 +86,7 @@ def publish_agent(public_id: PublicId, verbose: bool) -> None:
 @click.option("-t", "--template", type=click.Choice(available_agents), required=True)
 @click.option("-f", "--force", is_flag=True, help="Force the operation.", default=False)
 @click.option("-p", "--publish", is_flag=True, help="Publish the agent to the local registry.", default=True)
-@click.option("-c", "--clean-up", is_flag=True, help="Clean up the agent after creation.", default=True)
+@click.option("-c", "--clean-up/--no-clean-up", is_flag=True, help="Clean up the agent after creation.", default=True)
 @click.pass_context
 def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean_up: bool) -> None:
     """
@@ -154,6 +154,15 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
 
     update_author(public_id=public_id)
     if publish:
+        # We check if there is a local registry.
+
+        if not Path("packages").exists():
+            command = CommandExecutor("autonomy package init")
+            result = command.execute(verbose=verbose)
+            if not result:
+                msg = f"Command failed: {command.command}"
+                click.secho(msg, fg="red")
+                return OperationError()
         publish_agent(public_id, verbose)
 
     if clean_up:

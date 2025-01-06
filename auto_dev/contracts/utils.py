@@ -58,3 +58,40 @@ PARAM_TO_STR_MAPPING = {
     ParamType.BYTES32_ARRAY_ARRAY: "List[List[str]]",
     ParamType.BYTES_ARRAY: "List[str]",
 }
+
+PYTHON_KEYWORDS = [
+    "from", 
+    "type",
+    "global",
+    "nonlocal",
+    "assert",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "if",
+    "import",
+    "lambda",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
+]
+
+
+def keyword_to_safe_name(name: str) -> str:
+    """Convert a keyword to a safe name."""
+    return f"{name}_" if name in PYTHON_KEYWORDS else name
+
+def safe_name_to_keyword(name: str) -> str:
+    """Convert a safe name to a keyword."""
+    return name[:-1] if name in PYTHON_KEYWORDS else name

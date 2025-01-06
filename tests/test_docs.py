@@ -59,4 +59,6 @@ def test_doc_code_execution(doc, test_filesystem):
                 os.chdir(command.split(" ")[1])
             else:
                 executor = CommandExecutor(command)
-                assert executor.execute(stream=True, shell=True, verbose=False), f"Command failed: {command}"
+                assert executor.execute(
+                    stream=True, shell=True, verbose=False
+                ), f"Command failed: {command}: {executor.output}"

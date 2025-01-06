@@ -1,27 +1,28 @@
 # Project Status Badges
 
 [![Code Quality](https://github.com/8ball030/auto_dev/actions/workflows/common_check.yaml/badge.svg)](https://github.com/8ball030/auto_dev/actions/workflows/common_check.yaml)
+[![Documentation](https://github.com/8ball030/auto_dev/actions/workflows/github_action.yml/badge.svg)](https://github.com/8ball030/auto_dev/actions/workflows/github_action.yml)
 
 
 # Autonomy Dev
 
 Tooling to speed up open-autonomy development.
 
+For detailed instructions please see the [Docs.](https://8ball030.github.io/auto_dev/)
 
 ## TLDR
 
-```bash
-# install 
-pip install autonomy-dev[all]
-```
+    ```
+    # install 
+    pip install autonomy-dev[all]
+    ```
 
 ```bash
 # create a repo & a simple webserver agent
-adev repo scaffold fun_new_hack && \
-cd fun_new_hack && \
-adev create author/cool_agent \
-    -t eightballer/frontend_agent # type of template to use.
-# sync to the local registry.
+adev repo scaffold fun_new_hack
+cd fun_new_hack
+adev create author/cool_agent --template eightballer/frontend_agent
+# sync to the local registry. [Optional]
 yes 'third_party' | autonomy packages lock
 
 ```
@@ -88,19 +89,41 @@ Testing completed successfully! ✅
 
 #### Contracts
 
-We can scaffold a new contract using the `adev scaffold contract` command. This will create a new directory with;
-- open-aea contract component
-    - open-aea contract component class 🎉
-    - open-aea contract component function generation 🚧
-    - open-aea contract component test generation 🚧
+We provide tools to scaffold smart contract components from existing deployed contracts. The scaffolding process includes:
 
+- Complete open-aea contract component
+- Contract class with auto-generated methods
+- Test suite scaffolding
+- Type hints and documentation
 
+Basic usage:
 ```bash
-adev scaffold contract 0xc939df369C0Fc240C975A6dEEEE77d87bCFaC259 beyond_pricer \
-      --block-explorer-api-key $BLOCK_EXPLORER_API_KEY \
-      --block-explorer-url "https://api-goerli.arbiscan.io"
+adev scaffold contract <NAME> --address <CONTRACT_ADDRESS> --network <NETWORK_NAME>
 ```
 
+Example using Base:
+```bash
+# Scaffold USDC contract from Base
+adev scaffold contract usdc \
+    --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 \
+    --network base
+```
+
+Additional options:
+```bash
+# Scaffold from local ABI file
+adev scaffold contract my_contract \
+    --address 0xContract_Address \
+    --from-abi ./path/to/abi.json \
+    --network ethereum-mainnet
+
+# Specify read/write functions
+adev scaffold contract my_contract \
+    --address 0xContract_Address \
+    --read-functions "balanceOf,totalSupply" \
+    --write-functions "transfer,approve" \
+    --network polygon-mainnet
+```
 
 ## Installation
 
@@ -139,3 +162,19 @@ auto_dev/utils.py                  251    153    39%   76-77, 81, 94-101, 106-15
 TOTAL                              819    536    35%
 <!-- Pytest Coverage Comment:End -->
 ```
+
+## Documentation
+
+### Running Docs Locally
+
+To run and preview the documentation locally:
+
+```bash
+# Install mkdocs and required dependencies
+pip install mkdocs-material mkdocstrings[python] mkdocs-include-markdown-plugin mkdocs-mermaid2-plugin
+
+# Serve the documentation (available at http://127.0.0.1:8000)
+mkdocs serve
+```
+
+This will start a local server and automatically reload when you make changes to the documentation.

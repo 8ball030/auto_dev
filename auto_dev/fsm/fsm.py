@@ -69,10 +69,10 @@ class FsmSpec:
         return cls(**fsm_spec)
 
     @classmethod
-    def from_path(cls, path: Path):
+    def from_path(cls, path: Path, label: str = None):
         """We create a FsmSpec from a yaml file."""
         with open(path, encoding=DEFAULT_ENCODING) as file_pointer:
-            return cls.from_yaml(file_pointer.read())
+            return cls.from_yaml(file_pointer.read(), label)
 
     @classmethod
     def from_mermaid_path(cls, path: Path, label: str):

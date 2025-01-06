@@ -40,9 +40,9 @@ The tools within the `openapi` subcommand are used to augment a customs componen
 
 ## Prerequisites
 
-1. An OpenAPI 3 specification file with paths, operationIds, and schemas defined.
+1. An OpenAPI 3 specification file with paths, operationIds, and if augmenting with DAOs, schemas defined.
 2. A `component.yaml` file in the current directory that references the OpenAPI specification using the `api_spec` field.
-3. DAOs for each schema in the OpenAPI specification (see dao docs for how to scaffold these).
+3. If augmenting with DAOs, DAOs for each schema in the OpenAPI specification (see dao docs for how to scaffold these).
 
 ## Steps to Augment a Handler
 
@@ -58,10 +58,10 @@ cat auto_dev/data/openapi/openapi_specification.yaml
 api_spec: <path_to_openapi_specification.yaml>
 ```
 
-3. Run the Handler augmenting command:
+3. Run the Handler augmenting command, optionally with the `--use-daos` flag if you are augmenting with DAOs:
 
 ```bash
-adev augment customs openapi3
+adev augment customs openapi3 --use-daos
 ```
 
 The augmenting process creates the following: 

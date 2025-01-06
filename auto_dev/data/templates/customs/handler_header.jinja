@@ -19,34 +19,40 @@
 """This package contains a scaffold of a handler."""
 
 import re
+{%- if use_daos %}
 import json
-from dataclasses import dataclass
+{%- endif %}
 from urllib.parse import unquote, urlparse
 
 from aea.skills.base import Handler
 from packages.eightballer.protocols.http.message import HttpMessage as ApiHttpMessage
-
+{% if use_daos %}
 {% for schema, filename in zip(schemas, schema_filenames) -%}
 from .daos.{{ filename }} import {{ schema }}DAO
 {% endfor %}
-
-
-from .exceptions import (
-    BadRequestError,
-    UnauthorizedError,
-    ForbiddenError,
-    NotFoundError,
-    ConflictError,
-    ValidationError,
-    InternalServerError,
-    ServiceUnavailableError
-)
-
 
 {% for schema in schemas -%}
 {{ schema|lower|replace(' ', '_') }}_dao = {{ schema }}DAO()
 {% endfor %}
 
+def handle_exception(handler_func):
+    """Handle exception in the handler."""
+    def wrapper(self, message, *args, **kwargs):
+        try:
+            return handler_func(self, message, *args, **kwargs)
+        except Exception as e:
+            self.context.logger.exception("Unhandled exception")
+            error_message = json.dumps({"error": str(e)})
+            return ApiHttpMessage(
+                performative=ApiHttpMessage.Performative.RESPONSE,
+                status_code=500,
+                headers="",
+                version=message.version,
+                status_text="Internal Server Error",
+                body=error_message.encode(),
+            )
+    return wrapper
+{% endif %}
 
 class ApiHttpHandler(Handler):
     """Implements the API HTTP handler."""
@@ -58,5 +64,4 @@ class ApiHttpHandler(Handler):
 
     def teardown(self) -> None:
         """Tear down the handler."""
-
 

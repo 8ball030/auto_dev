@@ -1,17 +1,17 @@
 Name                             Stmts   Miss  Cover   Missing
 --------------------------------------------------------------
 auto_dev/__init__.py                 0      0   100%
-auto_dev/base.py                    60     19    68%   66-88
+auto_dev/base.py                    60     60     0%   3-94
 auto_dev/check_dependencies.py     236    236     0%   28-452
-auto_dev/cli.py                      4      1    75%   9
-auto_dev/cli_executor.py            68     36    47%   33-61, 79, 83, 87-89, 92-94, 99-105
-auto_dev/constants.py               25      0   100%
-auto_dev/enums.py                   36      0   100%
-auto_dev/exceptions.py               5      0   100%
-auto_dev/fmt.py                     59     43    27%   16-17, 21-22, 27-45, 50, 60-61, 66-80, 85-97, 102-112
-auto_dev/lint.py                     7      3    57%   13-27
-auto_dev/local_fork.py              52     32    38%   32-33, 37-54, 58-95
-auto_dev/test.py                    16     13    19%   4, 16-39
-auto_dev/utils.py                  251    158    37%   76-77, 81, 94-101, 106-151, 167, 180-185, 204-228, 233, 240-242, 247, 252, 257-269, 276-281, 290-293, 298-350, 355, 370-373, 380-381, 388-418
+auto_dev/cli.py                      4      4     0%   3-9
+auto_dev/cli_executor.py            68     68     0%   8-105
+auto_dev/constants.py               27     27     0%   3-110
+auto_dev/enums.py                   36     36     0%   3-54
+auto_dev/exceptions.py               5      5     0%   4-20
+auto_dev/fmt.py                     59     59     0%   3-112
+auto_dev/lint.py                     7      7     0%   3-27
+auto_dev/local_fork.py              52     52     0%   3-95
+auto_dev/test.py                    16     16     0%   3-39
+auto_dev/utils.py                  251    251     0%   3-418
 --------------------------------------------------------------
-TOTAL                              819    541    34%
+TOTAL                              821    821     0%
