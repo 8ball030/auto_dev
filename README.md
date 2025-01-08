@@ -14,7 +14,7 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
 
     ```
     # install 
-    pip install autonomy-dev[all]
+    pip install "open-autonomy[all]" open-aea-ledger-ethereum "autonomy-dev[all]"
     ```
 
 ```bash
@@ -128,7 +128,7 @@ adev scaffold contract my_contract \
 ## Installation
 
 ```bash
-pip install autonomy-dev[all]
+pip install "open-autonomy[all]" open-aea-ledger-ethereum "autonomy-dev[all]"
 ```
 ## Release
 
