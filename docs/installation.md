@@ -6,7 +6,7 @@ To get started running auto_dev, run this command in your
 terminal:
 
 ```console
-$ pip install "open-autonomy[all]" open-aea-ledger-ethereum "autonomy-dev[all]"
+$ pip install "autonomy-dev[all]"
 ```
 
 This is the preferred method to install auto_dev, as it will always install the most recent stable release.
