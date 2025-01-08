@@ -12,7 +12,7 @@ pip install autonomy-dev[all]
 
 ### Repository and Agent Creation
 
-Create a new repository and agent:
+Create a new repository and agent and run it:
 
 ```bash
 # Create a new repository
