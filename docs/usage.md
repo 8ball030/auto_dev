@@ -22,10 +22,13 @@ adev repo scaffold fun_new_hack
 cd fun_new_hack
 
 # Create an agent using a template
-adev create author/cool_agent --template eightballer/frontend_agent
+adev create author/cool_agent --template eightballer/frontend_agent --publish --force
 
 # Optional: Sync to local registry
 yes 'third_party' | autonomy packages lock
+
+bash scripts/run_single_agent.sh author/cool_agent
+
 ```
 
 ### Development Tools
