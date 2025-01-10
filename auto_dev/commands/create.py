@@ -100,147 +100,132 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
     """
     name = public_id.name
 
+    if not handle_existing_directory(name, force, ctx.obj["VERBOSE"]):
+        return
+
+    if not check_python_version():
+        return
+
+    if not initialize_poetry_environment():
+        return
+
+    logger = ctx.obj["LOGGER"]
+    logger.info(f"Creating agent {name} from template {template}")
+
+    if not create_agent_from_template(name, template, ctx.obj["VERBOSE"]):
+        return
+
+    update_author(public_id=public_id)
+
+    if publish:
+        if not ensure_packages_directory():
+            return
+        publish_agent(public_id, ctx.obj["VERBOSE"])
+
+    if clean_up:
+        clean_up_agent(name, ctx.obj["VERBOSE"])
+
+    lock_packages(ctx.obj["VERBOSE"])
+
+
+def handle_existing_directory(name: str, force: bool, verbose: bool) -> bool:
+    """Handle existing directory logic."""
     is_proposed_path_exists = Path(name).exists()
     if is_proposed_path_exists and not force:
-        msg = (f"Directory {name} already exists. Please remove it or use the --force flag to overwrite it.",)
-        click.secho(
-            msg,
-            fg="red",
-        )
+        msg = f"Directory {name} already exists. Please remove it or use the --force flag to overwrite it."
+        click.secho(msg, fg="red")
         raise FileExistsError(msg)
 
     if is_proposed_path_exists and force:
-        click.secho(
-            f"Directory {name} already exists. Removing it.",
-            fg="yellow",
-        )
-
-        command = CommandExecutor(
-            [
-                "rm",
-                "-rf",
-                name,
-            ]
-        )
+        click.secho(f"Directory {name} already exists. Removing it.", fg="yellow")
+        command = CommandExecutor(["rm", "-rf", name])
         click.secho(f"Executing command: {command.command}", fg="yellow")
-        result = command.execute(verbose=ctx.obj["VERBOSE"])
+        result = command.execute(verbose=verbose)
         if not result:
             msg = f"Command failed: {command.command}"
             click.secho(msg, fg="red")
             raise OperationError(msg)
         click.secho("Command executed successfully.", fg="green")
-
-    verbose = ctx.obj["VERBOSE"]
-    logger = ctx.obj["LOGGER"]
+    return True
 
 
+def check_python_version() -> bool:
+    """Check if Python 3.11 is available."""
     click.secho("Checking Python 3.11 availability...", fg="blue")
-    command = CommandExecutor(
-        [
-            "python3.11",
-            "--version"
-        ]
-    )
+    command = CommandExecutor(["python3.11", "--version"])
     result = command.execute(verbose=True)
     if not result:
         msg = "Python 3.11 is not installed. Please install it before proceeding."
         click.secho(msg, fg="red")
-        return OperationError()
+        return False
+    return True
 
 
+def initialize_poetry_environment() -> bool:
+    """Initialize the Poetry environment with Python 3.11."""
     click.secho("Removing existing Python environment...", fg="blue")
-    command = CommandExecutor(
-        [
-            "poetry",
-            "env",
-            "remove",
-            "python"
-        ]
-    )
+    command = CommandExecutor(["poetry", "env", "remove", "python"])
     result = command.execute(verbose=True)
     if not result:
         click.secho("No existing Python environment to remove.", fg="yellow")
 
-
     click.secho("Initializing Poetry environment with Python 3.11...", fg="blue")
-    command = CommandExecutor(
-        [
-            "poetry",
-            "env",
-            "use",
-            "python3.11"
-        ]
-    )
+    command = CommandExecutor(["poetry", "env", "use", "python3.11"])
     result = command.execute(verbose=True)
     if not result:
         msg = f"Command failed: {command.command}. Ensure Python 3.11 is installed and accessible."
         click.secho(msg, fg="red")
-        return OperationError()
+        return False
     click.secho("Poetry environment initialized successfully.", fg="green")
+    return True
 
-    # The poetry install step has been removed
 
-    logger.info(f"Creating agent {name} from template {template}")
-
+def create_agent_from_template(name: str, template: str, verbose: bool) -> bool:
+    """Create an agent from a template."""
     ipfs_hash = available_agents[template]
-
-    create_commands = [
-        f"poetry run autonomy fetch {ipfs_hash} --alias {name}",
-    ]
+    create_commands = [f"poetry run autonomy fetch {ipfs_hash} --alias {name}"]
 
     for command in create_commands:
-        command = CommandExecutor(
-            command.split(" "),
-        )
+        command = CommandExecutor(command.split(" "))
         click.secho(f"Executing command: {command.command}", fg="yellow")
         result = command.execute(verbose=verbose)
         if not result:
             msg = f"Command failed: {command.command}  failed to create agent {public_id!s}"
             click.secho(msg, fg="red")
-            return OperationError(msg)
+            return False
         click.secho("Command executed successfully.", fg="yellow")
-
-    update_author(public_id=public_id)
-    if publish:
+    return True
 
 
-        if not Path("packages").exists():
-            command = CommandExecutor(["poetry", "run", "autonomy", "packages", "init"])
-            result = command.execute(verbose=verbose)
-            if not result:
-                msg = f"Command failed: {command.command}"
-                click.secho(msg, fg="red")
-                return OperationError()
-        publish_agent(public_id, verbose)
-
-    if clean_up:
-        command = CommandExecutor(
-            [
-                "rm",
-                "-rf",
-                name,
-            ]
-        )
-        result = command.execute(verbose=verbose)
+def ensure_packages_directory() -> bool:
+    """Ensure the packages directory exists."""
+    if not Path("packages").exists():
+        command = CommandExecutor(["poetry", "run", "autonomy", "packages", "init"])
+        result = command.execute(verbose=True)
         if not result:
             msg = f"Command failed: {command.command}"
             click.secho(msg, fg="red")
-            return OperationError()
-        click.secho(f"Agent {name} cleaned up successfully.", fg="green")
-
-    click.secho(f"Agent {name} created successfully.", fg="green")
+            return False
+    return True
 
 
-    command = CommandExecutor(
-        [
-            "sh",
-            "-c",
-            "yes 'third_party' | autonomy packages lock"
-        ]
-    )
+def clean_up_agent(name: str, verbose: bool) -> None:
+    """Clean up the agent after creation."""
+    command = CommandExecutor(["rm", "-rf", name])
     result = command.execute(verbose=verbose)
     if not result:
         msg = f"Command failed: {command.command}"
         click.secho(msg, fg="red")
-        return OperationError()
+        raise OperationError(msg)
+    click.secho(f"Agent {name} cleaned up successfully.", fg="green")
+
+
+def lock_packages(verbose: bool) -> None:
+    """Lock the packages."""
+    command = CommandExecutor(["sh", "-c", "yes 'third_party' | autonomy packages lock"])
+    result = command.execute(verbose=verbose)
+    if not result:
+        msg = f"Command failed: {command.command}"
+        click.secho(msg, fg="red")
+        raise OperationError(msg)
     click.secho("Packages locked successfully.", fg="green")
