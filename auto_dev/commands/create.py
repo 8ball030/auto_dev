@@ -132,6 +132,54 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
 
     verbose = ctx.obj["VERBOSE"]
     logger = ctx.obj["LOGGER"]
+
+
+    click.secho("Checking Python 3.11 availability...", fg="blue")
+    command = CommandExecutor(
+        [
+            "python3.11",
+            "--version"
+        ]
+    )
+    result = command.execute(verbose=True)
+    if not result:
+        msg = "Python 3.11 is not installed. Please install it before proceeding."
+        click.secho(msg, fg="red")
+        return OperationError()
+
+
+    click.secho("Removing existing Python environment...", fg="blue")
+    command = CommandExecutor(
+        [
+            "poetry",
+            "env",
+            "remove",
+            "python"
+        ]
+    )
+    result = command.execute(verbose=True)
+    if not result:
+        click.secho("No existing Python environment to remove.", fg="yellow")
+
+
+    click.secho("Initializing Poetry environment with Python 3.11...", fg="blue")
+    command = CommandExecutor(
+        [
+            "poetry",
+            "env",
+            "use",
+            "python3.11"
+        ]
+    )
+    result = command.execute(verbose=True)
+    if not result:
+        msg = f"Command failed: {command.command}. Ensure Python 3.11 is installed and accessible."
+        click.secho(msg, fg="red")
+        return OperationError()
+    click.secho("Poetry environment initialized successfully.", fg="green")
+
+    # The poetry install step has been removed
+
     logger.info(f"Creating agent {name} from template {template}")
 
     ipfs_hash = available_agents[template]
@@ -154,7 +202,7 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
 
     update_author(public_id=public_id)
     if publish:
-        # We check if there is a local registry.
+
 
         if not Path("packages").exists():
             command = CommandExecutor(["poetry", "run", "autonomy", "packages", "init"])
@@ -181,3 +229,18 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
         click.secho(f"Agent {name} cleaned up successfully.", fg="green")
 
     click.secho(f"Agent {name} created successfully.", fg="green")
+
+
+    command = CommandExecutor(
+        [
+            "sh",
+            "-c",
+            "yes 'third_party' | autonomy packages lock"
+        ]
+    )
+    result = command.execute(verbose=verbose)
+    if not result:
+        msg = f"Command failed: {command.command}"
+        click.secho(msg, fg="red")
+        return OperationError()
+    click.secho("Packages locked successfully.", fg="green")
