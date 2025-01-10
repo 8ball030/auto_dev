@@ -112,7 +112,7 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
     logger = ctx.obj["LOGGER"]
     logger.info(f"Creating agent {name} from template {template}")
 
-    if not create_agent_from_template(name, template, ctx.obj["VERBOSE"]):
+    if not create_agent_from_template(name, template, public_id, ctx.obj["VERBOSE"]):
         return
 
     update_author(public_id=public_id)
@@ -180,7 +180,7 @@ def initialize_poetry_environment() -> bool:
     return True
 
 
-def create_agent_from_template(name: str, template: str, verbose: bool) -> bool:
+def create_agent_from_template(name: str, template: str, public_id: str, verbose: bool) -> bool:
     """Create an agent from a template."""
     ipfs_hash = available_agents[template]
     create_commands = [f"poetry run autonomy fetch {ipfs_hash} --alias {name}"]
@@ -190,7 +190,7 @@ def create_agent_from_template(name: str, template: str, verbose: bool) -> bool:
         click.secho(f"Executing command: {command.command}", fg="yellow")
         result = command.execute(verbose=verbose)
         if not result:
-            msg = f"Command failed: {command.command}  failed to create agent {public_id!s}"
+            msg = f"Command failed: {command.command}  failed to create agent {public_id}"
             click.secho(msg, fg="red")
             return False
         click.secho("Command executed successfully.", fg="yellow")
