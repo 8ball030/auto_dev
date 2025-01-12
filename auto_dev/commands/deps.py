@@ -6,7 +6,7 @@ The child repo is dependent on the parent repo.
 
 When there is a change in the parent repo, we want to update the child repo.
 
-The dependencies are depfined in a file called packages/packages.json
+The dependencies are defined in a file called packages/packages.json
 
 this is structures as follows:
 
@@ -45,7 +45,7 @@ from rich import print_json
 from rich.progress import track
 
 from auto_dev.base import build_cli
-from auto_dev.utils import FileLoader, write_to_file, FileType
+from auto_dev.utils import FileType, FileLoader, write_to_file
 from auto_dev.constants import DEFAULT_TIMEOUT, DEFAULT_ENCODING
 from auto_dev.exceptions import AuthenticationError, NetworkTimeoutError
 
@@ -64,7 +64,7 @@ def get_package_json(repo: Path) -> dict[str, dict[str, str]]:
 def write_package_json(repo: Path, package_dict: dict[str, dict[str, str]]) -> None:
     """We write the package json."""
     package_json = repo / "packages" / "packages.json"
-    write_to_file(str(package_json), package_dict, FileType.JSON)
+    write_to_file(str(package_json), package_dict, FileType.JSON, indent=4)
 
 
 def get_package_hashes(repo: Path) -> dict[str, str]:
@@ -344,7 +344,7 @@ def generate_gitignore(
 
 
 @dataclass
-class AutonomyDepenencies:
+class AutonomyDependencies:
     """A set of autonomy versions."""
 
     upstream_dependency: List[GitDependency]
@@ -408,13 +408,13 @@ open_aea_repo = GitDependency(
 
 auto_dev_repo = GitDependency(
     name="autonomy-dev",
-    version="0.2.75",
+    version="0.2.86",
     location=DependencyLocation.REMOTE,
     url="https://api.github.com/repos/8ball030/auto_dev",
     extras=["all"],
 )
 
-autonomy_version_set = AutonomyDepenencies(
+autonomy_version_set = AutonomyDependencies(
     upstream_dependency=[
         open_autonomy_repo,
         open_aea_repo,
@@ -430,7 +430,7 @@ poetry_dependencies = PoetryDependencies(
 )
 
 
-# We then use this to contruct a to_yaml function such that we can read in from a configfile.
+# We then use this to construct a to_yaml function such that we can read in from a configfile.
 
 
 DEFAULT_ADEV_CONFIG_FILE = Path("adev_config.yaml")
@@ -474,7 +474,7 @@ poetry_dependencies:
 class VersionSetLoader:
     """We load the version set."""
 
-    autonomy_dependencies: AutonomyDepenencies
+    autonomy_dependencies: AutonomyDependencies
     poetry_dependencies: PoetryDependencies
 
     def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE):
@@ -494,7 +494,7 @@ class VersionSetLoader:
         """Load the config file."""
         with open(self.config_file, "r") as file_pointer:
             data = yaml.safe_load(file_pointer)
-        self.autonomy_dependencies = AutonomyDepenencies(
+        self.autonomy_dependencies = AutonomyDependencies(
             upstream_dependency=[
                 GitDependency(
                     name=dependency["name"],
@@ -575,11 +575,20 @@ def verify(
     ctx: click.Context,
     auto_approve: bool = False,
 ) -> None:
-    """
-    We verify the packages.json file.
+    """Verify the packages.json file.
+
+    Requires GITHUB_TOKEN env variable to be set.
+
     Example usage:
         adev deps verify
     """
+
+    if not os.getenv("GITHUB_TOKEN"):
+        ctx.obj["LOGGER"].error("Error: GITHUB_TOKEN environment variable is not set.")
+        ctx.obj["LOGGER"].error("Please set it with: export GITHUB_TOKEN=<your_token>")
+        ctx.obj["LOGGER"].error("You can generate a token at: https://github.com/settings/tokens")
+        sys.exit(1)
+
     ctx.obj["LOGGER"].info("Verifying the dependencies against the version set specified. 📝")
     issues = []
     changes = []

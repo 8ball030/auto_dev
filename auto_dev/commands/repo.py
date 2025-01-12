@@ -185,18 +185,13 @@ def repo() -> None:
 
 @repo.command()
 @click.argument("name", type=str, required=True)
-@click.option(
-    "-t",
-    "--type-of-repo",
-    help="Type of repo to scaffold",
-    type=click.Choice(TEMPLATES),
-    required=True,
-)
+@click.option("-t", "--type-of-repo", help="Type of repo to scaffold", type=click.Choice(TEMPLATES), default="autonomy")
 @click.option("-f", "--force", is_flag=True, help="Force overwrite of existing repo", default=False)
 @click.option("--auto-approve", is_flag=True, help="Automatically approve all prompts", default=False)
 @click.option("--install/--no-install", is_flag=True, help="Do not install dependencies", default=True)
+@click.option("--initial-commit/--no-commit", is_flag=True, help="Add the initial commit. Requires git", default=True)
 @click.pass_context
-def scaffold(ctx, name, type_of_repo, force, auto_approve, install) -> None:
+def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_commit) -> None:
     """Create a new repo and scaffold necessary files."""
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
@@ -227,7 +222,13 @@ def scaffold(ctx, name, type_of_repo, force, auto_approve, install) -> None:
             logger.info("Installing host deps. This may take a while!")
             if install:
                 execute_commands("bash ./install.sh", verbose=verbose, logger=logger)
+
+            if initial_commit:
+                git_commands = ["git init", "git add .", "git commit -m 'feat-first-commit-from-StationsStation'"]
+                execute_commands(*git_commands, verbose=verbose, logger=logger)
+
             logger.info("Initialising autonomy packages.")
+
         elif type_of_repo == "python":
             src_dir = Path(name)
             src_dir.mkdir(exist_ok=False)

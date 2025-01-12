@@ -19,15 +19,14 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
 cython = "<3.0.0"
-open-aea-ledger-solana = "==1.55.0"
-open-aea-ledger-cosmos = "==1.55.0"
-open-aea-ledger-ethereum = "==1.55.0"
-open-aea = "==1.55.0"
-open-aea-cli-ipfs = "==1.55.0"
-open-aea-test-autonomy = "==0.15.2"
-open-autonomy = "==0.15.2"
-autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.75"}}
-
+open-aea-ledger-solana = "==1.57.0"
+open-aea-ledger-cosmos = "==1.57.0"
+open-aea-ledger-ethereum = "==1.57.0"
+open-aea = "==1.57.0"
+open-aea-cli-ipfs = "==1.57.0"
+open-aea-test-autonomy = "==0.16.1"
+open-autonomy = "==0.16.1"
+autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.86"}}
 
 [tool.poetry.dev-dependencies]
 

@@ -282,8 +282,9 @@ def connection(connections) -> None:
 @augment.command()
 @click.argument("component_type", type=click.Choice(["openapi3"]))
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
+@click.option("--use-daos", is_flag=True, default=False, help="Augment OpenAPI3 handlers with DAOs")
 @click.pass_context
-def customs(ctx, component_type, auto_confirm):
+def customs(ctx, component_type, auto_confirm, use_daos):
     """Augment a customs component with OpenAPI3 handlers."""
     logger = ctx.obj["LOGGER"]
     logger.info(f"Augmenting {component_type} component")
@@ -310,12 +311,7 @@ def customs(ctx, component_type, auto_confirm):
     scaffolder = (
         HandlerScaffoldBuilder()
         .create_scaffolder(
-            api_spec_path,
-            public_id,
-            logger,
-            verbose,
-            new_skill=False,
-            auto_confirm=auto_confirm,
+            api_spec_path, public_id, logger, verbose, new_skill=False, auto_confirm=auto_confirm, use_daos=use_daos
         )
         .build()
     )
@@ -346,7 +342,8 @@ def customs(ctx, component_type, auto_confirm):
     logger.info(f"Handler code written to {handler_path}")
 
     scaffolder.create_dialogues()
-    scaffolder.create_exceptions()
+    if use_daos:
+        scaffolder.create_exceptions()
     logger.info("OpenAPI3 scaffolding completed successfully.")
 
 

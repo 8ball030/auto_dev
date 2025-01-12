@@ -51,3 +51,4 @@ class BehaviourTypes(Enum):
     """Behaviour types enum."""
 
     metrics = "metrics"
+    simple_fsm = "simple_fsm"

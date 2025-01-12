@@ -16,7 +16,9 @@ from jinja2 import Environment, FileSystemLoader
 from aea.protocols.generator.base import ProtocolGenerator
 
 from auto_dev.fmt import Formatter
+from auto_dev.enums import BehaviourTypes
 from auto_dev.utils import currenttz, get_logger, remove_prefix, camel_to_snake, snake_to_camel
+from auto_dev.fsm.fsm import FsmSpec
 from auto_dev.constants import DEFAULT_TZ, DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
 from auto_dev.protocols.scaffolder import PROTOBUF_TO_PYTHON, ProtocolScaffolder, read_protocol, parse_protobuf_type
@@ -130,6 +132,13 @@ class BehaviourScaffolder(ProtocolScaffolder):
         self.env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
 
     @property
+    def scaffold(self):
+        """Scaffold the protocol."""
+        return (
+            self._scaffold_simple_fsm if self.behaviour_type is BehaviourTypes.simple_fsm else self._scaffold_protocol
+        )
+
+    @property
     def template(self) -> Any:
         """Get the template."""
         return self.env.get_template(str(Path(self.component_class) / f"{self.behaviour_type.value}.jinja"))
@@ -152,7 +161,39 @@ class BehaviourScaffolder(ProtocolScaffolder):
                 )
         return target_speech_acts
 
-    def scaffold(self, target_speech_acts=None) -> None:
+    def _scaffold_simple_fsm(
+        self,
+        target_speech_acts=None,
+    ) -> None:
+        """Scaffold the simple fsm behaviour from a fsm class."""
+        del target_speech_acts
+
+        fsm_spec = FsmSpec.from_yaml(Path(self.protocol_specification_path).read_text())
+
+        all_states = fsm_spec.states
+        states_not_in_initial_or_final = [
+            state for state in all_states if state not in fsm_spec.final_states + [fsm_spec.default_start_state]
+        ]
+
+        transitions: list = []
+
+        for key, destination in fsm_spec.transition_func.items():
+            source, event = key[1:-1].split(", ")
+            transitions.append({"source": source, "event": event, "destination": destination})
+
+        output = self.template.render(
+            fsm_spec=fsm_spec,
+            class_name=snake_to_camel(fsm_spec.label).capitalize(),
+            states=fsm_spec.states,
+            default_start_state=fsm_spec.default_start_state,
+            final_states=fsm_spec.final_states,
+            events=fsm_spec.alphabet_in,
+            remaining_states=states_not_in_initial_or_final,
+            transitions=transitions,
+        )
+        print(output)
+
+    def _scaffold_protocol(self, target_speech_acts=None) -> None:
         """Scaffold the protocol."""
         protocol_specification = read_protocol(self.protocol_specification_path)
         raw_classes, all_dummy_data, enums = self._get_definition_of_custom_types(protocol=protocol_specification)
@@ -248,6 +289,8 @@ def get_py_type_and_args(arg, arg_type, type_map):
     if py_type not in DEFAULT_TYPE_MAP:
         if py_type.startswith("Optional"):
             DEFAULT_TYPE_MAP[py_type] = None
+        elif py_type.startswith("Dict"):
+            DEFAULT_TYPE_MAP[py_type] = {}
         else:
             raise ValueError(f"Type {py_type} not found in the default type map.")
 

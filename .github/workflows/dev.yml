@@ -46,7 +46,7 @@ jobs:
         run: |
           make install
 
-      - name:
+      - name: Run tests
         run: |
           make test
 

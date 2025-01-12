@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import pytest
+from aea.configurations.base import PublicId
 
 from auto_dev.utils import isolated_filesystem
 from auto_dev.constants import DEFAULT_ENCODING, SAMPLE_PACKAGE_FILE, SAMPLE_PACKAGES_JSON, AUTONOMY_PACKAGES_FILE
@@ -85,31 +86,15 @@ def cli_runner():
 
 
 @pytest.fixture
-def dummy_agent_tim(test_filesystem, monkeypatch) -> Path:
+def dummy_agent_tim(test_packages_filesystem) -> Path:
     """Fixture for dummy agent tim."""
-
-    monkeypatch.syspath_prepend(test_filesystem)
-    assert Path.cwd() == Path(test_filesystem)
-
-    agent = "tim"
-    command = f"adev create {agent} -t eightballer/base "
+    assert Path.cwd() == Path(test_packages_filesystem)
+    agent = PublicId.from_str("dummy_author/tim")
+    command = f"adev create {agent!s} -t eightballer/base --no-clean-up"
     command_executor = CommandExecutor(command)
     result = command_executor.execute(verbose=True, shell=True)
     if not result:
         msg = f"CLI command execution failed: `{command}`"
         raise ValueError(msg)
-
-    os.chdir(str(Path.cwd() / agent))
-
-    commands = (
-        "aea generate-key ethereum",
-        "aea add-key ethereum",
-    )
-    for command in commands:
-        command_executor = CommandExecutor(command.split())
-        result = command_executor.execute(verbose=True)
-        if not result:
-            msg = f"CLI command execution failed: `{command}`"
-            raise ValueError(msg)
-
-    return Path.cwd()
+    os.chdir(agent.name)
+    return True

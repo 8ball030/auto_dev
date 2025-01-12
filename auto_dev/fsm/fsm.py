@@ -37,6 +37,15 @@ STATE_TEMPLATE = Template("""$state""")
 TRANSITION_TEMPLATE = Template("""$start_state -->|$transition| $end_state""")
 
 
+def validate_name(name: str) -> str:
+    """Validate an fsm name."""
+    if not name:
+        raise ValueError("Name must not be empty.")
+    if not name.endswith("AbciApp"):
+        raise ValueError("Name must end with AbciApp.")
+    return name
+
+
 @dataclass
 class FsmSpec:
     """We represent a fsm spec."""
@@ -50,22 +59,29 @@ class FsmSpec:
     transition_func: dict[tuple[str, str], str]
 
     @classmethod
-    def from_yaml(cls, yaml_str: str):
+    def from_yaml(cls, yaml_str: str, label: str = None):
         """We create a FsmSpec from a yaml string."""
         fsm_spec = yaml.safe_load(yaml_str)
+        if label:
+            fsm_spec["label"] = label
+        label = fsm_spec["label"]
+        validate_name(label)
         return cls(**fsm_spec)
 
     @classmethod
-    def from_path(cls, path: Path):
+    def from_path(cls, path: Path, label: str = None):
         """We create a FsmSpec from a yaml file."""
         with open(path, encoding=DEFAULT_ENCODING) as file_pointer:
-            return cls.from_yaml(file_pointer.read())
+            return cls.from_yaml(file_pointer.read(), label)
 
     @classmethod
-    def from_mermaid_path(cls, path: Path):
+    def from_mermaid_path(cls, path: Path, label: str):
         """We create a FsmSpec from a yaml file."""
+        validate_name(label)
         with open(path, encoding=DEFAULT_ENCODING) as file_pointer:
-            return cls.from_mermaid(file_pointer.read())
+            res = cls.from_mermaid(file_pointer.read())
+            res.label = label
+        return res
 
     def to_mermaid(self):
         """We convert the FsmSpec to a mermaid string."""
@@ -120,6 +136,8 @@ class FsmSpec:
                     msg = f"Invalid line {line}"
                     raise ValueError(msg)
                 start_state, _transition, end_state = items
+
+                states.extend((start_state, end_state))
                 transition = _transition.split("|")[1]
                 transitions.append(((start_state, transition), end_state))
         # we need to create the alphabet_in

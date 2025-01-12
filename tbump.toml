@@ -2,7 +2,7 @@
 # github_url = "https://github.com/<user or organization>/<project>/"
 
 [version]
-current = "0.2.75"
+current = "0.2.86"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before
@@ -30,6 +30,8 @@ src = "auto_dev/commands/deps.py"
 src = "auto_dev/data/repo/templates/autonomy/pyproject.toml.template"
 [[file]]
 src = "auto_dev/data/repo/templates/python/pyproject.toml.template"
+[[file]]
+src = "adev_config.yaml"
 
 # You can specify a list of commands to
 # run after the files have been patched
