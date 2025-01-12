@@ -6,10 +6,11 @@ import time
 import shutil
 import logging
 import operator
+import platform
 import tempfile
 import subprocess
 from glob import glob
-from typing import Any
+from typing import Any, Union, Optional
 from pathlib import Path
 from datetime import timezone, timedelta
 from functools import reduce
@@ -27,8 +28,26 @@ from aea.configurations.base import AgentConfig
 from openapi_spec_validator.exceptions import OpenAPIValidationError
 
 from auto_dev.enums import FileType, FileOperation
-from auto_dev.constants import DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE
+from auto_dev.constants import OS_ENV_MAP, DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE, SupportedOS
 from auto_dev.exceptions import NotFound, OperationError
+
+
+def reset_logging():
+    """
+    Forcefully remove any existing logging configuration.
+    """
+    # Clear all handlers from the root logger
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    # Optionally, reset the root logger's level
+    logging.root.setLevel(logging.NOTSET)
+
+
+# Call reset_logging before applying your new configuration
+
+
+LOGGER = None
 
 
 def get_logger(name: str = __name__, log_level: str = "INFO") -> logging.Logger:
@@ -44,20 +63,33 @@ def get_logger(name: str = __name__, log_level: str = "INFO") -> logging.Logger:
         logging.Logger: Configured logger instance.
 
     """
+    global LOGGER  # noqa
+    if LOGGER:
+        return LOGGER
+    reset_logging()
+    # Reset any existing logging configuration
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    logging.root.setLevel(logging.NOTSET)  # Reset root logger level
+
     handler = RichHandler(
         rich_tracebacks=True,
         markup=True,
+        show_path=False,
+        tracebacks_show_locals=True,
+        enable_link_path=True,
     )
 
     datefmt = "%H:%M:%S"
     logging.basicConfig(
         level=getattr(logging, log_level.upper(), "INFO"),
         datefmt=datefmt,
-        format="%(levelname)s - %(message)s",
+        format="%(message)s",
         handlers=[handler],
     )
     log = logging.getLogger(name)
     log.setLevel(getattr(logging, log_level.upper(), "INFO"))
+    LOGGER = log
     return log
 
 
@@ -101,7 +133,7 @@ def has_package_code_changed(package_path: Path):
     return [f.replace("?? ", "") for f in changed_files]
 
 
-def get_paths(path: str | None = None, changed_only: bool = False):
+def get_paths(path: Optional[str] = None, changed_only: bool = False):
     """Get the paths."""
     if not path and not Path(AUTONOMY_PACKAGES_FILE).exists():
         msg = "No path was provided and no default packages file found"
@@ -196,7 +228,7 @@ def restore_directory():
 
 
 @contextmanager
-def folder_swapper(dir_a: str | Path, dir_b: str | Path):
+def folder_swapper(dir_a: Union[str, Path], dir_b: Union[str, Path]):
     """A custom context manager that swaps the contents of two folders, allows the execution of logic
     within the context, and ensures the original folder contents are restored on exit, whether due
     to success or failure.
@@ -264,20 +296,19 @@ def load_aea_config():
     # We have to load all the documents in the yaml file, however, later on, we run into issues
     # with the agent config loader not being able to load the yaml file.
     # I propose we we raise an issue to address ALL instances of agent loading
-    agent_config_yaml = list(yaml.safe_load_all(aea_config.read_text(encoding=DEFAULT_ENCODING)))[0]
-    agent_config_json = json.loads(json.dumps(agent_config_yaml))
-    return agent_config_json
+    agent_config_yaml = list(yaml.safe_load_all(aea_config.read_text(encoding=DEFAULT_ENCODING)))
+    return agent_config_yaml
 
 
 def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[click.Context, Any, Any], Any]:
     """Load aea Context and AgentConfig if aea-config.yaml exists."""
 
     def wrapper(ctx: click.Context, *args, **kwargs):
-        agent_config_json = load_aea_config()
+        agent_config_json = load_aea_config()[0]
         registry_path = get_registry_path_from_cli_config()
         ctx.aea_ctx = Context(cwd=".", verbosity="INFO", registry_path=registry_path)
         ctx.aea_ctx.agent_config = AgentConfig.from_json(agent_config_json)
-
+        # we need a way to ensure we are also loading the overrides...
         return func(ctx, *args, **kwargs)
 
     wrapper.__name__ = func.__name__
@@ -305,7 +336,7 @@ def write_to_file(file_path: str, content: Any, file_type: FileType = FileType.T
                 else:
                     yaml.dump(content, f, default_flow_style=False, sort_keys=False)
             elif file_type is FileType.JSON:
-                json_kwargs = {"separators": (",", ":")}
+                json_kwargs = {"separators": (",", ": ")}
                 json_kwargs.update(kwargs)
                 json.dump(content, f, **json_kwargs)
             elif file_type is FileType.PYTHON:
@@ -414,3 +445,20 @@ class FileLoader:
             return self.file_path.write_text(loader_func(*args, **kwargs), encoding=DEFAULT_ENCODING)
         msg = f"Operation {func} not supported"
         raise OperationError(msg)
+
+
+def log_operating_system(self) -> None:
+    """Log the current operating system."""
+    os_name = platform.system()
+    if os_name not in SupportedOS:
+        self.logger.error(f"Operating System {os_name} is not supported.")
+        raise RuntimeError(f"Operating System {os_name} is not supported.")
+
+    self.logger.info(f"Operating System: {os_name}")
+    self.map_os_to_env_vars(os_name)
+
+
+def map_os_to_env_vars(os_name: str) -> None:
+    """Map operating system to environment variables."""
+    env_vars = OS_ENV_MAP.get(os_name, {})
+    return env_vars

@@ -4,7 +4,7 @@ requires = ["poetry-core>=1.0.0", "setuptools"]
 
 [tool.poetry]
 name = "autonomy_dev"
-version = "0.2.75"
+version = "0.2.86"
 homepage = "https://github.com/8ball030/auto_dev"
 description = "A collection of tooling to enable open source development of autonomy tools"
 authors = ["8Baller <8ball030@gmail.com>"]
@@ -44,18 +44,18 @@ open-aea-ledger-ethereum = "==1.57.0"
 open-aea-ledger-solana = "==1.57.0"
 open-aea-ledger-cosmos = "==1.57.0"
 open-aea-cli-ipfs = "==1.57.0"
-web3 = "<7,>=6.0.0"
+web3 = ">=6.0.0,<7.0.0"
 ipfshttpclient = "==0.8.0a2"
 typing_extensions = ">=3.10.0.2"
-protobuf = "<4.25.0,>=4.21.6"
-hypothesis = "==6.114.1"
+protobuf = ">=3.19.1,<4.25.0"
+hypothesis = "==6.122.3"
 toml = "==0.10.2"
 tomte = {version = "==0.2.17", extras = ["cli", "tests", "ledgers", "black"]}
 
 py-multibase = "==1.0.3"
 py-multicodec = "==0.2.1"
 py-eth-sig-utils = "*"
-grpcio = "==1.65.4"
+grpcio = "==1.69.0"
 asn1crypto = "<1.5.0,>=1.4.0"
 
 eth-utils = "==2.3.1"
@@ -70,15 +70,14 @@ ruff = "^0.5.7"
 pydantic = "^2.8.2"
 isort = "^5.13.2"
 openapi-spec-validator = "0.2.8"
-faker = "^30.0.0"
 
 mkdocstrings = {extras = ["python"], version = "^0.25.2"}
 [tool.poetry.dev-dependencies]
 responses = "^0.23.1"
 mkdocs = "^1.6.0"
-mkdocs-include-markdown-plugin = "^3.6.1"
+mkdocs-include-markdown-plugin = "^7.0.0"
 mkdocs-mermaid2-plugin = "^1.1.1"
-mkdocs-material = "^9.5.31"
+mkdocs-material = "^9.5.47"
 mkdocstrings-python = "^1.10.7"
 twine = "^5.1.1"
 mkdocs-autorefs = "^1.0.1"

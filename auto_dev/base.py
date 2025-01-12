@@ -83,9 +83,9 @@ def build_cli(plugins=False):
         if verbose:
             ctx.obj["LOGGER"].info("Verbose mode enabled")
         if num_processes > 1:
-            ctx.obj["LOGGER"].info(f"Using {num_processes} processes for processing")
+            ctx.obj["LOGGER"].debug(f"Using {num_processes} processes for processing")
         if log_level:
-            ctx.obj["LOGGER"].info(f"Setting log level to {log_level}")
+            ctx.obj["LOGGER"].debug(f"Setting log level to {log_level}")
 
     if plugins:
         plugins = CLIs().get_all_commands()

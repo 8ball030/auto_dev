@@ -22,6 +22,7 @@ class BaseDAO:
     def __post_init__(self):
         """Post initialization setup."""
         self.logger = logging.getLogger(f"aea.{self.__class__.__name__}")
+        self.load_data()
 
     @property
     def data(self) -> dict[str, Any]:
@@ -80,8 +81,11 @@ class BaseDAO:
 
     def insert(self, data: dict[str, Any] | list[dict[str, Any]]) -> None:
         """Insert a new item or items into the data."""
-        self.load_data()
-
+        if not isinstance(data, (dict, list)):
+            raise ValueError("Data must be a dictionary or list of dictionaries")
+        
+        if isinstance(data, list) and not all(isinstance(item, dict) for item in data):
+            raise ValueError("All items must be dictionaries")
         if self.model_name not in self._data:
             self._data[self.model_name] = {}
 

@@ -2,7 +2,7 @@
 # github_url = "https://github.com/<user or organization>/<project>/"
 
 [version]
-current = "0.15.2"
+current = "0.16.1"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before
@@ -25,6 +25,8 @@ tag_template = "v{new_version}"
 [[file]]
 src = "pyproject.toml"
 
+[[file]]
+src = "adev_config.yaml"
 [[file]]
 src = "auto_dev/data/repo/templates/autonomy/pyproject.toml.template"
 

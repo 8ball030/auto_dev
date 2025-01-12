@@ -299,6 +299,10 @@ def render_metadata(metadata, verbose=False) -> bool:
         if component_status == "NOT MINTED":
             click.echo(f"\n{component_id} is not minted. Please mint it first.")
             return False
+
+    image_hash = metadata["image"][7:]
+    click.echo(f"View image at: https://gateway.autonolas.tech/ipfs/{image_hash}")
+    click.echo(f"View code at: https://gateway.autonolas.tech/ipfs/{metadata['code_uri'][7:]}")
     click.echo("\nAll dependencies are minted. You can mint this component now.")
 
     deps_ids_numeric = sorted(map(int, mint_status.keys()))

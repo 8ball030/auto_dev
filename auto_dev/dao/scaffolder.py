@@ -1,12 +1,13 @@
 """DAOScaffolder class is responsible for scaffolding DAO classes and test scripts."""
 
 import json
-from typing import Any
+from typing import Any, Optional
 from pathlib import Path
 from collections import defaultdict
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from aea.configurations.base import PublicId
 
 from auto_dev.enums import FileType
 from auto_dev.utils import write_to_file, camel_to_snake, read_from_file, validate_openapi_spec
@@ -18,10 +19,11 @@ from auto_dev.dao.dummy_data import generate_dummy_data, generate_single_dummy_d
 class DAOScaffolder:
     """DAOScaffolder class is responsible for scaffolding DAO classes and test scripts."""
 
-    def __init__(self, logger: Any, verbose: bool, auto_confirm: bool):
+    def __init__(self, logger: Any, verbose: bool, auto_confirm: bool, public_id: PublicId):
         self.logger = logger
         self.verbose = verbose
         self.auto_confirm = auto_confirm
+        self.public_id = public_id
         self.env = Environment(
             loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER, "dao")),
             autoescape=True,
@@ -29,13 +31,19 @@ class DAOScaffolder:
             trim_blocks=True,
         )
         self.component_yaml = Path.cwd() / "component.yaml"
+        self.component_data = None
+        self.public_id = None
 
     def scaffold(self) -> None:
         """Scaffold DAO classes and test scripts."""
         try:
             self.logger.info("Starting DAO scaffolding process")
-            component_data = self._load_component_yaml()
-            api_spec_path = self._get_api_spec_path(component_data)
+            self.component_data = self._load_component_yaml()
+            if not self.component_data:
+                msg = "Failed to load component data"
+                raise ValueError(msg)
+
+            api_spec_path = self._get_api_spec_path(self.component_data)
             api_spec = self._load_and_validate_api_spec(api_spec_path)
 
             schemas = api_spec.get("components", {}).get("schemas", {})
@@ -145,7 +153,13 @@ class DAOScaffolder:
 
     def _generate_dao_classes(self, models: dict[str, Any], paths: dict[str, Any]) -> dict[str, str]:
         try:
-            dao_generator = DAOGenerator(models, paths)
+            dao_generator = DAOGenerator(
+                models,
+                paths,
+                self.component_data,
+                author_name=self.component_data.get("author"),
+                package_name=self.component_data.get("name"),
+            )
             return dao_generator.generate_dao_classes()
         except Exception as e:
             self.logger.exception(f"Error generating DAO classes: {e!s}")
@@ -226,7 +240,13 @@ class DAOScaffolder:
         self, model_names: list[str], dao_file_names: list[str], test_dummy_data: dict[str, Any]
     ) -> str:
         template = self.env.get_template("test_dao.jinja")
-        return template.render(model_names=model_names, dao_file_names=dao_file_names, dummy_data=test_dummy_data)
+        return template.render(
+            model_names=model_names,
+            dao_file_names=dao_file_names,
+            dummy_data=test_dummy_data,
+            author_name=self.component_data.get("author"),
+            package_name=self.component_data.get("name"),
+        )
 
     def _save_test_script(self, test_script: str) -> None:
         test_script_path = Path("tests/test_dao.py")
@@ -240,9 +260,7 @@ class DAOScaffolder:
             file_names = [camel_to_snake(model) for model in model_names]
             model_file_pairs = list(zip(model_names, file_names, strict=False))
             init_template = self.env.get_template("__init__.jinja")
-            init_content = init_template.render(
-                model_file_pairs=model_file_pairs
-                )
+            init_content = init_template.render(model_file_pairs=model_file_pairs)
             dao_dir = Path("daos")
             init_file_path = dao_dir / "__init__.py"
             write_to_file(init_file_path, init_content, FileType.PYTHON)
@@ -258,11 +276,7 @@ class DAOScaffolder:
 
         self._analyze_paths(api_spec, schema_usage, schemas)
 
-        return [
-            schema
-            for schema, usage in schema_usage.items()
-            if "response" in usage or "nested_request" in usage
-        ]
+        return [schema for schema, usage in schema_usage.items() if "response" in usage or "nested_request" in usage]
 
     def _analyze_paths(self, api_spec: dict[str, Any], schema_usage: dict[str, set], schemas: dict[str, Any]) -> None:
         for path_details in api_spec.get("paths", {}).values():
@@ -270,10 +284,7 @@ class DAOScaffolder:
                 self._analyze_method(method_details, schema_usage, schemas)
 
     def _analyze_method(
-        self,
-        method_details: dict[str, Any],
-        schema_usage: dict[str, set],
-        schemas: dict[str, Any]
+        self, method_details: dict[str, Any], schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
         if "requestBody" in method_details:
             self._analyze_content(method_details["requestBody"].get("content", {}), "request", schema_usage, schemas)
@@ -282,11 +293,7 @@ class DAOScaffolder:
             self._analyze_content(response_details.get("content", {}), "response", schema_usage, schemas)
 
     def _analyze_content(
-        self,
-        content: dict[str, Any],
-        usage_type: str,
-        schema_usage: dict[str, set],
-        schemas: dict[str, Any]
+        self, content: dict[str, Any], usage_type: str, schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
         for media_details in content.values():
             schema = media_details.get("schema", {})
@@ -296,11 +303,7 @@ class DAOScaffolder:
                 self._analyze_schema(schema, usage_type, schema_usage, schemas)
 
     def _analyze_schema(
-        self,
-        schema: dict[str, Any],
-        usage_type: str,
-        schema_usage: dict[str, set],
-        schemas: dict[str, Any]
+        self, schema: dict[str, Any], usage_type: str, schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
         schema_name = self._process_schema(schema)
         if schema_name:
@@ -308,11 +311,7 @@ class DAOScaffolder:
             self._analyze_nested_properties(schema_name, usage_type, schema_usage, schemas)
 
     def _analyze_nested_properties(
-        self,
-        schema_name: str,
-        usage_type: str,
-        schema_usage: dict[str, set],
-        schemas: dict[str, Any]
+        self, schema_name: str, usage_type: str, schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
         if "properties" in schemas.get(schema_name, {}):
             for prop in schemas[schema_name].get("properties", {}).values():
@@ -320,7 +319,7 @@ class DAOScaffolder:
                 if nested_schema_name:
                     schema_usage[nested_schema_name].add(f"nested_{usage_type}")
 
-    def _process_schema(self, schema: dict[str, Any]) -> str | None:
+    def _process_schema(self, schema: dict[str, Any]) -> Optional[str]:
         if "$ref" in schema:
             return schema["$ref"].split("/")[-1]
         return None

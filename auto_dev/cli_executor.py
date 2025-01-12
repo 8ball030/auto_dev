@@ -7,6 +7,7 @@ It is used by the lint and test functions.
 
 import os
 import subprocess
+from typing import Union, List, Optional
 
 from .utils import get_logger
 
@@ -17,7 +18,7 @@ logger = get_logger()
 class CommandExecutor:
     """A simple command executor."""
 
-    def __init__(self, command: str | list[str], cwd: str | None = None):
+    def __init__(self, command: Union[str, List[str]], cwd: Optional[str] = None):
         """Initialize the command executor."""
         self.command = command
         self.cwd = str(cwd) if cwd else "."
@@ -26,10 +27,10 @@ class CommandExecutor:
         self.return_code = None
         self.exception = None
 
-    def execute(self, stream=False, verbose: bool = True, shell: bool = False):
+    def execute(self, stream=False, verbose: bool = True, shell: bool = False, env_vars: Optional[dict] = None) -> bool:
         """Execute the command."""
         if stream:
-            return self._execute_stream(verbose, shell)
+            return self._execute_stream(verbose, shell, env_vars)
         if verbose:
             logger.debug(f"Executing command:\n\"\"\n{' '.join(self.command)}\n\"\"")
         try:
@@ -38,7 +39,7 @@ class CommandExecutor:
                 capture_output=True,
                 cwd=self.cwd,
                 check=False,
-                env=os.environ,
+                env=env_vars,
                 shell=shell,
             )
             if verbose:
@@ -60,7 +61,7 @@ class CommandExecutor:
             self.exception = error
             return False
 
-    def _execute_stream(self, verbose: bool = True, shell: bool = False) -> bool | None:
+    def _execute_stream(self, verbose: bool = True, shell: bool = False, env_vars: Optional[dict] = None) -> Optional[bool]:
         """Stream the command output. Especially useful for long running commands."""
         logger.debug(f"Executing command:\n\"\"\n{' '.join(self.command)}\n\"\"")
         try:
@@ -71,6 +72,7 @@ class CommandExecutor:
                 cwd=self.cwd,
                 universal_newlines=True,
                 shell=shell,
+                env=env_vars,
             ) as process:
                 for stdout_line in iter(process.stdout.readline, ""):  # type: ignore
                     self.stdout.append(stdout_line.strip())
@@ -87,6 +89,10 @@ class CommandExecutor:
                         logger.error("Command failed with return code: %s", self.return_code)
                     return False
                 return True
+        except KeyboardInterrupt:
+            logger.info("Command execution interrupted by user.")
+            process.terminate()
+            return None
         except Exception as error:  # pylint: disable=broad-except
             logger.exception("Command failed: %s", error)
             self.exception = error

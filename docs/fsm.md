@@ -36,7 +36,7 @@ transition_func:
 We can then convert this to a mermaid diagram using the adev tool.
 
 ```bash
-adev fsm from-file auto_dev/data/fsm/fsm_specification.yaml --output mermaid
+adev fsm from-file auto_dev/data/fsm/fsm_specification.yaml --output mermaid DemoAbciApp
 ```
 
 Output:
@@ -66,7 +66,7 @@ graph TD
 We now scaffold the agent.
 
 ```bash
-adev create -t eightballer/base new_agent
+adev create --no-clean-up -t eightballer/base author/new_agent
 ```
 We now have a new agent.
 
