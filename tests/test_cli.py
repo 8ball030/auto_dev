@@ -78,3 +78,12 @@ def test_create_with_publish_no_packages(cli_runner, test_filesystem):
     assert runner.execute()
     assert "No such file or directory" not in runner.output
     assert runner.return_code == 0, f"Command failed': {runner.output}"
+
+
+def test_run_cmd(cli_runner):
+    """Test the run command help message."""
+    cmd = ["adev", "run", "--help"]
+    runner = cli_runner(cmd)
+    result = runner.execute()
+    assert result, runner.output
+    assert runner.return_code == 0, runner.output
