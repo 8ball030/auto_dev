@@ -1,12 +1,13 @@
 """DAOScaffolder class is responsible for scaffolding DAO classes and test scripts."""
 
 import json
-from typing import Any
+from typing import Any, Optional
 from pathlib import Path
 from collections import defaultdict
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from aea.configurations.base import PublicId
 
 from auto_dev.enums import FileType
 from auto_dev.utils import write_to_file, camel_to_snake, read_from_file, validate_openapi_spec
@@ -18,10 +19,11 @@ from auto_dev.dao.dummy_data import generate_dummy_data, generate_single_dummy_d
 class DAOScaffolder:
     """DAOScaffolder class is responsible for scaffolding DAO classes and test scripts."""
 
-    def __init__(self, logger: Any, verbose: bool, auto_confirm: bool):
+    def __init__(self, logger: Any, verbose: bool, auto_confirm: bool, public_id: PublicId):
         self.logger = logger
         self.verbose = verbose
         self.auto_confirm = auto_confirm
+        self.public_id = public_id
         self.env = Environment(
             loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER, "dao")),
             autoescape=True,
@@ -317,7 +319,7 @@ class DAOScaffolder:
                 if nested_schema_name:
                     schema_usage[nested_schema_name].add(f"nested_{usage_type}")
 
-    def _process_schema(self, schema: dict[str, Any]) -> str | None:
+    def _process_schema(self, schema: dict[str, Any]) -> Optional[str]:
         if "$ref" in schema:
             return schema["$ref"].split("/")[-1]
         return None

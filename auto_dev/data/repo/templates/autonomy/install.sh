@@ -141,6 +141,7 @@ function install_poetry_deps() {
     echo "Checking if aea is installed"
     poetry run aea --version
     echo "Done installing dependencies"
+
 }
 # Main execution
 

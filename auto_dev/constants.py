@@ -1,5 +1,6 @@
 """Constants for the auto_dev package."""
 
+import platform
 import os
 from enum import Enum
 from pathlib import Path
@@ -22,6 +23,13 @@ JINJA_TEMPLATE_FOLDER = os.path.join(
     AUTO_DEV_FOLDER,
     "data",
     "templates",
+)
+
+DOCKERCOMPOSE_TEMPLATE_FOLDER = os.path.join(
+    AUTO_DEV_FOLDER,
+    "data",
+    "templates",
+    "compose",
 )
 
 AEA_CONFIG = get_or_create_cli_config()
@@ -108,3 +116,20 @@ class CheckResult(Enum):
     FAIL = "FAIL"
     MODIFIED = "MODIFIED"
     SKIPPED = "SKIPPED"
+
+
+class SupportedOS(Enum):
+    """Supported operating systems."""
+    LINUX = "Linux"
+    DARWIN = "Darwin" 
+
+OS_ENV_MAP = {
+    SupportedOS.LINUX.value: {
+        "NETWORK_MODE": "host",
+        "HOST_NAME": "localhost:26658",
+    },
+    SupportedOS.DARWIN.value: {
+        "NETWORK_MODE": "bridge",
+        "HOST_NAME": "host.docker.internal:26658",
+    }
+}

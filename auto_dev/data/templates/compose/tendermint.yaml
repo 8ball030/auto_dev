@@ -1,0 +1,54 @@
+version: "3.8"
+services:
+  tendermint: &tendermint
+    user: "1000"
+    mem_limit: 1024m
+    mem_reservation: 256M
+    cpus: 0.5
+    container_name: tm_0
+    hostname: tm_0
+    image: "valory/open-autonomy-tendermint:0.15.2"
+    restart: always
+    network_mode: ${NETWORK_MODE}
+    environment:
+      - ID=0
+      - PROXY_APP=tcp://${HOST_NAME}
+      - TMHOME=/tendermint/node0
+      - CREATE_EMPTY_BLOCKS=true
+      - DEV_MODE=0
+      - LOG_FILE=node_0.txt
+      - LOG_LEVEL=INFO
+      - WRITE_TO_LOG=true
+    working_dir: /tendermint
+    command: ["run", "--no-reload", "--host=0.0.0.0", "--port=8080"]
+    ports:
+      - 8080:8080
+      - 26656:26656
+      - 26657:26657
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - tendermint:/tendermint/
+    depends_on:
+      - "tendermint-init"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+
+  tendermint-init:
+    # sudo rm -rf ~/.tendermint/ && sudo tendermint init validator && sudo chown -R 1000: ~/.tendermint  && tendermint start
+    <<: *tendermint
+    container_name: tm_reset
+    hostname: tm_reset
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "rm -rf /tendermint/node0 && mkdir -p /tendermint/node0 && tendermint init validator && chown -R 1000:1000 /tendermint/ && echo 'reset done'"
+    restart: "no"
+    user: "0"
+    depends_on: []
+    ports: []
+
+volumes:
+  tendermint:

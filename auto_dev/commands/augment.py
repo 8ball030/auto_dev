@@ -311,13 +311,7 @@ def customs(ctx, component_type, auto_confirm, use_daos):
     scaffolder = (
         HandlerScaffoldBuilder()
         .create_scaffolder(
-            api_spec_path,
-            public_id,
-            logger,
-            verbose,
-            new_skill=False,
-            auto_confirm=auto_confirm,
-            use_daos=use_daos
+            api_spec_path, public_id, logger, verbose, new_skill=False, auto_confirm=auto_confirm, use_daos=use_daos
         )
         .build()
     )

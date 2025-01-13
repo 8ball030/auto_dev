@@ -82,6 +82,8 @@ def get_dummy_data(field):
 def parse_enums(protocol: ProtocolSpecification) -> dict[str, dict[str, str]]:
     """Parse enums."""
     enums = {}
+    if protocol.custom_types is None:
+        return enums
     for ct_name, definition in protocol.custom_types.items():
         if not definition.startswith("enum "):
             continue
@@ -334,7 +336,7 @@ class ProtocolScaffolder:
 
     def generate(self) -> None:
         """Generate protocol."""
-        command = f"aea generate protocol {self.protocol_specification_path} --l {self.language}"
+        command = f"aea -s generate protocol {self.protocol_specification_path} --l {self.language}"
         result = subprocess.run(command, shell=True, capture_output=True, check=False)
         if result.returncode != 0:
             msg = f"Protocol scaffolding failed: {result.stderr}"
@@ -358,13 +360,14 @@ class ProtocolScaffolder:
 
         EnumModifier(protocol_path, self.logger).augment_enums()
 
-        self.cleanup_protocol(protocol_path, protocol_author, protocol_definition, protocol_name)
-        self.generate_pydantic_models(protocol_path, protocol_name, protocol)
+        self.cleanup_protocol(protocol_path, protocol_author, protocol_definition, protocol_name, protocol)
+        if protocol.custom_types is not None:
+            self.generate_pydantic_models(protocol_path, protocol_name, protocol)
+            self.clean_tests(
+                protocol_path,
+                protocol,
+            )
         self.generate_base_models(protocol_path, protocol_name, protocol)
-        self.clean_tests(
-            protocol_path,
-            protocol,
-        )
 
         # We now update the protocol.yaml dependencies key to include 'pydantic'
 
@@ -386,7 +389,7 @@ class ProtocolScaffolder:
 
         self.logger.info(f"New protocol scaffolded at {protocol_path}")
 
-    def cleanup_protocol(self, protocol_path, protocol_author, protocol_definition, protocol_name) -> None:
+    def cleanup_protocol(self, protocol_path, protocol_author, protocol_definition, protocol_name, protocol) -> None:
         """Cleanup protocol."""
         # We add in some files. that are necessary for the protocol to pass linting...
         test_init = protocol_path / "tests" / "__init__.py"
@@ -420,10 +423,12 @@ class ProtocolScaffolder:
         pb2_file.write_text(new_content, encoding=DEFAULT_ENCODING)
 
         # We split long lines in the protocol_spec.yaml file
-        custom_types = protocol_path / "custom_types.py"
-        content = custom_types.read_text(encoding=DEFAULT_ENCODING)
-        updated_content = split_long_comment_lines(content)
-        custom_types.write_text(updated_content, encoding=DEFAULT_ENCODING)
+
+        if protocol.custom_types:
+            custom_types = protocol_path / "custom_types.py"
+            content = custom_types.read_text(encoding=DEFAULT_ENCODING)
+            updated_content = split_long_comment_lines(content)
+            custom_types.write_text(updated_content, encoding=DEFAULT_ENCODING)
 
     def generate_base_models(self, protocol_path, protocol_name, protocol):
         """Generate base models."""
@@ -513,6 +518,8 @@ class ProtocolScaffolder:
         raw_classes = []
         all_dummy_data = {}
         enums = parse_enums(protocol)
+        if not protocol.custom_types:
+            return raw_classes, all_dummy_data, enums
         for custom_type, definition in protocol.custom_types.items():
             if definition.startswith("enum "):
                 continue

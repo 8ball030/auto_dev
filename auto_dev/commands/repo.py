@@ -185,13 +185,7 @@ def repo() -> None:
 
 @repo.command()
 @click.argument("name", type=str, required=True)
-@click.option(
-    "-t",
-    "--type-of-repo",
-    help="Type of repo to scaffold",
-    type=click.Choice(TEMPLATES),
-    default="autonomy"
-)
+@click.option("-t", "--type-of-repo", help="Type of repo to scaffold", type=click.Choice(TEMPLATES), default="autonomy")
 @click.option("-f", "--force", is_flag=True, help="Force overwrite of existing repo", default=False)
 @click.option("--auto-approve", is_flag=True, help="Automatically approve all prompts", default=False)
 @click.option("--install/--no-install", is_flag=True, help="Do not install dependencies", default=True)
@@ -230,11 +224,7 @@ def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_comm
                 execute_commands("bash ./install.sh", verbose=verbose, logger=logger)
 
             if initial_commit:
-                git_commands = [
-                    "git init", 
-                    "git add .",
-                    "git commit -m 'feat-first-commit-from-StationsStation'"
-                ]
+                git_commands = ["git init", "git add .", "git commit -m 'feat-first-commit-from-StationsStation'"]
                 execute_commands(*git_commands, verbose=verbose, logger=logger)
 
             logger.info("Initialising autonomy packages.")
@@ -250,7 +240,6 @@ def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_comm
             msg = f"Unsupported repo type: {type_of_repo}"
             raise NotImplementedError(msg)
         logger.info(f"{type_of_repo.capitalize()} successfully setup.")
-
 
 
 @dataclass(frozen=True)

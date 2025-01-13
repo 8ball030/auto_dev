@@ -66,7 +66,7 @@ graph TD
 We now scaffold the agent.
 
 ```bash
-adev create -t eightballer/base author/new_agent
+adev create --no-clean-up -t eightballer/base author/new_agent
 ```
 We now have a new agent.
 

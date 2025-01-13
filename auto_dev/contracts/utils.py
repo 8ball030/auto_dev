@@ -60,7 +60,7 @@ PARAM_TO_STR_MAPPING = {
 }
 
 PYTHON_KEYWORDS = [
-    "from", 
+    "from",
     "type",
     "global",
     "nonlocal",
@@ -91,6 +91,7 @@ PYTHON_KEYWORDS = [
 def keyword_to_safe_name(name: str) -> str:
     """Convert a keyword to a safe name."""
     return f"{name}_" if name in PYTHON_KEYWORDS else name
+
 
 def safe_name_to_keyword(name: str) -> str:
     """Convert a safe name to a keyword."""

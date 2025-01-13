@@ -2,7 +2,7 @@
 # ruff: noqa: E501
 
 import re
-from typing import Any
+from typing import Any, Union, Optional
 from pathlib import Path
 from collections import defaultdict
 
@@ -88,8 +88,8 @@ class HandlerScaffolder:
             msg = "Failed to scaffold skill."
             raise ScaffolderError(msg)
 
-    def extract_schema(self, operation: Operation) -> str | None:
-        """Extract the schema from the operation."""
+    def extract_schema(self, operation: Operation) -> Optional[str]:
+        """Extract schema from an operation."""
         if not operation.responses:
             return None
 
@@ -507,8 +507,10 @@ class HandlerScaffolder:
 
         return [schema for schema, usage in schema_usage.items() if "response" in usage or "nested_request" in usage]
 
-    def _resolve_path_item(self, path_item: PathItem | Reference, api_spec: OpenAPI, path: str) -> PathItem | None:
-        """Resolve a path item it's a reference."""
+    def _resolve_path_item(
+        self, path_item: Union[PathItem, Reference], api_spec: OpenAPI, path: str
+    ) -> Optional[PathItem]:
+        """Resolve a path item if it's a reference."""
         if isinstance(path_item, Reference):
             try:
                 path_item = path_item.resolve(api_spec)

@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 import responses
 
-from auto_dev.commands.scaffold import BlockExplorer, ContractScaffolder
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.commands.scaffold import BlockExplorer, ContractScaffolder
 
 
 KNOWN_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # checksum address
@@ -16,6 +16,7 @@ BLOCK_EXPLORER_URL = "https://abidata.net"
 NETWORK = "base"
 
 DUMMY_ABI = json.loads((Path() / "tests" / "data" / "dummy_abi.json").read_text(DEFAULT_ENCODING))
+
 
 @pytest.fixture
 def block_explorer():
@@ -28,7 +29,7 @@ def test_block_explorer(block_explorer):
     """Test the block explorer."""
     expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK}"
     print(f"Mocked URL: {expected_url}")
-    
+
     responses.add(
         responses.GET,
         expected_url,
@@ -44,20 +45,15 @@ def test_block_explorer(block_explorer):
 def test_block_explorer_error_handling(block_explorer):
     """Test the block explorer handles errors gracefully."""
     expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK}"
-    
+
     # Test case 1: API returns error
-    responses.add(
-        responses.GET,
-        expected_url,
-        json={"ok": False, "error": "Not found"},
-        status=404
-    )
+    responses.add(responses.GET, expected_url, json={"ok": False, "error": "Not found"}, status=404)
     abi = block_explorer.get_abi(KNOWN_ADDRESS)
     assert abi is None, "Should return None for error response"
-    
+
     # Reset responses
     responses.reset()
-    
+
     # Test case 2: API returns invalid response
     responses.add(
         responses.GET,

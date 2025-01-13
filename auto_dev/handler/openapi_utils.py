@@ -1,6 +1,7 @@
 """OpenAPI Utilities."""
 
 import re
+from typing import Any, Dict, List, Union, Optional
 
 from pydantic import ValidationError
 
@@ -20,10 +21,10 @@ class CrudOperation:
     OTHER = "other"
 
 
-def load_openapi_spec(spec_file_path: str, logger) -> OpenAPI:
-    """Load the OpenAPI spec."""
+def load_openapi_spec(file_path: str, logger) -> OpenAPI:
+    """Load the OpenAPI specification from a file."""
     try:
-        openapi_spec_dict = read_yaml_file(spec_file_path)
+        openapi_spec_dict = read_yaml_file(file_path)
 
         if not validate_openapi_spec(openapi_spec_dict, logger):
             msg = "OpenAPI specification failed schema validation"
@@ -37,13 +38,13 @@ def load_openapi_spec(spec_file_path: str, logger) -> OpenAPI:
             raise ScaffolderError(msg) from e
 
     except FileNotFoundError as e:
-        msg = f"OpenAPI specification file not found: {spec_file_path}"
+        msg = f"OpenAPI specification file not found: {file_path}"
         logger.exception(msg)
         raise ScaffolderError(msg) from e
 
 
-def get_crud_classification(openapi_spec: OpenAPI, logger) -> list[dict]:
-    """Get the CRUD classification."""
+def get_crud_classification(openapi_spec: OpenAPI, logger) -> Optional[List[Dict]]:
+    """Get CRUD classification from OpenAPI spec."""
     classifications = []
     for path, path_item in openapi_spec.paths.items():
         if isinstance(path_item, Reference):
@@ -55,7 +56,7 @@ def get_crud_classification(openapi_spec: OpenAPI, logger) -> list[dict]:
                 continue
 
         for method in ["get", "post", "put", "delete", "patch", "options", "head", "trace"]:
-            operation: Operation | None = getattr(path_item, method.lower(), None)
+            operation: Optional[Operation] = getattr(path_item, method.lower(), None)
             if operation:
                 if method in {"patch", "options", "head", "trace"}:
                     msg = f"Method {method.upper()} is not currently supported"
@@ -121,9 +122,9 @@ def classify_post_operation(operation: Operation, path: str, logger) -> str:
     return crud_type
 
 
-def parse_schema_like(data: dict | Reference | Schema) -> Schema | Reference:
-    """Parse a schema-like object into a Schema or Reference."""
-    if isinstance(data, Schema | Reference):
+def parse_schema_like(data: Union[Dict[str, Any], Reference, Schema]) -> Union[Schema, Reference]:
+    """Parse a schema-like object."""
+    if isinstance(data, (Schema, Reference)):
         return data
     if isinstance(data, dict):
         if "$ref" in data:
