@@ -28,7 +28,7 @@ from aea.configurations.constants import (
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType
-from auto_dev.utils import write_to_file
+from auto_dev.utils import write_to_file, build_dependency_tree_for_component
 from auto_dev.constants import DEFAULT_ENCODING
 
 
@@ -188,43 +188,21 @@ class Dependency(PublicId):
     component_type: str
 
 
-def build_dependency_tree_for_component(component) -> list[str]:
-    """Build dependency tree for a component."""
+def build_dependency_tree_for_metadata_components(component) -> list[str]:
+    """Build dependency tree for metadata components.
+
+    Args:
+        component: Component identifier string in format 'type/author/name'
+
+    Returns:
+        List of dependencies for the component
+    """
     component_type = component.split("/")[0]
     component_author = component.split("/")[1]
     component_name = component.split("/")[2]
     public_id = PublicId(component_author, component_name.split(":")[0])
-    if component_type == AGENT:
-        file_name = DEFAULT_AEA_CONFIG_FILE
-    elif component_type == SERVICE:
-        file_name = "service.yaml"
-    elif component_type == CUSTOM:
-        file_name = "component.yaml"
-    else:
-        file_name = f"{component_type}.yaml"
-
-    component_path = f"packages/{public_id.author}/{component_type}s/{public_id.name}/{file_name}"
-    component_data = read_yaml_file(component_path)
-
-    dependencies = {}
-
-    for dependency_type in dependency_order:
-        if dependency_type == AGENTS and component_type != SERVICE:
-            continue
-        if component_type == SERVICE and dependency_type == SERVICES:
-            dependency_id = Dependency.from_str(component_data[AGENT])
-            dependency_id.component_type = AGENT
-            path = f"{dependency_type}/{dependency_id.author}/{dependency_id.name}"
-            dependencies[dependency_id] = path
-        else:
-            if dependency_type not in component_data:
-                continue
-            for dependency in component_data[dependency_type]:
-                dependency_id = Dependency.from_str(dependency)
-                dependency_id.component_type = dependency_type[:-1]
-                path = f"{dependency_type}/{dependency_id.author}/{dependency_id.name}"
-                dependencies[dependency_id] = path
-    return dependencies
+    component_path = f"packages/{public_id.author}/{component_type}s/{public_id.name}"
+    return build_dependency_tree_for_component(component_path, component_type)
 
 
 @cli.command()
@@ -248,7 +226,7 @@ def render_metadata(metadata, verbose=False) -> bool:
     self_component = Dependency.from_str("/".join(metadata["name"].split("/")[1:]))
     self_component.component_type = metadata["name"].split("/")[0]
     self_component_status, self_component_id = check_component_status(self_component)
-    dependencies = build_dependency_tree_for_component(metadata["name"])
+    dependencies = build_dependency_tree_for_metadata_components(metadata["name"])
 
     if verbose:
         click.echo("Raw Data:")
