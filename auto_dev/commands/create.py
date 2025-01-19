@@ -15,8 +15,6 @@ from auto_dev.exceptions import OperationError
 from auto_dev.cli_executor import CommandExecutor
 
 
-AGENT_PUBLISHED_SUCCESS_MSG = "Agent published successfully."
-
 cli = build_cli()
 
 
@@ -81,7 +79,7 @@ def publish_agent(public_id: PublicId, verbose: bool) -> None:
                 stdout: {command.stdout}"""
                 click.secho(msg, fg="red")
                 raise OperationError(msg)
-            click.secho(AGENT_PUBLISHED_SUCCESS_MSG, fg="green")
+            click.secho("Agent published successfully.", fg="green")
 
 
 @cli.command()
