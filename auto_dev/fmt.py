@@ -2,6 +2,8 @@
 
 from multiprocessing import Pool
 
+import isort
+import isort.files
 import requests
 from rich.progress import track
 
@@ -63,6 +65,10 @@ class Formatter:
     @staticmethod
     def run_sort(path, verbose=False):
         """Run sort on the path."""
+
+    @staticmethod
+    def run_autoflake8(path, verbose=False):
+        """Run autoflake8 on the path."""
         command = CommandExecutor(
             [
                 "poetry",
@@ -79,7 +85,6 @@ class Formatter:
         )
         return command.execute(verbose=verbose)
 
-
 def single_thread_fmt(paths, verbose, logger, remote=False):
     """Run the formatting in a single thread."""
     results = {}
@@ -95,7 +100,6 @@ def single_thread_fmt(paths, verbose, logger, remote=False):
             result = local_formatter.format(path)
         results[package] = result
     return results
-
 
 def multi_thread_fmt(paths, verbose, num_processes, remote=False):
     """Run the formatting in multiple threads."""

@@ -24,10 +24,6 @@ classifiers = [
 [[tool.poetry.packages]]
 include = "auto_dev"
 
-[[tool.poetry.packages]]
-include = "tests"
-format = "sdist"
-
 [tool.black]
 line-length = 120
 skip-string-normalization = true
@@ -46,6 +42,7 @@ open-aea-ledger-cosmos = "==1.60.0"
 open-aea-cli-ipfs = "==1.60.0"
 web3 = ">=6.0.0,<7.0.0"
 ipfshttpclient = "==0.8.0a2"
+web3 = "<7,>=6.0.0"
 typing_extensions = ">=3.10.0.2"
 protobuf = ">=3.19.1,<4.25.0"
 hypothesis = "==6.122.3"
