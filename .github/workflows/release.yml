@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        python-versions: [3.9]
+        python-versions: [3.11]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -65,10 +65,6 @@ jobs:
       - name: Build wheels and source tarball
         run: >-
           poetry build
-
-      - name: show temporary files
-        run: >-
-          ls -l
 
       - name: create github release
         id: create_release

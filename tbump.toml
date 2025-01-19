@@ -2,7 +2,7 @@
 # github_url = "https://github.com/<user or organization>/<project>/"
 
 [version]
-current = "0.2.68"
+current = "0.2.89"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before
@@ -24,11 +24,15 @@ tag_template = "v{new_version}"
 # tbump.toml location.
 [[file]]
 src = "pyproject.toml"
-
+[[file]]
+src = "auto_dev/commands/deps.py"
 [[file]]
 src = "auto_dev/data/repo/templates/autonomy/pyproject.toml.template"
 [[file]]
 src = "auto_dev/data/repo/templates/python/pyproject.toml.template"
+[[file]]
+src = "auto_dev/data/repo/templates/autonomy/adev_config.yaml"
+
 
 # You can specify a list of commands to
 # run after the files have been patched

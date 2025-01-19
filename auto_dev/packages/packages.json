@@ -1,0 +1,8 @@
+{
+    "dev": {
+    },
+    "third_party": {
+        "agent/eightballer/base/0.1.0": "bafybeidohldv57m3jkc33zpgbxukaushmcibmt4ncnsnomd3pvpocxs3ui",
+        "agent/eightballer/frontend_agent/0.1.0": "bafybeigvt6z3pcub3klzetwpmjxgzpf2hg6uq3vcoe6g7n4cdqz3jr3fqu"
+    }
+}

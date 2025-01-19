@@ -1,11 +1,10 @@
-"""
-This module contains the ParamType class, which represents the type of a parameter in solidity.
-"""
+"""Module contains the ParamType class, which represents the type of a parameter in solidity."""
+
 from enum import Enum
 
 
 class ParamType(Enum):
-    """This class represent the type of a parameter in solidity."""
+    """Class to represent the type of a parameter in solidity."""
 
     ADDRESS = "address"
     BOOL = "bool"
@@ -34,3 +33,5 @@ class ParamType(Enum):
     INT16 = "int16"
     BYTES4 = "bytes4"
     BYTES = "bytes"
+    BYTES_ARRAY = "bytes[]"
+    BYTES32_ARRAY_ARRAY = "bytes32[][]"

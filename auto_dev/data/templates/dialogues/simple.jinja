@@ -1,0 +1,54 @@
+
+{%if type_imports%}
+{% for import in type_imports %}
+from typing import {{import}}{% endfor %}
+{% endif %}
+from typing import Any
+
+from aea.skills.base import Model
+from aea.protocols.base import Address, Message
+from aea.protocols.dialogue.base import Dialogue as BaseDialogue
+
+from packages.{{author}}.protocols.{{protocol_name}}.dialogues import (
+    {{class_name}}Dialogue as Base{{class_name}}Dialogue,
+    {{class_name}}Dialogues as Base{{class_name}}Dialogues,
+)
+
+{{class_name}}Dialogue = Base{{class_name}}Dialogue
+
+
+class {{class_name}}Dialogues(Model, Base{{class_name}}Dialogues):
+    """The dialogues class keeps track of all dialogues for the `{{protocol_name}}` protocol."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """
+        Initialize dialogues.
+
+        :param kwargs: keyword arguments
+        """
+        Model.__init__(self, **kwargs)
+
+        def role_from_first_message(  # pylint: disable=unused-argument
+            message: Message, receiver_address: Address
+        ) -> BaseDialogue.Role:
+            """Infer the role of the agent from an incoming/outgoing first message
+
+            :param message: an incoming/outgoing first message
+            :param receiver_address: the address of the receiving agent
+            :return: The role of the agent
+            """
+            _, _ = message, receiver_address
+            {% if roles | length > 1%}
+            {% for key in roles%}
+            if ...
+                return {{class_name}}Dialogue.Role.{{key.upper()}}
+            {% endfor %}    
+            {% else %}
+            return {{class_name}}Dialogue.Role.{{roles.keys()| first | upper}}
+            {% endif %}
+
+        Base{{class_name}}Dialogues.__init__(
+            self,
+            self_address=self.context.skill_id,
+            role_from_first_message=role_from_first_message,
+        )

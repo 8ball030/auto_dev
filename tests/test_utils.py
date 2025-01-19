@@ -1,6 +1,4 @@
-"""
-We test the functions from utils
-"""
+"""We test the functions from utils."""
 
 import json
 import shutil
@@ -8,22 +6,24 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import yaml
 import pytest
 import rich_click as click
-import yaml
 
-from auto_dev.constants import DEFAULT_ENCODING, FileType
+from auto_dev.enums import FileType
 from auto_dev.utils import (
-    folder_swapper,
+    get_paths,
     get_logger,
     get_packages,
-    get_paths,
-    has_package_code_changed,
     load_aea_ctx,
     remove_prefix,
     remove_suffix,
     write_to_file,
+    folder_swapper,
+    has_package_code_changed,
 )
+from auto_dev.constants import DEFAULT_ENCODING
+
 
 TEST_PACKAGES_JSON = {
     "packages/packages.json": """
@@ -82,9 +82,7 @@ def test_get_packages(test_packages_filesystem):
 
 
 def test_has_package_code_changed_true(test_packages_filesystem):
-    """
-    Test has_package_code_changed.
-    """
+    """Test has_package_code_changed."""
     with open(Path(test_packages_filesystem) / Path("packages/test_file.txt"), "w", encoding=DEFAULT_ENCODING) as file:
         file.write("test")
     assert has_package_code_changed(Path("packages"))
@@ -92,9 +90,7 @@ def test_has_package_code_changed_true(test_packages_filesystem):
 
 @pytest.fixture
 def autonomy_fs(test_packages_filesystem):
-    """
-    Test get_paths.
-    """
+    """Test get_paths."""
     Path(list(TEST_PACKAGES_JSON.keys()).pop())
     for key, value in TEST_PACKAGES_JSON.items():
         key_path = Path(test_packages_filesystem) / Path(key)
@@ -114,27 +110,23 @@ def autonomy_fs(test_packages_filesystem):
                 file_path.parent.mkdir(parents=True)
             with open(file_path, "w", encoding=DEFAULT_ENCODING) as path:
                 path.write(json.dumps(data))
-    yield test_packages_filesystem
+    return test_packages_filesystem
 
 
 def test_get_paths_changed_only(test_packages_filesystem):
-    """
-    Test get_paths.
-    """
+    """Test get_paths."""
     assert test_packages_filesystem == str(Path.cwd())
     assert len(get_paths(changed_only=True)) == 0
 
 
 def test_get_paths(test_packages_filesystem):
-    """
-    Test get_paths.
-    """
+    """Test get_paths."""
     assert test_packages_filesystem == str(Path.cwd())
     assert len(get_paths()) == 0
 
 
 def test_remove_prefix():
-    """Test remove_prefix"""
+    """Test remove_prefix."""
 
     assert remove_prefix("HelloWorld", "Hello") == "World"
     assert remove_prefix("PythonIsGreat", "Python") == "IsGreat"
@@ -144,7 +136,7 @@ def test_remove_prefix():
 
 
 def test_remove_suffix():
-    """Test remove_suffix"""
+    """Test remove_suffix."""
 
     assert remove_suffix("HelloWorld", "World") == "Hello"
     assert remove_suffix("PythonIsGreat", "Great") == "PythonIs"
@@ -154,11 +146,11 @@ def test_remove_suffix():
 
 
 class TestFolderSwapper:
-    """TestFolderSwapper"""
+    """TestFolderSwapper."""
 
     @classmethod
-    def setup_class(cls):
-        """Setup class"""
+    def setup_class(cls) -> None:
+        """Setup the class."""
         cls.temp_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         cls.a_dir = Path(tempfile.mkdtemp(dir=cls.temp_dir.name))
         cls.b_dir = Path(tempfile.mkdtemp(dir=cls.temp_dir.name))
@@ -167,9 +159,7 @@ class TestFolderSwapper:
         cls.b_file_path = cls.b_dir / "test_file.txt"
 
     def test_folder_swapper(self):
-        """
-        Test the folder_swapper custom context manager.
-        """
+        """Test the folder_swapper custom context manager."""
         assert self.a_file_path.is_file()
         assert not self.b_file_path.exists()
 
@@ -180,27 +170,28 @@ class TestFolderSwapper:
         assert not self.b_file_path.exists()
 
     def test_folder_swapper_execution_raises(self):
-        """
-        Test the folder_swapper custom context manager restores on raise.
-        """
+        """Test the folder_swapper custom context manager restores on raise."""
         assert self.a_file_path.is_file()
         assert not self.b_file_path.exists()
 
         try:
             with folder_swapper(self.a_dir, self.b_dir):
-                raise ZeroDivisionError("Whoops!")
-        except ZeroDivisionError:
-            pass
-
+                msg = "Whoops!"
+                raise ZeroDivisionError(msg)
+        except ZeroDivisionError as exc:
+            assert str(exc) == msg
         assert self.a_file_path.is_file()
         assert not self.b_file_path.exists()
 
 
 def test_load_aea_ctx(dummy_agent_tim):
-    """Test load_aea_ctx"""
+    """Test load_aea_ctx."""
 
     assert dummy_agent_tim
-    mock_func = lambda ctx, *args, **kwargs: (ctx, args, kwargs)  # pylint: disable=C3001
+
+    def mock_func(ctx, *args, **kwargs):
+        return ctx, args, kwargs  # pylint: disable=C3001
+
     mock_context = MagicMock(spec=click.Context)
 
     decorated_func = load_aea_ctx(mock_func)
@@ -215,7 +206,9 @@ def test_load_aea_ctx(dummy_agent_tim):
 def test_load_aea_ctx_without_config_fails():
     """Test load_aea_ctx fails without aea-config.yaml in local directory."""
 
-    mock_func = lambda ctx, *args, **kwargs: (ctx, args, kwargs)  # pylint: disable=C3001
+    def mock_func(ctx, *args, **kwargs):
+        return ctx, args, kwargs  # pylint: disable=C3001
+
     mock_context = MagicMock(spec=click.Context)
 
     decorated_func = load_aea_ctx(mock_func)
@@ -225,7 +218,7 @@ def test_load_aea_ctx_without_config_fails():
 
 @pytest.fixture
 def temp_dir(tmp_path):
-    """Temp dir fixture"""
+    """Temp dir fixture."""
     return tmp_path
 
 
@@ -236,7 +229,7 @@ def test_write_to_file_text(temp_dir):
     write_to_file(str(file_path), content, FileType.TEXT)
 
     assert file_path.exists()
-    with open(file_path, "r", encoding=DEFAULT_ENCODING) as f:
+    with open(file_path, encoding=DEFAULT_ENCODING) as f:
         assert f.read() == content
 
 
@@ -247,7 +240,7 @@ def test_write_to_file_yaml(temp_dir):
     write_to_file(str(file_path), content, FileType.YAML)
 
     assert file_path.exists()
-    with open(file_path, "r", encoding=DEFAULT_ENCODING) as f:
+    with open(file_path, encoding=DEFAULT_ENCODING) as f:
         assert yaml.safe_load(f) == content
 
 
@@ -258,7 +251,7 @@ def test_write_to_file_json(temp_dir):
     write_to_file(str(file_path), content, FileType.JSON)
 
     assert file_path.exists()
-    with open(file_path, "r", encoding=DEFAULT_ENCODING) as f:
+    with open(file_path, encoding=DEFAULT_ENCODING) as f:
         assert json.load(f) == content
 
 

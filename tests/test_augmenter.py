@@ -1,22 +1,20 @@
-"""
-Test the augmenter.
-"""
+"""Test the augmenter."""
+
 import os
 import shutil
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
+import pytest
 
-from auto_dev.commands.augment import ConnectionScaffolder, LoggingScaffolder
+from auto_dev.commands.augment import LoggingScaffolder, ConnectionScaffolder
 
 
 def read_aea_config() -> list:
-    """Small helper to load local aea-config.yaml"""
+    """Small helper to load local aea-config.yaml."""
     content = Path("aea-config.yaml").read_text(encoding="utf-8")
-    aea_config = list(yaml.safe_load_all(content))
-    return aea_config
+    return list(yaml.safe_load_all(content))
 
 
 @pytest.fixture
@@ -48,29 +46,29 @@ def connection_scaffolder(isolated_filesystem):
 
 
 def test_logging_scaffolder_scaffold_all(logging_scaffolder):
-    """test the logging scaffolder."""
+    """Test the logging scaffolder."""
     scaffold = logging_scaffolder.scaffold(["all"])
-    assert "console" in scaffold['logging_config']['handlers']
-    assert "http" in scaffold['logging_config']['handlers']
-    assert "logfile" in scaffold['logging_config']['handlers']
+    assert "console" in scaffold["logging_config"]["handlers"]
+    assert "http" in scaffold["logging_config"]["handlers"]
+    assert "logfile" in scaffold["logging_config"]["handlers"]
 
 
 def test_logging_scaffolder_scaffold(logging_scaffolder):
-    """test the logging scaffolder."""
+    """Test the logging scaffolder."""
     scaffold = logging_scaffolder.scaffold(["console"])
-    assert "console" in scaffold['logging_config']['handlers']
-    assert "http" not in scaffold['logging_config']['handlers']
-    assert "logfile" not in scaffold['logging_config']['handlers']
+    assert "console" in scaffold["logging_config"]["handlers"]
+    assert "http" not in scaffold["logging_config"]["handlers"]
+    assert "logfile" not in scaffold["logging_config"]["handlers"]
 
 
 def test_logging_scaffolder_scaffold_bad_handler(logging_scaffolder):
-    """test the logging scaffolder."""
+    """Test the logging scaffolder."""
     with pytest.raises(ValueError):
         logging_scaffolder.scaffold(["bad"])
 
 
 def test_scaffold_connection(connection_scaffolder):
-    """Test scaffold connection"""
+    """Test scaffold connection."""
     aea_config = read_aea_config()
     assert len(aea_config) == 1
     connections = ("abci", "ledger", "ipfs", "http_client", "http_server", "websocket_server", "prometheus")

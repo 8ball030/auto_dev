@@ -1,0 +1,217 @@
+openapi: 3.0.0
+info:
+  title: innovation_station_api
+  version: 1.0.0
+paths:
+  /protocol:
+    get:
+      summary: Get a list of all protocols
+      responses:
+        '200':
+          description: Successful response
+    post:
+      summary: Create a new protocol
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+      responses:
+        '201':
+          description: Successful response
+  /protocol/{id}:
+    get:
+      summary: Get a protocol by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+  /connection:
+    get:
+      summary: Get a list of all connections
+      responses:
+        '200':
+          description: Successful response
+    post:
+      summary: Create a new connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+      responses:
+        '201':
+          description: Successful response
+  /connection/{id}:
+    get:
+      summary: Get a connection by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+  /contract:
+    get:
+      summary: Get a list of all contracts
+      responses:
+        '200':
+          description: Successful response
+    post:
+      summary: Create a new contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+              # Define your contract schema here
+      responses:
+        '201':
+          description: Successful response
+
+  /contract/{id}:
+    get:
+      summary: Get a contract by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+  /skill:
+    get:
+      summary: Get a list of all skills
+      responses:
+        '200':
+          description: Successful response
+    post:
+      summary: Create a new skill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              # Define your skill schema here
+      responses:
+        '201':
+          description: Successful response
+
+  /skill/{id}:
+    get:
+      summary: Get a skill by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+  /agent:
+    get:
+      summary: Get a list of all agents
+      responses:
+        '200':
+          description: Successful response
+    post:
+      summary: Create a new agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+      responses:
+        '201':
+          description: Successful response
+              # Define your agent schema here
+  /agent/{id}:
+    get:
+      summary: Get an agent by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+  /service:
+    get:
+      summary: Get a list of all services
+      responses:
+        '200':
+          description: Successful response
+    post:
+      summary: Create a new service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+      responses:
+        '201':
+          description: Successful response
+  /service/{id}:
+    get:
+      summary: Get a service by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+  /generate:
+    post:
+      summary: Generate a component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input:
+                  type: string
+                componentType:
+                  type: string
+                  enum: [protocol, connection, contract, skill, agent, service]
+      responses:
+        '200':
+          description: Successful response

@@ -1,8 +1,10 @@
 """Template for the connection for the connection scaffolder."""
 
 # pylint: skip-file
+# ruff: noqa: E501
 
 from collections import namedtuple
+
 
 HEADER = """
 # -*- coding: utf-8 -*-
@@ -23,6 +25,7 @@ HEADER = """
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+'''Module for connection. '''
 """
 
 DOCSTRING = """\"\"\"{proper_name} connection and channel.\"\"\""""
@@ -193,9 +196,9 @@ class BaseAsyncChannel:
         for task in list(self._tasks):
             try:
                 await task
-            except KeyboardInterrupt:  # pragma: nocover
+            except KeyboardInterrupt:  # noqa
                 raise
-            except BaseException:  # pragma: nocover # pylint: disable=broad-except
+            except BaseException:  # noqa
                 pass  # nosec
 """
 
@@ -231,7 +234,7 @@ class {name_camelcase}AsyncChannel(BaseAsyncChannel):  # pylint: disable=too-man
 
         :param loop: asyncio event loop to use
         \"\"\"
-        
+
         if self.is_stopped:
             self._loop = loop
             self._in_queue = asyncio.Queue()
@@ -240,7 +243,7 @@ class {name_camelcase}AsyncChannel(BaseAsyncChannel):  # pylint: disable=too-man
                 raise NotImplementedError("{name_camelcase}AsyncChannel.connect")
                 self._connection = ...  # TODO: e.g. self.engine.connect()
                 self.logger.info("{proper_name} has connected.")
-            except Exception as e:  # pragma: nocover # pylint: disable=broad-except
+            except Exception as e:  # noqa
                 self.is_stopped = True
                 self._in_queue = None
                 raise ConnectionError(f"Failed to start {proper_name}: {{e}}")
@@ -331,23 +334,23 @@ class {name_camelcase}Connection(Connection):
 
             result = await self.channel.get_message()
             return result
-        except Exception as e:
+        except Exception as e:  # noqa
             self.logger.info(f"Exception on receive {{e}}")
             return None
 """
 
 ConnectionTemplate = namedtuple(
-    'ConnectionTemplate',
+    "ConnectionTemplate",
     [
-        'HEADER',
-        'DOCSTRING',
-        'IMPORTS',
-        'PULBIC_ID',
-        'LOGGER',
-        'DIALOGUES',
-        'BASE_ASYNC_CHANNEL',
-        'ASYNC_CHANNEL',
-        'CONNECTION',
+        "HEADER",
+        "DOCSTRING",
+        "IMPORTS",
+        "PULBIC_ID",
+        "LOGGER",
+        "DIALOGUES",
+        "BASE_ASYNC_CHANNEL",
+        "ASYNC_CHANNEL",
+        "CONNECTION",
     ],
 )
 CONNECTION_TEMPLATE = ConnectionTemplate(

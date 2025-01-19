@@ -1,24 +1,39 @@
-"""
-Constants for the auto_dev package.
-"""
+"""Constants for the auto_dev package."""
 
 import os
+import platform
 from enum import Enum
 from pathlib import Path
 
 from aea.cli.utils.config import get_or_create_cli_config
 
+
 DEFAULT_ENCODING = "utf-8"
+DEFAULT_TZ = "UTC"
 DEFAULT_TIMEOUT = 10
+DEFAULT_AUTHOR = "eighballer"
 # package directory
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_PYLAMA_CONFIG = Path(PACKAGE_DIR) / "data" / "pylama.ini"
+DEFAULT_RUFF_CONFIG = Path(PACKAGE_DIR) / "data" / "ruff.toml"
 AUTONOMY_PACKAGES_FILE = "packages/packages.json"
 AUTO_DEV_FOLDER = os.path.join(os.path.dirname(__file__))
 PLUGIN_FOLDER = os.path.join(AUTO_DEV_FOLDER, "commands")
 TEMPLATE_FOLDER = os.path.join(AUTO_DEV_FOLDER, "data", "repo", "templates")
+JINJA_TEMPLATE_FOLDER = os.path.join(
+    AUTO_DEV_FOLDER,
+    "data",
+    "templates",
+)
+
+DOCKERCOMPOSE_TEMPLATE_FOLDER = os.path.join(
+    AUTO_DEV_FOLDER,
+    "data",
+    "templates",
+    "compose",
+)
 
 AEA_CONFIG = get_or_create_cli_config()
+NAME_PATTERN = r"[a-z_][a-z0-9_]{0,127}"
 
 SAMPLE_PACKAGES_JSON = {
     "packages/packages.json": """
@@ -33,14 +48,14 @@ SAMPLE_PACKAGES_JSON = {
 }
 
 SAMPLE_PACKAGE_FILE = {
-    "packages/eightballer/agents/tmp/aea-config.yaml": """
+    "packages/eightballer/agents/tmp/aea-config.yaml": f"""
 agent_name: tmp
-author: eightballer
+author: {DEFAULT_AUTHOR}
 version: 0.1.0
 license: Apache-2.0
 description: ''
 aea_version: '>=1.35.0, <2.0.0'
-fingerprint: {}
+fingerprint: {{}}
 fingerprint_ignore_patterns: []
 connections: []
 contracts: []
@@ -51,14 +66,14 @@ default_connection: null
 default_ledger: ethereum
 required_ledgers:
 - ethereum
-default_routing: {}
-connection_private_key_paths: {}
-private_key_paths: {}
+default_routing: {{}}
+connection_private_key_paths: {{}}
+private_key_paths: {{}}
 logging_config:
   disable_existing_loggers: false
   version: 1
 dependencies:
-  open-aea-ledger-ethereum: {}
+  open-aea-ledger-ethereum: {{}}
 """
 }
 
@@ -94,9 +109,55 @@ BASE_FSM_SKILLS = {
 }
 
 
-class FileType(Enum):
-    """File type enum."""
+class CheckResult(Enum):
+    """Check result enum."""
 
-    TEXT = "text"
-    YAML = "yaml"
-    JSON = "json"
+    PASS = "PASS"
+    FAIL = "FAIL"
+    MODIFIED = "MODIFIED"
+    SKIPPED = "SKIPPED"
+
+
+class SupportedOS(Enum):
+    """Supported operating systems."""
+
+    LINUX = "Linux"
+    DARWIN = "Darwin"
+
+
+OS_ENV_MAP = {
+    SupportedOS.LINUX.value: {
+        "NETWORK_MODE": "host",
+        "HOST_NAME": "localhost:26658",
+    },
+    SupportedOS.DARWIN.value: {
+        "NETWORK_MODE": "bridge",
+        "HOST_NAME": "host.docker.internal:26658",
+    },
+}
+
+
+class Network(Enum):
+    """Supported blockchain networks."""
+
+    ETHEREUM = "ethereum"
+    GOERLI = "goerli"
+    SEPOLIA = "sepolia"
+    AVALANCHE = "avalanche"
+    AVALANCHE_FUJI = "avalancheFuji"
+    ARBITRUM = "arbitrum"
+    ARBITRUM_GOERLI = "arbitrumGoerli"
+    ARBITRUM_NOVA = "arbitrumNova"
+    BASE = "base"
+    BASE_GOERLI = "baseGoerli"
+    BSC = "bsc"
+    BSC_TESTNET = "bscTestnet"
+    FANTOM = "fantom"
+    FANTOM_TESTNET = "fantomTestnet"
+    POLYGON = "polygon"
+    POLYGON_MUMBAI = "polygonMumbai"
+    POLYGON_ZKEVM = "polygonZkEvm"
+    POLYGON_ZKEVM_TESTNET = "polygonZkEvmTestnet"
+    OPTIMISM = "optimism"
+    OPTIMISM_GOERLI = "optimismGoerli"
+    GNOSIS = "gnosis"

@@ -1,10 +1,9 @@
-"""
-Utils for the contracts.
-"""
+"""Utils for the contracts."""
 
 from aea.crypto.base import Address
 
 from auto_dev.contracts.param_type import ParamType
+
 
 SOLIDITY_TYPE_TO_PYTHON_TYPE = {
     "address": Address,
@@ -16,14 +15,15 @@ SOLIDITY_TYPE_TO_PYTHON_TYPE = {
 SOLIDITY_TO_PYTHON_TYPES = {
     "address": "str",
     "bool": "bool",
+    "bytes": "str",
     "bytes32": "str",
     "bytes4": "str",
-    "bytes": "str",
+    "int16": "int",
+    "int8": "int",
+    "string": "str",
+    "tuple": "tuple",
     "uint256": "int",
     "uint80": "int",
-    "int8": "int",
-    "tuple": "tuple",
-    "int16": "int",
 }
 
 
@@ -55,4 +55,44 @@ PARAM_TO_STR_MAPPING = {
     ParamType.INT16: "int",
     ParamType.UNINT32: "int",
     ParamType.UINT8_ARRAY: "List[int]",
+    ParamType.BYTES32_ARRAY_ARRAY: "List[List[str]]",
+    ParamType.BYTES_ARRAY: "List[str]",
 }
+
+PYTHON_KEYWORDS = [
+    "from",
+    "type",
+    "global",
+    "nonlocal",
+    "assert",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "if",
+    "import",
+    "lambda",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
+]
+
+
+def keyword_to_safe_name(name: str) -> str:
+    """Convert a keyword to a safe name."""
+    return f"{name}_" if name in PYTHON_KEYWORDS else name
+
+
+def safe_name_to_keyword(name: str) -> str:
+    """Convert a safe name to a keyword."""
+    return name[:-1] if name in PYTHON_KEYWORDS else name

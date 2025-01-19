@@ -1,0 +1,67 @@
+# ------------------------------------------------------------------------------
+#
+#   Copyright 2024 {{ author }}
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+# ------------------------------------------------------------------------------
+
+"""This package contains a scaffold of a handler."""
+
+import re
+{%- if use_daos %}
+import json
+{%- endif %}
+from urllib.parse import unquote, urlparse
+
+from aea.skills.base import Handler
+from packages.eightballer.protocols.http.message import HttpMessage as ApiHttpMessage
+{% if use_daos %}
+{% for schema, filename in zip(schemas, schema_filenames) -%}
+from .daos.{{ filename }} import {{ schema }}DAO
+{% endfor %}
+
+{% for schema in schemas -%}
+{{ schema|lower|replace(' ', '_') }}_dao = {{ schema }}DAO()
+{% endfor %}
+
+def handle_exception(handler_func):
+    """Handle exception in the handler."""
+    def wrapper(self, message, *args, **kwargs):
+        try:
+            return handler_func(self, message, *args, **kwargs)
+        except Exception as e:
+            self.context.logger.exception("Unhandled exception")
+            error_message = json.dumps({"error": str(e)})
+            return ApiHttpMessage(
+                performative=ApiHttpMessage.Performative.RESPONSE,
+                status_code=500,
+                headers="",
+                version=message.version,
+                status_text="Internal Server Error",
+                body=error_message.encode(),
+            )
+    return wrapper
+{% endif %}
+
+class ApiHttpHandler(Handler):
+    """Implements the API HTTP handler."""
+
+    SUPPORTED_PROTOCOL = ApiHttpMessage.protocol_id  # type: Optional[str]
+
+    def setup(self) -> None:
+        """Set up the handler."""
+
+    def teardown(self) -> None:
+        """Tear down the handler."""
+

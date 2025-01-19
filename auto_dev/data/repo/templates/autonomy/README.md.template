@@ -17,22 +17,14 @@
 
 ## Getting Started
 
-### Installation
-
-Install `{project_name}` with pip:
-
-```shell
-pip install {project_name}
-```
-
-### Setup for Development
+### Installation and Setup for Development
 
 If you're looking to contribute or develop with `{project_name}`, get the source code and set up the environment:
 
 ```shell
-git clone https://github.com/{author}/{project_name}
+git clone https://github.com/{author}/{project_name} --recurse-submodules
 cd {project_name}
-poetry install && poetry shell
+make install
 ```
 
 ## Commands

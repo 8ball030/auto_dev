@@ -1,8 +1,5 @@
-"""
+"""Constants for the contract generation."""
 
-Constants for the contract generation.
-
-"""
 IMPORTS = """
 import logging
 from typing import Any, Optional, cast

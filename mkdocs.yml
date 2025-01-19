@@ -6,8 +6,21 @@ repo_name: 8ball030/auto_dev
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Usage: usage.md
-  - Modules: api.md
+  - Usage: 
+    - Overview: usage.md
+    - FSM: fsm.md
+    - OpenAPI: openapi.md
+  - API Reference:
+    - Overview: api/index.md
+    - auto_dev: api/auto_dev.md
+    - Commands: api/commands.md
+    - Connections: api/connections.md
+    - Contracts: api/contracts.md
+    - FSM: api/fsm.md
+    - Handler: api/handler.md
+    - Protocols: api/protocols.md
+    - Utils: api/utils.md
+    - Constants: api/constants.md
   - Contributing: contributing.md
   - Changelog: changelog.md
 theme:
@@ -15,17 +28,38 @@ theme:
   language: en
   #logo: assets/logo.png
   palette:
-    scheme: preference
-    primary: indigo
-    accent: indigo
+    # Automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      accent: blue
+      primary: blue_grey
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      accent: blue
+      primary: blue_grey
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to system preference
+  font:
+    code: Roboto Mono
+    text: Source Sans Pro
   features:
     - navigation.indexes
     - navigation.instant
     - navigation.tabs.sticky
+    - navigation.expand
+    - content.code.copy
 markdown_extensions:
-  - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.emoji
   - pymdownx.critic
   - pymdownx.caret
   - pymdownx.mark
@@ -36,40 +70,45 @@ markdown_extensions:
       generic: true
   - pymdownx.highlight:
       linenums: false
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.superfences
   - pymdownx.inlinehilite
   - pymdownx.details
   - admonition
   - toc:
-      baselevel: 2
+      baselevel: 3
       permalink: true
       slugify: !!python/name:pymdownx.slugs.uslugify
   - meta
+  - pymdownx.superfences:
+        # make exceptions to highlighting of code:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
 plugins:
   - include-markdown
   - search:
       lang: en
+  - autorefs
   - mkdocstrings:
-      watch:
-        - auto_dev
+      default_handler: python
+      handlers:
+        python:
+          paths: [auto_dev]
+          options:
+            show_root_heading: true
+            show_source: false
+            show_submodules: true
+            docstring_style: sphinx
+extra_css:
+  - stylesheets/extra.css
 extra:
   social:
-    - icon: fontawesome/brands/twitter
-      # replace with your own tweet link below
-      link: https://github.com/waynerv/cookiecutter-pypackage
-      name: Tweet
-    - icon: fontawesome/brands/facebook
-      # replace with your own facebook link below
-      link: https://github.com/waynerv/cookiecutter-pypackage
-      name: Facebook
     - icon: fontawesome/brands/github
       link: https://github.com/8ball030/auto_dev
       name: Github
     - icon: material/email
       link: "mailto:8ball030@gmail.com"
-  # to enable disqus, uncomment the following and put your disqus id below
-  # disqus: disqus_id
-# uncomment the following and put your google tracking id below to enable GA
-#google_analytics:
-  #- UA-xxx
-  #- auto

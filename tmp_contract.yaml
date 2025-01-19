@@ -1,4 +1,0 @@
-block_explorer_url: "https://api-sepolia.etherscan.io"
-
-contracts:
-    chronicle_price_feed: "0xdd6D76262Fd7BdDe428dcfCd94386EbAe0151603"

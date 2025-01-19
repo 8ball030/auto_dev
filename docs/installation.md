@@ -5,7 +5,7 @@
 To install auto_dev, run this command in your
 terminal:
 
-``` console
+```console
 $ pip install auto_dev
 ```
 
@@ -33,7 +33,7 @@ $ curl -OJL https://github.com/8ball030/auto_dev/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
-``` console
+```console
 $ pip install .
 ```
 

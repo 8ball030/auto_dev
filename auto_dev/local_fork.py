@@ -1,16 +1,17 @@
-"""
-Module to run a docker container with a fork of the mainnet.
-"""
+"""Module to run a docker container with a fork of the mainnet."""
 
+import time
 import platform
 import subprocess
-import time
 from dataclasses import dataclass
-from typing import Optional
 
 import requests
 from docker import DockerClient
 from docker.models.containers import Container
+
+
+SLEEP_TIME = 1
+PULL_TIMEOUT = 60
 
 
 @dataclass
@@ -22,10 +23,10 @@ class DockerFork:
 
     host: str = "http://localhost"
     port: int = 8546
-    container: Optional[Container] = None
+    container: Container | None = None
     run_command: str = "--fork-url '{fork_url}' --fork-block-number {fork_block_number} --host 0.0.0.0 --port {port}"
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the docker container."""
         # we force the container to stop
         self.container.stop()
@@ -52,11 +53,11 @@ class DockerFork:
             return False
         return int(res.json()["result"], 16) == self.fork_block_number
 
-    def run(self):
+    def run(self) -> None:
         """Run the docker container in a background process."""
         client = DockerClient.from_env()
 
-        is_amd64 = platform.machine().lower() in ["x86_64", "amd64"]
+        is_amd64 = platform.machine().lower() in {"x86_64", "amd64"}
 
         try:
             if is_amd64:
@@ -66,7 +67,8 @@ class DockerFork:
             else:
                 client.images.pull("ghcr.io/foundry-rs/foundry:latest")
         except Exception as error:
-            raise RuntimeError(f"Failed to pull Docker image: {str(error)}") from error
+            msg = f"Failed to pull Docker image: {error!s}"
+            raise RuntimeError(msg) from error
 
         cmd = self.run_command.format(fork_url=self.fork_url, fork_block_number=self.fork_block_number, port=self.port)
 
@@ -86,7 +88,8 @@ class DockerFork:
 
         wait = 0
         while not self.is_ready():
-            time.sleep(1)
-            wait += 1
-            if wait > 8:
-                raise TimeoutError("Docker fork did not start in time.")
+            time.sleep(SLEEP_TIME)
+            wait += SLEEP_TIME
+            if wait > PULL_TIMEOUT:
+                msg = "Docker fork did not start in time."
+                raise TimeoutError(msg)

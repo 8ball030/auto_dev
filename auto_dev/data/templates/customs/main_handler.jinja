@@ -1,0 +1,96 @@
+{%- if use_daos %}
+    @handle_exception
+{%- endif %}
+    def handle(self, message: ApiHttpMessage) -> None:
+        """Handle incoming API HTTP messages."""
+        method = message.method.lower()
+        parsed_url = urlparse(unquote(message.url))
+        path = parsed_url.path
+        body = message.body
+
+        self.context.logger.info(f"Received {method.upper()} request for {path}")
+{% if path_mappings %}
+        normalized_path = self.normalize_path(path)
+{% else %}
+        normalized_path = path.rstrip("/")
+{% endif %}
+        handler_name, kwargs = self.get_handler_name_and_kwargs(method, normalized_path, path, body)
+
+        handler_method = getattr(self, handler_name, None)
+
+        if handler_method:
+            self.context.logger.debug(f"Found handler method: {handler_name}")
+            return handler_method(message, **kwargs)
+        self.context.logger.warning(f"No handler found for {method.upper()} request to {path}")
+        return self.handle_unexpected_message(message)
+{%- if path_mappings %}
+
+    def normalize_path(self, path: str) -> str:
+        """Normalize the path using regex substitution."""
+        normalized_path = path.rstrip("/")
+        self.context.logger.debug(f"Normalized path: {normalized_path}")
+
+        substitutions = {
+{%- for normalized_path, mapping in path_mappings.items() %}
+            r"^{{ normalized_path.rstrip('/') }}/(?P<{{ mapping.params.values()|first }}>[^/]+)$": "{{ mapping.original_path.replace('{', '').replace('}', '') }}",
+{%- endfor %}
+        }
+
+        for pattern, replacement in substitutions.items():
+            normalized_path = re.sub(pattern, replacement, normalized_path)
+
+        self.context.logger.debug(f"After regex substitutions: {normalized_path}")
+        return normalized_path
+{%- endif %}
+
+    def get_handler_name_and_kwargs(self, method: str, normalized_path: str, {% if path_mappings %}original_path: str, {% endif %}body: bytes) -> tuple[str, dict]:
+        """Get the handler name and kwargs for the given method and path."""
+        handler_name = f"handle_{method}_{normalized_path.lstrip('/').replace('/', '_')}"
+{% if path_mappings %}
+        self.context.logger.debug(f"Initial handler name: {handler_name}")
+
+        {%- set replaced_params = [] %}
+        {%- for normalized_path, mapping in path_mappings.items() %}
+            {%- for param_name, snake_case in mapping.params.items() -%}
+                {%- if param_name not in replaced_params %}
+        handler_name = handler_name.replace("{{ param_name }}", "by_{{ snake_case }}")
+                    {%- set _ = replaced_params.append(param_name) %}
+                {%- endif %}
+            {%- endfor %}
+        {%- endfor %}
+        self.context.logger.debug(f"Final handler name: {handler_name}")
+{% endif %}
+        kwargs = {"body": body} if method in {"post", "put", "patch"} else {}
+
+{%- if path_mappings %}
+        patterns = [
+{%- for normalized_path, mapping in path_mappings.items() %}
+            (r"^{{ normalized_path.rstrip('/') }}/(?P<{{ mapping.params.values()|first }}>[^/]+)$", ["{{ mapping.params.values()|first }}"]),
+{%- endfor %}
+        ]
+
+        for pattern, param_names in patterns:
+            match = re.search(pattern, original_path)
+            if match:
+                for param_name in param_names:
+                    kwargs[param_name] = match.group(param_name)
+                break
+        self.context.logger.debug(f"Final kwargs: {kwargs}")
+{%- endif %}
+        return handler_name, kwargs
+{% if use_daos %}
+    def create_response(self, message, status_code, status_text, body):
+        """Create an ApiHttpMessage response."""
+        return ApiHttpMessage(
+            performative=ApiHttpMessage.Performative.RESPONSE,
+            status_code=status_code,
+            status_text=status_text,
+            headers="",
+            version=message.version,
+            body=json.dumps(body).encode(),
+        )
+{%- endif %}
+
+{{ all_methods }}
+
+{{ unexpected_message_handler }}

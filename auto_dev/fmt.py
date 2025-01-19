@@ -1,6 +1,4 @@
-"""
-Module to format the code.
-"""
+"""Module to format the code."""
 
 from multiprocessing import Pool
 
@@ -9,8 +7,8 @@ import isort.files
 import requests
 from rich.progress import track
 
+from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_RUFF_CONFIG
 from auto_dev.cli_executor import CommandExecutor
-from auto_dev.constants import DEFAULT_ENCODING
 
 
 class Formatter:
@@ -28,56 +26,45 @@ class Formatter:
     def _remote_format_path(self, path, verbose=False):
         """Format the path."""
         # pylint: disable=R1732
-        with requests.Session() as session:
+        with requests.Session() as session, open(path, "r", encoding=DEFAULT_ENCODING) as file:
+            data = file.read()
             result = session.post(
                 "http://localhost:26659/format",
-                data=open(path, "rb").read(),
+                data=data.encode(DEFAULT_ENCODING),
                 timeout=150,
             )
         if verbose:
-            print(result.json())
+            pass
 
         if result.json():
-            if 'new_data' in result.json():
+            if "new_data" in result.json():
                 with open(path, "w", encoding=DEFAULT_ENCODING) as file:
-                    file.write(result.json()['new_data'])
+                    file.write(result.json()["new_data"])
                 return True
-            if 'result' in result.json():
-                return result.json()['result']
+            if "result" in result.json():
+                return result.json()["result"]
 
         return False
 
     def _format_path(self, path, verbose=False):
         """Format the path."""
 
-        results = all(
+        return all(
             [
-                self.run_autoflake8(path, verbose=verbose),
-                self.run_isort(path, verbose=verbose),
-                self.run_black(path, verbose=verbose),
+                self.run_sort(path, verbose=verbose),
+                self.run_format(path, verbose=verbose),
             ]
         )
-        return results
 
     @staticmethod
-    def run_black(path, verbose=False):
+    def run_format(path, verbose=False):
         """Run black on the path."""
-        command = CommandExecutor(
-            [
-                "poetry",
-                "run",
-                "black",
-                str(path),
-            ]
-        )
-        result = command.execute(verbose=verbose)
-        return result
+        command = CommandExecutor(["poetry", "run", "ruff", "format", str(path), "--config", str(DEFAULT_RUFF_CONFIG)])
+        return command.execute(verbose=verbose)
 
     @staticmethod
-    def run_isort(path, verbose=False):
-        """Run isort on the path."""
-        changed = isort.file(str(path))
-        return not changed
+    def run_sort(path, verbose=False):
+        """Run sort on the path."""
 
     @staticmethod
     def run_autoflake8(path, verbose=False):
@@ -86,16 +73,17 @@ class Formatter:
             [
                 "poetry",
                 "run",
-                "autoflake8",
-                "--remove-unused-variables",
-                "--in-place",
-                "--recursive",
+                "ruff",
+                "check",
+                "--select",
+                "I",
+                "--fix",
                 str(path),
+                "--config",
+                str(DEFAULT_RUFF_CONFIG),
             ]
         )
-        result = command.execute(verbose=verbose)
-        return result
-
+        return command.execute(verbose=verbose)
 
 def single_thread_fmt(paths, verbose, logger, remote=False):
     """Run the formatting in a single thread."""
@@ -107,12 +95,11 @@ def single_thread_fmt(paths, verbose, logger, remote=False):
         if verbose:
             logger.info(f"Formatting: {path}")
         result = formatter.format(path)
-        if not result:
+        if not result and remote:
             logger.error(f"Failed to format {path} remotely, trying locally")
             result = local_formatter.format(path)
         results[package] = result
     return results
-
 
 def multi_thread_fmt(paths, verbose, num_processes, remote=False):
     """Run the formatting in multiple threads."""
@@ -126,4 +113,4 @@ def multi_thread_fmt(paths, verbose, num_processes, remote=False):
         if not result:
             results[i] = local_formatter.format(paths[i])
 
-    return dict(zip(paths, results))
+    return dict(zip(paths, results, strict=False))

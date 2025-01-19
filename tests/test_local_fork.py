@@ -1,13 +1,13 @@
-"""
-Tests for the local fork.
-"""
-import socket
+"""Tests for the local fork."""
+
 import sys
+import socket
 
 import pytest
 import requests
 
 from auto_dev.local_fork import DockerFork
+
 
 TESTNET_RPC_URL = "https://rpc.ankr.com/eth"
 DEFAULT_FORK_BLOCK_NUMBER = 18120809

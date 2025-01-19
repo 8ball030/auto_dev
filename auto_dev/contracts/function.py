@@ -1,29 +1,22 @@
-"""
-Function class.
+"""Function class."""
 
-"""
-
+from typing import Any
 from dataclasses import dataclass
-from typing import Any, Dict
 
-from auto_dev.contracts.contract_functions import FUNCTION_TO_TEMPLATE_MAPPING, FunctionType
-from auto_dev.contracts.variable import Variable
 from auto_dev.utils import camel_to_snake
+from auto_dev.contracts.variable import Variable
+from auto_dev.contracts.contract_functions import FUNCTION_TO_TEMPLATE_MAPPING, FunctionType
 
 
 @dataclass
 class Function:
-    """
-    A function of a contract.
-    """
+    """A function of a contract."""
 
-    abi: Dict[str, Any]
+    abi: dict[str, Any]
     function_type: FunctionType
 
     def to_string(self):
-        """
-        Returns the function as a string.
-        """
+        """Returns the function as a string."""
         spacer = ",\n" + (" " * 8)
         returns = spacer.join([param.to_str_return() for param in self.outputs])
         args = spacer.join([param.to_str_arg() for param in self.inputs])

@@ -4,7 +4,7 @@ requires = ["poetry-core>=1.0.0", "setuptools"]
 
 [tool.poetry]
 name = "autonomy_dev"
-version = "0.2.68"
+version = "0.2.89"
 homepage = "https://github.com/8ball030/auto_dev"
 description = "A collection of tooling to enable open source development of autonomy tools"
 authors = ["8Baller <8ball030@gmail.com>"]
@@ -31,68 +31,67 @@ target-version = ["py37", "py38", "py39"]
 include = "\\.pyi?$"
 exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox\n  | \\.venv\n  | _build\n  | buck-out\n  | build\n  | dist\n)/\n"
 
-[tool.isort]
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
-line_length = 120
-skip_gitignore = true
-
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
-open-autonomy = "==0.15.2"
-open-aea-test-autonomy = "==0.15.2"
-open-aea-ledger-ethereum = "==1.55.0"
-open-aea-ledger-solana= "==1.55.0"
-open-aea-ledger-cosmos = "==1.55.0"
-open-aea-cli-ipfs = "==1.55.0"
+open-autonomy = "==0.18.4"
+open-aea = "==1.60.0"
+open-aea-test-autonomy = "==0.18.4"
+open-aea-ledger-ethereum = "==1.60.0"
+open-aea-ledger-solana = "==1.60.0"
+open-aea-ledger-cosmos = "==1.60.0"
+open-aea-cli-ipfs = "==1.60.0"
+web3 = ">=6.0.0,<7.0.0"
 ipfshttpclient = "==0.8.0a2"
 web3 = "<7,>=6.0.0"
 typing_extensions = ">=3.10.0.2"
-protobuf = "<4.25.0,>=4.21.6"
-hypothesis = "==6.21.6"
+protobuf = ">=3.19.1,<4.25.0"
+hypothesis = "==6.122.3"
 toml = "==0.10.2"
 tomte = {version = "==0.2.17", extras = ["cli", "tests", "ledgers", "black"]}
 
 py-multibase = "==1.0.3"
 py-multicodec = "==0.2.1"
 py-eth-sig-utils = "*"
-grpcio = "==1.65.1"
+grpcio = "==1.69.0"
 asn1crypto = "<1.5.0,>=1.4.0"
 
 eth-utils = "==2.3.1"
 eth-abi = "==5.1.0"
 pycryptodome = "==3.20.0"
 
-autoflake8 = "^0.4.1"
 rich-click = "^1.8.2"
 tbump = "^6.11.0"
 requests = "2.28.1"
 pytest-xdist = "^3.6.1"
+ruff = "^0.5.7"
+pydantic = "^2.8.2"
+isort = "^5.13.2"
+openapi-spec-validator = "0.2.8"
 
+mkdocstrings = {extras = ["python"], version = "^0.25.2"}
 [tool.poetry.dev-dependencies]
 responses = "^0.23.1"
-mkdocs = "^1.3.1"
-mkdocs-include-markdown-plugin = "^3.6.1"
-mkdocs-material = "^8.4.0"
-mkdocs-material-extensions = "^1.0.3"
-mkdocstrings-python = "^0.10.0"
+mkdocs = "^1.6.0"
+mkdocs-include-markdown-plugin = "^7.0.0"
+mkdocs-mermaid2-plugin = "^1.1.1"
+mkdocs-material = "^9.5.47"
+mkdocstrings-python = "^1.10.7"
 twine = "^5.1.1"
 mkdocs-autorefs = "^1.0.1"
 
 [tool.poetry.extras]
 all = [
   "pytest",
-  "tbump",
-  "black",
-  "isort",
-  "mypy",
-  "pylama",
-  "pylint",
-  "autoflake8",
   "pytest-cov",
+  "tbump",
+  "ruff",
+  "isort",
+  "pydantic",
+  "open-autonomy",
+  "open-aea",
+  "open-aea-ledger-ethereum",
+  "open-aea-ledger-solana",
+  "open-aea-ledger-cosmos",
 ]
 dev = ["tox", "pre-commit", "virtualenv", "pip", "twine", "toml", "tbump"]
 doc = [
@@ -106,8 +105,3 @@ doc = [
 
 [tool.poetry.scripts]
 adev = "auto_dev.cli:cli"
-
-[tool.poetry.dependencies.pylama]
-extras = ["all"]
-version = "^8.4.1"
-

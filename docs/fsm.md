@@ -10,10 +10,63 @@ We start with a simple fsm;
 cat auto_dev/data/fsm/fsm_specification.yaml
 ```
 
+Output:
+```yaml
+alphabet_in:
+- DONE
+- NO_MAJORITY
+- TIMEOUT
+default_start_state: FirstRound
+final_states:
+- ErrorRound
+- FinalRound
+label: DummyAbciApp
+start_states:
+- FirstRound
+states:
+- FirstRound
+- FinalRound
+- ErrorRound
+transition_func:
+  (FirstRound, DONE): FinalRound
+  (FirstRound, NO_MAJORITY): ErrorRound
+  (FirstRound, TIMEOUT): ErrorRound
+```
+
+We can then convert this to a mermaid diagram using the adev tool.
+
+```bash
+adev fsm from-file auto_dev/data/fsm/fsm_specification.yaml --output mermaid DemoAbciApp
+```
+
+Output:
+```txt
+graph TD
+  FirstRound
+  FirstRound
+  FinalRound
+  ErrorRound
+  FirstRound -->|DONE| FinalRound
+  FirstRound -->|NO_MAJORITY| ErrorRound
+  FirstRound -->|TIMEOUT| ErrorRound
+```
+which can be rendered as a mermaid diagram as so;
+
+```mermaid
+graph TD
+  FirstRound
+  FirstRound
+  FinalRound
+  ErrorRound
+  FirstRound -->|DONE| FinalRound
+  FirstRound -->|NO_MAJORITY| ErrorRound
+  FirstRound -->|TIMEOUT| ErrorRound
+```
+
 We now scaffold the agent.
 
 ```bash
-aea create new_agent
+adev create --no-clean-up -t eightballer/base author/new_agent
 ```
 We now have a new agent.
 

@@ -1,6 +1,8 @@
 """Template for the tests for the connection scaffolder."""
+# ruff: noqa: E501
 
 from collections import namedtuple
+
 
 HEADER = """
 # -*- coding: utf-8 -*-
@@ -154,6 +156,6 @@ class Test{name_camelcase}Connection():
 """
 
 TestConnectionTemplate = namedtuple(
-    'TestConnectionTemplate', ['HEADER', 'DOCSTRING', 'IMPORTS', 'HELPERS', 'DIALOGUES', 'CONNECTION']
+    "TestConnectionTemplate", ["HEADER", "DOCSTRING", "IMPORTS", "HELPERS", "DIALOGUES", "CONNECTION"]
 )
 TEST_CONNECTION_TEMPLATE = TestConnectionTemplate(HEADER, DOCSTRING, IMPORTS, HELPERS, DIALOGUES, CONNECTION)

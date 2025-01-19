@@ -1,17 +1,19 @@
-"""
-Implement scaffolding tooling
-"""
+"""Implement scaffolding tooling."""
 
+import difflib
 from copy import deepcopy
 from pathlib import Path
-from typing import List, Tuple
 
-import rich_click as click
 import yaml
+import rich_click as click
+from aea.configurations.base import PublicId
 
 from auto_dev.base import build_cli
-from auto_dev.constants import DEFAULT_ENCODING, FileType
-from auto_dev.utils import get_logger, write_to_file
+from auto_dev.enums import FileType
+from auto_dev.utils import get_logger, write_to_file, read_from_file
+from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
+
 
 logger = get_logger()
 
@@ -167,16 +169,17 @@ AEA_CONFIG = "aea-config.yaml"
 
 
 class BaseScaffolder:
-    """BaseScaffolder"""
+    """BaseScaffolder."""
 
-    def load(self):
-        """Load"""
+    def load(self) -> None:
+        """Load."""
         if not Path(AEA_CONFIG).exists():
-            raise FileNotFoundError(f"File {AEA_CONFIG} not found")
+            msg = f"File {AEA_CONFIG} not found"
+            raise FileNotFoundError(msg)
         content = Path(AEA_CONFIG).read_text(encoding=DEFAULT_ENCODING)
         self.aea_config = list(yaml.safe_load_all(content))
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Init scaffolder."""
         self.logger = get_logger()
         self.load()
@@ -189,12 +192,14 @@ class LoggingScaffolder(BaseScaffolder):
         """Scaffold logging."""
         self.logger.info(f"Generating logging config with handlers: {handlers}")
         if not handlers:
-            raise ValueError("No handlers provided")
+            msg = "No handlers provided"
+            raise ValueError(msg)
         if handlers == ["all"]:
             handlers = HANDLERS
         for handler in handlers:
             if handler not in HANDLERS:
-                raise ValueError(f"Handler '{handler}' not found")
+                msg = f"Handler '{handler}' not found"
+                raise ValueError(msg)
             handlers = {handler: HANDLERS[handler] for handler in handlers}
         logging_config = deepcopy(BASE_LOGGING_CONFIG)
         logging_config["logging_config"]["handlers"] = handlers
@@ -205,13 +210,14 @@ class LoggingScaffolder(BaseScaffolder):
         """Scaffold logging."""
         path = "aea-config.yaml"
         if not Path(path).exists():
-            raise FileNotFoundError(f"File {path} not found")
+            msg = f"File {path} not found"
+            raise FileNotFoundError(msg)
 
         config = yaml.safe_load_all(Path(path).read_text(encoding=DEFAULT_ENCODING))
         if isinstance(config, dict):
             pass
         else:
-            config = list(config)[0]
+            config = next(iter(config))
         logging_config = self.generate(handlers)
         self.aea_config[0].update(logging_config)
         write_to_file(AEA_CONFIG, self.aea_config, FileType.YAML)
@@ -220,13 +226,13 @@ class LoggingScaffolder(BaseScaffolder):
 
 
 @cli.group()
-def augment():
+def augment() -> None:
     """Scaffold commands."""
 
 
 @augment.command()
 @click.argument("handlers", nargs=-1, type=click.Choice(HANDLERS.keys()), required=True)
-def logging(handlers):
+def logging(handlers) -> None:
     """Augment an aeas logging configuration."""
     logger.info(f"Augmenting logging with handlers: {handlers}")
     logging_scaffolder = LoggingScaffolder()
@@ -235,24 +241,24 @@ def logging(handlers):
 
 
 class ConnectionScaffolder(BaseScaffolder):
-    """ConnectionScaffolder"""
+    """ConnectionScaffolder."""
 
-    def generate(self, connections: list) -> List[Tuple[str, str]]:
+    def generate(self, connections: list) -> list[tuple[str, str]]:
         """Generate connections."""
         self.logger.info(f"Generating connection config for: {connections}")
         if not connections:
-            raise ValueError("No connections provided")
+            msg = "No connections provided"
+            raise ValueError(msg)
         if connections == ["all"]:
             connections = CONNECTIONS
         for connection in connections:
             if connection not in CONNECTIONS:
-                raise ValueError(f"Connection '{connection}' not found")
-        connections = [CONNECTIONS[c] for c in connections]
-        return connections
+                msg = f"Connection '{connection}' not found"
+                raise ValueError(msg)
+        return [CONNECTIONS[c] for c in connections]
 
     def scaffold(self, connections: list) -> None:
         """Scaffold connection."""
-
         connections = self.generate(connections)
         for connection, config in connections:
             self.aea_config[0]["connections"].append(connection)
@@ -265,12 +271,80 @@ class ConnectionScaffolder(BaseScaffolder):
 
 @augment.command()
 @click.argument("connections", nargs=-1, type=click.Choice(CONNECTIONS), required=True)
-def connection(connections):
+def connection(connections) -> None:
     """Augment an AEA configuration with connections."""
     logger.info(f"Augmenting agent connections: {connections}")
     connection_scaffolder = ConnectionScaffolder()
     connection_scaffolder.scaffold(connections)
     logger.info("Connections scaffolded.")
+
+
+@augment.command()
+@click.argument("component_type", type=click.Choice(["openapi3"]))
+@click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
+@click.option("--use-daos", is_flag=True, default=False, help="Augment OpenAPI3 handlers with DAOs")
+@click.pass_context
+def customs(ctx, component_type, auto_confirm, use_daos):
+    """Augment a customs component with OpenAPI3 handlers."""
+    logger = ctx.obj["LOGGER"]
+    logger.info(f"Augmenting {component_type} component")
+    verbose = ctx.obj["VERBOSE"]
+
+    if not Path("component.yaml").exists():
+        logger.error("component.yaml not found in the current directory.")
+        return
+
+    customs_config = read_from_file(Path("component.yaml"), FileType.YAML)
+    if customs_config is None:
+        logger.error("Error: customs_config is None. Unable to process.")
+        return
+
+    api_spec_path = customs_config.get("api_spec")
+    if not api_spec_path:
+        logger.error("api_spec key not found in component.yaml")
+        return
+
+    component_author = customs_config.get("author")
+    component_name = customs_config.get("name")
+    public_id = PublicId(component_author, component_name.split(":")[0])
+
+    scaffolder = (
+        HandlerScaffoldBuilder()
+        .create_scaffolder(
+            api_spec_path, public_id, logger, verbose, new_skill=False, auto_confirm=auto_confirm, use_daos=use_daos
+        )
+        .build()
+    )
+
+    handler_code = scaffolder.generate_handler()
+
+    handler_path = Path("handlers.py")
+    if handler_path.exists():
+        existing_handler_code = read_from_file(handler_path, FileType.PYTHON)
+
+        if existing_handler_code != handler_code:
+            diff = difflib.unified_diff(
+                existing_handler_code.splitlines(keepends=True),
+                handler_code.splitlines(keepends=True),
+                fromfile="existing",
+                tofile="new",
+            )
+            logger.info("Differences in handlers.py:")
+            logger.info("".join(diff))
+
+            if not auto_confirm:
+                confirm = click.confirm("Do you want to update handlers.py with these changes?")
+                if not confirm:
+                    logger.info("Exiting.")
+                    return
+
+    write_to_file(handler_path, handler_code, FileType.PYTHON)
+    logger.info(f"Handler code written to {handler_path}")
+
+    scaffolder.create_dialogues()
+    if use_daos:
+        scaffolder.create_exceptions()
+    logger.info("OpenAPI3 scaffolding completed successfully.")
 
 
 if __name__ == "__main__":

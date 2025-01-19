@@ -1,0 +1,57 @@
+{%if type_imports%}
+{% for import in type_imports %}
+from typing import {{import}}{% endfor %}
+{% endif %}
+from typing import Any, cast
+from aea.configurations.base import PublicId
+from aea.messages.base import Message
+from packages.{{author}}.protocols.{{protocol_name}}.message import (
+    {{class_name}}Message,
+)
+from packages.{{author}}.protocols.{{protocol_name}}.dialogues import (
+    {{class_name}}Dialogues,
+)
+
+from aea.skills.base import Handler, Message
+
+
+class {{class_name}}Handler(Handler):
+    """This class scaffolds a handler."""
+
+    SUPPORTED_PROTOCOL = {{class_name}}Message.protocol_id
+
+    def setup(self) -> None:
+        """Implement the setup."""
+        self.context.logger.info("Setting up {{class_name}}Handler.")
+
+    def handle(self, message: Message) -> None:
+        """
+        Implement the reaction to an envelope.
+
+        :param message: the message
+        """
+
+        dialogues = cast({{class_name}}Dialogues, self.context.{{protocol_name}}_dialogues)
+        {% for act in speech_acts%}
+        if message.performative == {{class_name}}Message.Performative.{{act.upper()}}:
+            self._handle_{{act}}(message)
+        {% endfor %}
+        else:
+            self.context.logger.warning(
+                "Cannot handle message of performative {}".format(message.performative)
+            )
+
+    def teardown(self) -> None:
+        """Implement the handler teardown."""
+        self.context.logger.info("Tearing down {{class_name}}Handler.")
+
+    {% for act in speech_acts%}
+    def _handle_{{act}}(self, message: {{class_name}}Message) -> None:
+        """
+        Implement the reaction to the {{act}} message.
+
+        :param message: the {{act}} message
+        """
+        self.context.logger.info("handling {{act}}. message={}".format(message))
+    {% endfor %}
+

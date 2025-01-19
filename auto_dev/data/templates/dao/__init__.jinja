@@ -1,0 +1,9 @@
+"""This module contains the DAOs."""
+
+from .base_dao import BaseDAO
+{% for model_name, file_name in model_file_pairs %}
+from .{{ file_name|lower }}_dao import {{ model_name }}DAO
+{% endfor %}
+
+
+__all__ = ["BaseDAO", {% for model_name, file_name in model_file_pairs %}"{{ model_name }}DAO"{% if not loop.last %}, {% endif %}{% endfor %}]
