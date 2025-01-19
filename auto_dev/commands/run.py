@@ -17,10 +17,9 @@ import rich_click as click
 from docker.errors import NotFound
 from aea.skills.base import PublicId
 from aea.configurations.base import PackageType
-from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 
 from auto_dev.base import build_cli
-from auto_dev.utils import load_aea_config, map_os_to_env_vars
+from auto_dev.utils import map_os_to_env_vars, load_autonolas_yaml
 from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
@@ -150,7 +149,7 @@ class AgentRunner:
     def manage_keys(self) -> None:
         """Manage keys based on the agent's default ledger configuration."""
         try:
-            config = load_aea_config()[0]
+            config = load_autonolas_yaml(PackageType.AGENT)[0]
             default_ledger = config["default_ledger"]
 
             self.logger.info(f"Using default ledger: {default_ledger}")
