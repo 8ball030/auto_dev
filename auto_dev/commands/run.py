@@ -10,7 +10,6 @@ from copy import deepcopy
 from typing import Any
 from pathlib import Path
 from textwrap import dedent
-from contextlib import chdir
 from dataclasses import dataclass
 
 import docker
