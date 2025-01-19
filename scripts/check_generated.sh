@@ -4,7 +4,7 @@ set -euo pipefail
 
 echo "Solving dependencies"
 
-poetry install && poetry update
+poetry install || poetry lock --no-update
 
 echo 'Generating lock files for template repos'
 echo 'doing autonomy'

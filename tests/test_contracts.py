@@ -2,18 +2,20 @@
 
 import json
 import shutil
+from enum import Enum
 from pathlib import Path
 
 import pytest
 import responses
 
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.constants import DEFAULT_ENCODING, Network
+from auto_dev.exceptions import APIError, UnsupportedSolidityVersion
 from auto_dev.commands.scaffold import BlockExplorer, ContractScaffolder
 
 
 KNOWN_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # checksum address
 BLOCK_EXPLORER_URL = "https://abidata.net"
-NETWORK = "base"
+NETWORK = Network.BASE
 
 DUMMY_ABI = json.loads((Path() / "tests" / "data" / "dummy_abi.json").read_text(DEFAULT_ENCODING))
 
@@ -27,7 +29,7 @@ def block_explorer():
 @responses.activate
 def test_block_explorer(block_explorer):
     """Test the block explorer."""
-    expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK}"
+    expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}"
     print(f"Mocked URL: {expected_url}")
 
     responses.add(
@@ -44,12 +46,12 @@ def test_block_explorer(block_explorer):
 @responses.activate
 def test_block_explorer_error_handling(block_explorer):
     """Test the block explorer handles errors gracefully."""
-    expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK}"
+    expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}"
 
     # Test case 1: API returns error
     responses.add(responses.GET, expected_url, json={"ok": False, "error": "Not found"}, status=404)
-    abi = block_explorer.get_abi(KNOWN_ADDRESS)
-    assert abi is None, "Should return None for error response"
+    with pytest.raises(APIError):
+        block_explorer.get_abi(KNOWN_ADDRESS)
 
     # Reset responses
     responses.reset()
@@ -60,8 +62,26 @@ def test_block_explorer_error_handling(block_explorer):
         expected_url,
         json={"ok": True},  # Missing ABI
     )
-    abi = block_explorer.get_abi(KNOWN_ADDRESS)
-    assert abi is None, "Should return None for invalid response"
+    with pytest.raises(ValueError):
+        block_explorer.get_abi(KNOWN_ADDRESS)
+
+
+@responses.activate
+def test_block_explorer_invalid_network():
+    """Test the block explorer with an invalid network."""
+    with pytest.raises(TypeError) as exc_info:
+        BlockExplorer(BLOCK_EXPLORER_URL, network="invalid")
+    assert "network must be an instance of Network enum" in str(exc_info.value)
+
+
+@responses.activate
+def test_block_explorer_non_enum_network():
+    """Test the block explorer with a network that's not in the Network enum."""
+    non_enum_network = "unknown_network"
+
+    with pytest.raises(TypeError) as exc_info:
+        BlockExplorer(BLOCK_EXPLORER_URL, network=non_enum_network)
+    assert "network must be an instance of Network enum" in str(exc_info.value)
 
 
 # we now test the scaffolder
@@ -76,7 +96,7 @@ def test_scaffolder_generate(scaffolder):
     """Test the scaffolder."""
     responses.add(
         responses.GET,
-        f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK}",
+        f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}",
         json={"ok": True, "abi": DUMMY_ABI},
     )
     new_contract = scaffolder.from_block_explorer(KNOWN_ADDRESS, "new_contract")
@@ -93,7 +113,7 @@ def test_scaffolder_generate_openaea_contract(scaffolder, test_filesystem):
     del test_filesystem
     responses.add(
         responses.GET,
-        f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK}",
+        f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}",
         json={"ok": True, "abi": DUMMY_ABI},
     )
     new_contract = scaffolder.from_block_explorer(KNOWN_ADDRESS, "new_contract")

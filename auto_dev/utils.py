@@ -24,7 +24,8 @@ from rich.logging import RichHandler
 from aea.cli.utils.config import get_registry_path_from_cli_config
 from aea.cli.utils.context import Context
 from openapi_spec_validator import validate_spec
-from aea.configurations.base import AgentConfig
+from aea.configurations.base import AgentConfig, _get_default_configuration_file_name_from_type  # noqa
+from aea.configurations.data_types import PackageType
 from openapi_spec_validator.exceptions import OpenAPIValidationError
 
 from auto_dev.enums import FileType, FileOperation
@@ -284,11 +285,26 @@ def remove_suffix(text: str, suffix: str) -> str:
     return text[: -len(suffix)] if suffix and text.endswith(suffix) else text
 
 
-def load_aea_config():
-    """Load the aea-config.yaml file."""
-    aea_config = Path("aea-config.yaml")
-    if not aea_config.exists():
-        msg = f"Could not find {aea_config}"
+def load_autonolas_yaml(package_type: PackageType, directory: Optional[Union[str, Path]] = None) -> list:
+    """Load a component's yaml configuration file.
+
+    Args:
+        package_type: Type of package (agent, skill, contract, protocol)
+        directory: Optional directory path where the config file is located
+
+    Returns:
+        List of yaml documents from the file
+
+    Raises:
+        FileNotFoundError: If the config file doesn't exist
+        ValueError: If invalid package type provided
+    """
+
+    config_file = _get_default_configuration_file_name_from_type(package_type)
+    config_path = Path(directory or ".") / config_file
+
+    if not config_path.exists():
+        msg = f"Could not find {config_path}, are you in the correct directory?"
         raise FileNotFoundError(msg)
 
     # Notes, we have a bit of an issue here.
@@ -296,19 +312,18 @@ def load_aea_config():
     # We have to load all the documents in the yaml file, however, later on, we run into issues
     # with the agent config loader not being able to load the yaml file.
     # I propose we we raise an issue to address ALL instances of agent loading
-    agent_config_yaml = list(yaml.safe_load_all(aea_config.read_text(encoding=DEFAULT_ENCODING)))
-    return agent_config_yaml
+    config_yaml = list(yaml.safe_load_all(config_path.read_text(encoding=DEFAULT_ENCODING)))
+    return config_yaml
 
 
 def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[click.Context, Any, Any], Any]:
     """Load aea Context and AgentConfig if aea-config.yaml exists."""
 
     def wrapper(ctx: click.Context, *args, **kwargs):
-        agent_config_json = load_aea_config()[0]
+        agent_config_json = load_autonolas_yaml(PackageType.AGENT)[0]
         registry_path = get_registry_path_from_cli_config()
         ctx.aea_ctx = Context(cwd=".", verbosity="INFO", registry_path=registry_path)
         ctx.aea_ctx.agent_config = AgentConfig.from_json(agent_config_json)
-        # we need a way to ensure we are also loading the overrides...
         return func(ctx, *args, **kwargs)
 
     wrapper.__name__ = func.__name__

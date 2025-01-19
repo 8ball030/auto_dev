@@ -79,24 +79,38 @@ adev test -p packages/eightballer/protocols/balances
 Generate smart contract components from deployed contracts:
 
 ```bash
+
 # Basic usage
-adev scaffold contract <NAME> --address <CONTRACT_ADDRESS> --network <NETWORK_NAME>
+
+# Create a new repository
+adev repo scaffold fun_new_hack
+
+# Navigate to the repository
+cd fun_new_hack
+
+# Create an agent using a template
+adev create author/cool_agent --template eightballer/frontend_agent --no-clean-up
+
+cd cool_agent
+
+adev scaffold contract author/some_contract --address <CONTRACT_ADDRESS> --network <NETWORK_NAME>
 
 # Example: Scaffold USDC contract from Base network
-adev scaffold contract usdc --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 --network base
+adev scaffold contract author/usdc --address 0x833589fcd6edb6e08f4c7c
+32d4f71b54bda02913 --network base
 
 # Advanced usage with local ABI
-adev scaffold contract my_contract \
-    --address 0xContract_Address \
+adev scaffold contract author/my_contract \
     --from-abi ./path/to/abi.json \
-    --network ethereum-mainnet
 
-# Specify specific functions to include
-adev scaffold contract my_contract \
-    --address 0xContract_Address \
+
+
+# Specify specific functions to include from a file (TODO)
+adev scaffold contract author/my_contract \
+    --address  0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 \
     --read-functions "balanceOf,totalSupply" \
     --write-functions "transfer,approve" \
-    --network polygon-mainnet
+    --network base
 ```
 
 ## Release Process

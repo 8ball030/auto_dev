@@ -8,10 +8,12 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
+import json
 from typing import Optional
 from pathlib import Path
 
 import yaml
+import tomli
 import rich_click as click
 from web3 import Web3
 from jinja2 import Environment, FileSystemLoader
@@ -21,7 +23,7 @@ from aea.configurations.data_types import PublicId
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
 from auto_dev.utils import load_aea_ctx, remove_suffix, camel_to_snake, read_from_file
-from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
+from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER, Network
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.handlers.base import HandlerTypes, HandlerScaffolder
 from auto_dev.dao.scaffolder import DAOScaffolder
@@ -51,78 +53,130 @@ def validate_address(address: str, logger, contract_name: str = None) -> Optiona
     try:
         return Web3.to_checksum_address(str(address))
     except ValueError as e:
-        name_info = f" for {contract_name}" if contract_name else ""
-        logger.error(f"Invalid address format{name_info}: {e}")
+        name_suffix = f" for {contract_name}" if contract_name else ""
+        logger.error(f"Invalid address format{name_suffix}: {e}")
         return None
 
 
+def _process_from_block_explorer(validated_address, name, logger, scaffolder):
+    """Process contracts from a block explorer."""
+    logger.info("Getting ABI from abidata.net")
+    new_contract = scaffolder.from_block_explorer(validated_address, name)
+    logger.info(f"New contract scaffolded from block explorer at {new_contract.path}")
+    return new_contract
+
+
+def _process_from_abi(from_abi: str, validated_address: str, name: str, logger, scaffolder) -> Optional[object]:
+    """Process contract from ABI file."""
+    logger.info(f"Using ABI file: {from_abi}")
+    try:
+        new_contract = scaffolder.from_abi(from_abi, validated_address, name)
+        logger.info(f"New contract scaffolded from ABI file at {new_contract.path}")
+        return new_contract
+    except Exception as e:
+        logger.error(f"Failed to process ABI file: {str(e)}")
+        raise ValueError(f"Error processing ABI file: {str(e)}") from e
+
+
+def _process_from_file(ctx, yaml_dict, network, read_functions, write_functions, logger):
+    """Process contracts from a file."""
+    for contract_name, contract_address in yaml_dict["contracts"].items():
+        validated_address = validate_address(contract_address, logger, contract_name)
+        if validated_address is None:
+            continue
+        ctx.invoke(
+            contract,
+            address=validated_address,
+            name=camel_to_snake(contract_name),
+            network=yaml_dict.get("network", network),
+            read_functions=read_functions,
+            write_functions=write_functions,
+        )
+
+
 @scaffold.command()
-@click.argument("name", default=None, required=False)
+@click.argument("public_id", type=PublicId.from_str, default=None, required=False)
 @click.option("--address", default=DEFAULT_NULL_ADDRESS, required=False, help="The address of the contract.")
 @click.option("--from-file", default=None, help="Ingest a file containing a list of addresses and names.")
 @click.option("--from-abi", default=None, help="Ingest an ABI file to scaffold a contract.")
-@click.option("--network", default="ethereum", help="The network to fetch the ABI from (e.g., ethereum, polygon)")
+@click.option(
+    "--network",
+    type=click.Choice([network.value for network in Network], case_sensitive=False),
+    default=Network.ETHEREUM.value,
+    help="The network to fetch the ABI from (e.g., ethereum, polygon)",
+)
 @click.option("--read-functions", default=None, help="Comma separated list of read functions to scaffold.")
 @click.option("--write-functions", default=None, help="Comma separated list of write functions to scaffold.")
 @click.pass_context
-def contract(  # pylint: disable=R0914
-    ctx, address, name, network, read_functions, write_functions, from_abi, from_file
-) -> None:
-    """Scaffold a contract."""
-    logger = ctx.obj["LOGGER"]
-    if address is None and name is None and from_file is None:
-        logger.error("Must provide either an address and name or a file containing a list of addresses and names.")
-        return
+def contract(ctx, public_id, address, network, read_functions, write_functions, from_abi, from_file):
+    """Scaffold a contract.
 
+    :param public_id: the public_id of the contract in the open-autonomy format i.e. `author/contract_name`
+    """
+    logger = ctx.obj["LOGGER"]
+
+    # Validate inputs
+    if address is None and public_id is None and from_file is None:
+        msg = "Must provide either an address and public_id or a file containing a list of addresses and names."
+        raise ValueError(msg)
+
+    # Process public_id
+    if public_id is not None:
+        processed_name = public_id.name if public_id else None
+        author = public_id.author if public_id else None
+    else:
+        processed_name = None
+        author = None
+
+    # Create the scaffolder before doing any processing
+    block_explorer = BlockExplorer(f"https://abidata.net", network=Network(network))
+    scaffolder = ContractScaffolder(block_explorer=block_explorer, author=author)
+
+    # Process from file if specified
     if from_file is not None:
         with open(from_file, encoding=DEFAULT_ENCODING) as file_pointer:
             yaml_dict = yaml.safe_load(file_pointer)
-        for contract_name, contract_address in yaml_dict["contracts"].items():
-            validated_address = validate_address(contract_address, logger, contract_name)
-            if validated_address is None:
-                continue
-            ctx.invoke(
-                contract,
-                address=validated_address,
-                name=camel_to_snake(contract_name),
-                network=yaml_dict.get("network", network),
-                read_functions=read_functions,
-                write_functions=write_functions,
-            )
+        _process_from_file(ctx, yaml_dict, network, read_functions, write_functions, logger)
         return
 
+    # Validate address
     validated_address = validate_address(address, logger)
     if validated_address is None:
         return
 
+    # Process contract
+    new_contract = None
     if from_abi is not None:
-        logger.info(f"Using ABI file: {from_abi}")
-        scaffolder = ContractScaffolder(block_explorer=None)
-        new_contract = scaffolder.from_abi(from_abi, validated_address, name)
-        logger.info(f"New contract scaffolded at {new_contract.path}")
-
+        # note, if this fails, an error is raised
+        new_contract = _process_from_abi(from_abi, validated_address, processed_name, logger, scaffolder)
+        logger.info(f"New contract scaffolded from ABI file at {new_contract.path}")
     else:
-        logger.info(f"Fetching ABI for contract at address: {validated_address} on network: {network}")
-        block_explorer = BlockExplorer(f"https://abidata.net", network=network)
-        scaffolder = ContractScaffolder(block_explorer=block_explorer)
-        logger.info("Getting ABI from abidata.net")
-        new_contract = scaffolder.from_block_explorer(validated_address, name)
+        new_contract = _process_from_block_explorer(validated_address, processed_name, logger, scaffolder)
+        logger.info(f"New contract scaffolded from block explorer at {new_contract.path}")
 
+    if new_contract is None:
+        logger.error("Failed to scaffold contract")
+        raise ValueError("Failed to scaffold contract")
+    # Generate and process contract
     logger.info("Generating openaea contract with aea scaffolder.")
     contract_path = scaffolder.generate_openaea_contract(new_contract)
     logger.info("Writing abi to file, Updating contract.yaml with build path. Parsing functions.")
     new_contract.process()
+
+    _log_contract_info(new_contract, contract_path, logger)
+
+
+def _log_contract_info(contract, contract_path, logger):
+    """Log contract information."""
     logger.info("Read Functions extracted:")
-    for function in new_contract.read_functions:
+    for function in contract.read_functions:
         logger.info(f"    {function.name}")
     logger.info("Write Functions extracted:")
-    for function in new_contract.write_functions:
+    for function in contract.write_functions:
         logger.info(f"    {function.name}")
-
     logger.info("Events extracted:")
-    for event in new_contract.events:
+    for event in contract.events:
         logger.info(f"    {event.name}")
-
     logger.info(f"New contract scaffolded at {contract_path}")
 
 
@@ -389,7 +443,8 @@ def dao(ctx, auto_confirm) -> None:
         scaffolder = DAOScaffolder(logger, verbose, auto_confirm, public_id)
         scaffolder.scaffold()
     except Exception as e:
-        logger.exception(f"Error during DAO scaffolding and test generation: {e}")
+        logger.error(f"Failed to scaffold DAO: {str(e)}")
+        raise ValueError("Error during DAO scaffolding and test generation") from e
 
 
 if __name__ == "__main__":

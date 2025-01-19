@@ -408,7 +408,7 @@ open_aea_repo = GitDependency(
 
 auto_dev_repo = GitDependency(
     name="autonomy-dev",
-    version="0.2.87",
+    version="0.2.89",
     location=DependencyLocation.REMOTE,
     url="https://api.github.com/repos/8ball030/auto_dev",
     extras=["all"],
@@ -554,7 +554,7 @@ def get_update_command(poetry_dependencies: Dependency) -> str:
             )
             if dependency.extras is not None:
                 extras = ",".join(dependency.extras)
-                cmd += f"{dependency.name}[{extras}]@=={expected_version} "
+                cmd += f"{dependency.name}[{extras}]@{expected_version} "
             else:
                 cmd += f"{dependency.name}@{expected_version} "
             if dependency.plugins:

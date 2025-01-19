@@ -1,7 +1,7 @@
 """Constants for the auto_dev package."""
 
-import platform
 import os
+import platform
 from enum import Enum
 from pathlib import Path
 
@@ -120,8 +120,10 @@ class CheckResult(Enum):
 
 class SupportedOS(Enum):
     """Supported operating systems."""
+
     LINUX = "Linux"
-    DARWIN = "Darwin" 
+    DARWIN = "Darwin"
+
 
 OS_ENV_MAP = {
     SupportedOS.LINUX.value: {
@@ -131,5 +133,31 @@ OS_ENV_MAP = {
     SupportedOS.DARWIN.value: {
         "NETWORK_MODE": "bridge",
         "HOST_NAME": "host.docker.internal:26658",
-    }
+    },
 }
+
+
+class Network(Enum):
+    """Supported blockchain networks."""
+
+    ETHEREUM = "ethereum"
+    GOERLI = "goerli"
+    SEPOLIA = "sepolia"
+    AVALANCHE = "avalanche"
+    AVALANCHE_FUJI = "avalancheFuji"
+    ARBITRUM = "arbitrum"
+    ARBITRUM_GOERLI = "arbitrumGoerli"
+    ARBITRUM_NOVA = "arbitrumNova"
+    BASE = "base"
+    BASE_GOERLI = "baseGoerli"
+    BSC = "bsc"
+    BSC_TESTNET = "bscTestnet"
+    FANTOM = "fantom"
+    FANTOM_TESTNET = "fantomTestnet"
+    POLYGON = "polygon"
+    POLYGON_MUMBAI = "polygonMumbai"
+    POLYGON_ZKEVM = "polygonZkEvm"
+    POLYGON_ZKEVM_TESTNET = "polygonZkEvmTestnet"
+    OPTIMISM = "optimism"
+    OPTIMISM_GOERLI = "optimismGoerli"
+    GNOSIS = "gnosis"

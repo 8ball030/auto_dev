@@ -30,6 +30,8 @@ class ContractScaffolder:
     def from_block_explorer(self, address: str, name: str):
         """Scaffold a contract from a block explorer."""
         abi = self.block_explorer.get_abi(address)
+        if abi is None:
+            raise ValueError(f"Failed to fetch ABI for contract at address {address}")
         return Contract(abi=abi, name=name, address=address, author=self.author)
 
     def generate_openaea_contract(self, contract: Contract):

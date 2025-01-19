@@ -7,7 +7,12 @@ from dataclasses import dataclass
 import requests
 from web3 import Web3
 
-from auto_dev.constants import DEFAULT_TIMEOUT
+from auto_dev.utils import get_logger
+from auto_dev.constants import DEFAULT_TIMEOUT, Network
+from auto_dev.exceptions import APIError
+
+
+logger = get_logger()
 
 
 @dataclass
@@ -15,7 +20,15 @@ class BlockExplorer:
     """Class to interact with the blockchain explorer."""
 
     url: str
-    network: str = "ethereum"
+    network: Network = Network.ETHEREUM
+
+    # Note: this is used to pass tests
+    def __init__(self, url: str, network: Network) -> None:
+        """Initialize the block explorer."""
+        self.url = url
+        if not isinstance(network, Network):
+            raise TypeError("network must be an instance of Network enum")
+        self.network = network
 
     def get_abi(self, address: str) -> Optional[Dict]:
         """
@@ -32,27 +45,28 @@ class BlockExplorer:
             ValueError: If the response is invalid or missing ABI data
         """
         try:
-            url = f"{self.url}/{address}?network={self.network}"
-            response = requests.get(url, timeout=DEFAULT_TIMEOUT)
+            url = f"{self.url}/{address}"
+            params = {}
+            if self.network != Network.ETHEREUM:
+                if not isinstance(self.network, Network):
+                    raise ValueError(f"Invalid network: {self.network}")
+                params["network"] = self.network.value
+
+            response = requests.get(url, params=params, timeout=DEFAULT_TIMEOUT)
 
             if not response.ok:
-                print(f"API request failed with status {response.status_code}: {response.text}")
-                return None
+                logger.error(f"API request failed with status {response.status_code}: {response.text}")
+                raise APIError(f"API request failed with status {response.status_code}: {response.text}")
 
             data = response.json()
-            if not data.get("ok"):
-                print(f"API returned error response: {data}")
-                return None
+            if not data.get("ok", False):
+                raise APIError(f"API not ok in {self.network} response: {data}")
 
             if "abi" not in data:
-                print(f"No ABI found in response: {data}")
-                return None
+                raise ValueError(f"No ABI found in {self.network} response: {data}")
 
             return data["abi"]
 
         except requests.exceptions.RequestException as e:
-            print(f"Request failed: {str(e)}")
-            return None
-        except (json.JSONDecodeError, KeyError) as e:
-            print(f"Failed to parse response: {str(e)}")
-            return None
+            logger.error(f"Request failed in {self.network}: {str(e)}")
+            raise APIError(f"Request failed in {self.network}: {str(e)}") from e
