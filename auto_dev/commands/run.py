@@ -27,15 +27,6 @@ from auto_dev.cli_executor import CommandExecutor
 
 cli = build_cli()
 
-
-class SupportedLedger(Enum):
-    """Supported ledger types."""
-
-    ETHEREUM = "ethereum"
-    COSMOS = "cosmos"
-    SOLANA = "solana"
-
-
 @dataclass
 class AgentRunner:
     """Class to manage running an agent."""
