@@ -37,21 +37,30 @@ class AgentRunner:
     verbose: bool
     force: bool
     logger: Any
-    fetch: bool = False
+    no_fetch: bool = False
 
     def run(self) -> None:
         """Run the agent."""
-        agent_path = "." if not self.fetch else self.agent_name.name
-        if self.fetch:
+
+        if self.no_fetch:
+            self.logger.info(f"Looking for local agent package in directory {self.agent_name.name}...")
+            if not Path(self.agent_name.name).exists():
+                self.logger.error(f"Local agent package {self.agent_name.name} does not exist.")
+                sys.exit(1)
+            self.logger.info(f"Found local agent package at {self.agent_name.name}")
+            self.logger.info(f"Changing to directory: {self.agent_name.name}")
+            self.change_directory(self.agent_name.name)
+        else:
+            self.logger.info(f"Fetching agent {self.agent_name} from the local package registry...")
+            if self.check_agent_exists():
+                sys.exit(1)
             self.fetch_agent()
-        if not self.check_agent_exists(locally=True, in_packages=False):
-            self.logger.error(f"Local agent package {self.agent_name.name} does not exist.")
-            sys.exit(1)
-        self.logger.info(f"Changing to directory: {agent_path}")
-        with change_dir(agent_path):
-            self.check_tendermint()
-            self.setup_agent()
-            self.execute_agent()
+            self.logger.info(f"Changing to directory: {self.agent_name.name}")
+            self.change_directory(self.agent_name.name)
+
+        self.check_tendermint()
+        self.setup_agent()
+        self.execute_agent()
         self.stop_tendermint()
 
     def check_agent_exists(self, locally=False, in_packages=True) -> bool:
@@ -80,10 +89,6 @@ class AgentRunner:
             self.logger.info(f"Looking for Tendermint container: {container_name}")
             res = docker_engine.containers.get(container_name)
             self.logger.info(f"Found Tendermint container with status: {res.status}")
-            if res.status == "exited":
-                res.remove()
-                time.sleep(0.2)
-                self.check_tendermint(retries + 1)
 
         except (subprocess.CalledProcessError, RuntimeError, NotFound) as e:
             self.logger.info(f"Tendermint container not found or error: {e}")
@@ -103,9 +108,18 @@ class AgentRunner:
 
         self.logger.info("Tendermint is running and healthy ✅")
 
-    def fetch_agent(self) -> None:
-        """Fetch the agent from registry if needed."""
-        self.logger.info(f"Fetching agent {self.agent_name} from the local package registry...")
+    def check_agent_exists(self) -> bool:
+        """Check if the agent already exists."""
+        if Path(self.agent_name.name).exists() and not self.force:
+            self.logger.error(f"Agent `{self.agent_name}` already exists. Use --force to overwrite.")
+            return True
+        if Path(self.agent_name.name).exists() and self.force:
+            self.logger.info(f"Removing existing agent `{self.agent_name}` due to --force option.")
+            self.execute_command(f"rm -rf {self.agent_name.name}")
+        return False
+
+    def fetch_agent(self) -> bool:
+        """Fetch the agent."""
 
         if self.check_agent_exists(locally=True, in_packages=False):
             if not self.force:
@@ -125,52 +139,53 @@ class AgentRunner:
             self.logger.info(f"Agent author: {self.agent_name.author}")
             self.logger.info(f"Agent name: {self.agent_name.name}")
 
-        self.logger.info("Setting up agent keys...")
-        self.manage_keys()
+        try:
+            if not self.no_fetch:
+                self.logger.info(f"Agent author: {self.agent_name.author}")
+                self.logger.info(f"Agent name: {self.agent_name.name}")
 
-        self.logger.info("Installing dependencies...")
-        self.install_dependencies()
+            self.logger.info("Setting up agent keys...")
+            self.manage_keys()
 
-        self.logger.info("Setting up certificates...")
-        self.issue_certificates()
-        self.logger.info("Agent setup complete. 🎉")
+            self.logger.info("Installing dependencies...")
+            self.install_dependencies()
 
-    def manage_keys(
-        self,
-        generate_keys: bool = True,
-    ) -> None:
-        """Manage keys based on the agent's default ledger configuration."""
-        config = load_autonolas_yaml(PackageType.AGENT)[0]
-        required_ledgers = config["required_ledgers"]
-        if not required_ledgers:
-            self.logger.error("No ledgers found in the agent configuration.")
+            self.logger.info("Setting up certificates...")
+            self.issue_certificates()
+
+            self.logger.info("Agent setup complete. 🎉")
+        except Exception as e:
+            self.logger.error(f"Failed to setup agent: {e}")
             sys.exit(1)
-        for ledger in required_ledgers:
-            self.logger.info(f"Processing ledger: {ledger}")
-            self.setup_ledger_key(ledger, generate_keys)
 
-    def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Path = None) -> None:
-        """
-        Setup the agent with the ledger key.
-        """
-        key_file = Path(f"{ledger}_private_key.txt")
-        commands_to_errors = []
-        if existing_key_file:
-            self.logger.info(f"Copying existing key file {existing_key_file} to {key_file}")
-            shutil.copy(existing_key_file, key_file)
-        if key_file.exists():
-            self.logger.error(f"Key file {key_file} already exists.")
+    def manage_keys(self) -> None:
+        """Manage Ethereum keys."""
+        self.logger.info("Checking for existing ethereum key...")
+
+        try:
+            result = subprocess.run(
+                ["aea", "-s", "remove-key", "ethereum"],
+                capture_output=True,
+                text=True,
+            )
+            if "no key registered" not in result.stderr.lower():
+                self.logger.info("Removed existing ethereum key")
+        except (subprocess.SubprocessError, OSError) as e:
+            self.logger.warning(f"Error while removing ethereum key: {e}")
+
+        if Path("ethereum_private_key.txt").exists():
+            self.logger.info("Found ethereum key in current directory")
+            self.execute_command("aea -s add-key ethereum ethereum_private_key.txt")
+        elif Path("../ethereum_private_key.txt").exists():
+            self.logger.info("Found ethereum key in parent directory, copying...")
+            self.execute_command("cp ../ethereum_private_key.txt ./ethereum_private_key.txt")
+            self.execute_command("aea -s add-key ethereum ethereum_private_key.txt")
         else:
-            if generate_keys:
-                self.logger.info(f"Generating key for {ledger}...")
-                commands_to_errors.append([f"aea -s generate-key {ledger}", f"Key generation failed for {ledger}"])
-            commands_to_errors.append([f"aea -s add-key {ledger}", f"Key addition failed for {ledger}"])
+            self.logger.info("No existing ethereum key found, generating new one...")
+            self.execute_command("aea -s generate-key ethereum")
+            self.execute_command("aea -s add-key ethereum ethereum_private_key.txt")
 
-        for command, error in commands_to_errors:
-            result = self.execute_command(command)
-            if not result:
-                self.logger.error(error)
-        self.logger.info(f"{ledger} key setup complete ✅")
+        self.logger.info("Ethereum key setup complete ✅")
 
     def install_dependencies(self) -> None:
         """Install agent dependencies."""
@@ -192,45 +207,22 @@ class AgentRunner:
                 env_vars=env_vars,
             )
             if not result:
-                raise RuntimeError("Docker compose command failed to start Tendermint")
+                self.logger.error("Failed to start Tendermint")
+                sys.exit(1)
             self.logger.info("Tendermint started successfully")
-        except FileNotFoundError:
-            self.logger.error("Docker compose file not found. Please ensure Tendermint configuration exists.")
-            sys.exit(1)
-        except docker.errors.DockerException as e:
-            self.logger.error(
-                f"Docker error: {str(e)}. Please ensure Docker is running and you have necessary permissions."
-            )
-            sys.exit(1)
         except Exception as e:
-            self.logger.error(f"Failed to start Tendermint: {str(e)}")
-
-            msg = dedent("""
-                         Please check that:
-                         1. Docker is installed and running
-                         2. Docker compose is installed
-                         3. You have necessary permissions to run Docker commands
-                         4. The Tendermint configuration file exists and is valid
-                         """)
-            self.logger.error(msg)
+            self.logger.error(f"Error starting Tendermint: {e}")
             sys.exit(1)
 
-    def execute_agent(
-        self,
-    ) -> None:
-        """Execute the agent.
-        - args: background (bool): Run the agent in the background."""
+    def execute_agent(self) -> None:
+        """Execute the agent."""
         self.logger.info("Starting agent execution...")
         try:
-            result = self.execute_command("aea -s run", verbose=True)
-            if result:
-                self.logger.info("Agent execution completed successfully. 😎")
-            else:
-                self.logger.error("Agent execution failed.")
-                sys.exit(1)
-        except RuntimeError as error:
-            self.logger.error(f"Agent ended with error: {error}")
-        self.logger.info("Agent execution complete. 😎")
+            subprocess.run(["aea", "-s", "run"], check=True)
+            self.logger.info("Agent execution started.")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to start agent: {e}")
+            sys.exit(1)
 
     def execute_command(self, command: str, verbose=None, env_vars=None) -> None:
         """Execute a shell command."""
@@ -254,9 +246,9 @@ class AgentRunner:
 )
 @click.option("-v", "--verbose", is_flag=True, help="Verbose mode.", default=False)
 @click.option("--force", is_flag=True, help="Force overwrite of existing agent", default=False)
-@click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
+@click.option("--no-fetch", is_flag=True, help="Use local agent package instead of fetching", default=False)
 @click.pass_context
-def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
+def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, no_fetch: bool) -> None:
     """
     Run an agent from the local packages registry or a local path.
 
@@ -272,13 +264,12 @@ def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         agent_public_id = PublicId.from_str(id_str)
     logger = ctx.obj["LOGGER"]
 
-    runner = AgentRunner(
-        agent_name=agent_public_id,
-        verbose=verbose,
-        force=force,
-        logger=logger,
-        fetch=fetch,
-    )
+    if no_fetch:
+        logger.info(f"Running local agent package {agent_public_id.name}... 🚀")
+    else:
+        logger.info(f"Fetching agent {agent_public_id}... 🚀")
+
+    runner = AgentRunner(agent_name=agent_public_id, verbose=verbose, force=force, logger=logger, no_fetch=no_fetch)
     runner.run()
     logger.info("Agent run complete. 😎")
 
