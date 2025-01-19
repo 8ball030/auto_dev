@@ -3,20 +3,21 @@
 import os
 import shutil
 import subprocess
+from typing import Iterator
 from pathlib import Path
 from unittest.mock import call, patch
 
 import yaml
 import pytest
 from click.testing import CliRunner
-from aea.configurations.base import PublicId
+from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
+from aea.configurations.data_types import PackageType
 
-from auto_dev.constants import COMPONENT_CONFIG_FILES
 from auto_dev.commands.eject import cli
 
 
 @pytest.fixture
-def test_data_dir(tmp_path: Path) -> Path:
+def test_data_dir(tmp_path: Path) -> Iterator[Path]:
     """Create a test data directory with a mock AEA project."""
     # Create basic structure
     packages_dir = tmp_path / "packages"
@@ -39,7 +40,7 @@ def test_data_dir(tmp_path: Path) -> Path:
             "protocol": ["other_author/test_protocol:0.1.0"],
         },
     }
-    skill_config_path = skill_dir / COMPONENT_CONFIG_FILES["skill"]
+    skill_config_path = skill_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL)
     skill_config_path.parent.mkdir(parents=True, exist_ok=True)
     with open(skill_config_path, "w", encoding="utf-8") as f:
         yaml.dump(skill_yaml, f)
@@ -58,7 +59,7 @@ def test_data_dir(tmp_path: Path) -> Path:
         "license": "Apache-2.0",
         "dependencies": {},
     }
-    dep_skill_config_path = dep_skill_dir / COMPONENT_CONFIG_FILES["skill"]
+    dep_skill_config_path = dep_skill_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL)
     dep_skill_config_path.parent.mkdir(parents=True, exist_ok=True)
     with open(dep_skill_config_path, "w", encoding="utf-8") as f:
         yaml.dump(dep_skill_yaml, f)
@@ -77,7 +78,7 @@ def test_data_dir(tmp_path: Path) -> Path:
         "license": "Apache-2.0",
         "dependencies": {},
     }
-    protocol_config_path = dep_protocol_dir / COMPONENT_CONFIG_FILES["protocol"]
+    protocol_config_path = dep_protocol_dir / _get_default_configuration_file_name_from_type(PackageType.PROTOCOL)
     protocol_config_path.parent.mkdir(parents=True, exist_ok=True)
     with open(protocol_config_path, "w", encoding="utf-8") as f:
         yaml.dump(protocol_yaml, f)
@@ -110,7 +111,9 @@ def test_eject_command(mock_run, mock_eject_single, test_data_dir, caplog):
         "license": "Apache-2.0",
         "dependencies": {},
     }
-    with open(packages_dir / COMPONENT_CONFIG_FILES["skill"], "w", encoding="utf-8") as f:
+    with open(
+        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
+    ) as f:
         yaml.dump(skill_yaml, f)
 
     # Change to test directory
@@ -171,7 +174,9 @@ def test_eject_command_with_skip_dependencies(mock_run, mock_eject_single, test_
         "license": "Apache-2.0",
         "dependencies": {},
     }
-    with open(packages_dir / COMPONENT_CONFIG_FILES["skill"], "w", encoding="utf-8") as f:
+    with open(
+        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
+    ) as f:
         yaml.dump(skill_yaml, f)
 
     # Change to test directory
@@ -233,7 +238,9 @@ def test_eject_command_lock_failure(mock_run, mock_eject_single, test_data_dir):
         "license": "Apache-2.0",
         "dependencies": {},
     }
-    with open(packages_dir / COMPONENT_CONFIG_FILES["skill"], "w", encoding="utf-8") as f:
+    with open(
+        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
+    ) as f:
         yaml.dump(skill_yaml, f)
 
     # Change to test directory
@@ -279,7 +286,9 @@ def test_eject_command_skip_dependencies_missing(mock_run, mock_eject_single, te
             "protocol": ["other_author/test_protocol:0.1.0"],
         },
     }
-    with open(packages_dir / COMPONENT_CONFIG_FILES["skill"], "w", encoding="utf-8") as f:
+    with open(
+        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
+    ) as f:
         yaml.dump(skill_yaml, f)
 
     # Change to test directory

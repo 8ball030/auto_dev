@@ -9,12 +9,15 @@ from contextlib import contextmanager
 from dataclasses import field, dataclass
 
 import yaml
-from aea.configurations.base import PublicId, ComponentType
+from aea.configurations.base import (
+    PublicId,
+    ComponentType,
+    _get_default_configuration_file_name_from_type,  # noqa
+)
 from aea.configurations.loader import ConfigLoader
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 
 from auto_dev.utils import FileType, change_dir, write_to_file, load_autonolas_yaml, build_dependency_tree_for_component
-from auto_dev.constants import COMPONENT_CONFIG_FILES
 
 
 @dataclass
@@ -47,7 +50,7 @@ def _update_component_config(config_path: Path, new_author: str, new_name: str, 
         config["name"] = new_name
 
         # Write back to file
-        config_file = COMPONENT_CONFIG_FILES[component_type]
+        config_file = _get_default_configuration_file_name_from_type(component_type)
         write_to_file(config_path.parent / config_file, config, file_type=FileType.YAML)
 
     except (FileNotFoundError, ValueError) as e:
@@ -81,7 +84,7 @@ def _eject_single_component(component_id: PublicId, new_author: str, new_name: s
             raise ValueError(f"Failed to fingerprint component {component_id}")
 
         # First update config with new author and name
-        config_path = component_dir / COMPONENT_CONFIG_FILES[component_type]
+        config_path = component_dir / _get_default_configuration_file_name_from_type(component_type)
         _update_component_config(config_path, new_author, new_name, component_type)
 
         # Then rename directory to new name (keeping plural form)
