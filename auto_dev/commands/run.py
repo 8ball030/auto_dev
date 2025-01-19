@@ -20,7 +20,7 @@ from aea.configurations.base import PackageType
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 
 from auto_dev.base import build_cli
-from auto_dev.utils import change_dir, map_os_to_env_vars, load_autonolas_yaml
+from auto_dev.utils import load_aea_config, map_os_to_env_vars
 from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
@@ -128,10 +128,6 @@ class AgentRunner:
 
     def setup_agent(self) -> None:
         """Setup the agent."""
-        if not self.fetch:
-            self.logger.info(f"Agent author: {self.agent_name.author}")
-            self.logger.info(f"Agent name: {self.agent_name.name}")
-
         try:
             if not self.no_fetch:
                 self.logger.info(f"Agent author: {self.agent_name.author}")
@@ -152,62 +148,85 @@ class AgentRunner:
             sys.exit(1)
 
     def manage_keys(self) -> None:
-        """Manage keys for supported ledgers."""
-        for ledger in SupportedLedger:
-            try:
-                self.generate_key(ledger)
-            except (subprocess.SubprocessError, OSError, RuntimeError) as e:
-                self.logger.warning(f"Skipping {ledger.value} key generation: {e}")
-
-    def generate_key(self, ledger: SupportedLedger) -> None:
-        """Generate and manage keys for a specific ledger.
-
-        Args:
-            ledger: The ledger type to generate keys for
-        """
-        self.logger.info(f"Checking for existing {ledger.value} key...")
-
+        """Manage keys based on the agent's default ledger configuration."""
         try:
+            config = load_aea_config()[0]
+            default_ledger = config["default_ledger"]
+
+            self.logger.info(f"Using default ledger: {default_ledger}")
+
+            key_file = Path(f"{default_ledger}_private_key.txt")
+
+            # If --no-fetch and key exists, just remove and re-add it
+            if self.no_fetch and key_file.exists():
+                self.logger.info(f"Found existing key file: {key_file}")
+
+                # Remove existing key from AEA
+                result = subprocess.run(
+                    ["aea", "-s", "remove-key", default_ledger],
+                    capture_output=True,
+                    text=True,
+                )
+                if "no key registered" not in result.stderr.lower():
+                    self.logger.info(f"Removed existing {default_ledger} key from AEA")
+
+                # Add existing key back
+                add_result = subprocess.run(
+                    ["aea", "-s", "add-key", default_ledger, str(key_file)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False,
+                )
+                if add_result.returncode != 0:
+                    self.logger.error(f"Key addition failed: {add_result.stderr}")
+                    raise RuntimeError("Key addition failed")
+
+                self.logger.info(f"Re-added existing {default_ledger} key ✅")
+                return
+
+            # Otherwise, proceed with normal key generation process
+            if key_file.exists():
+                self.logger.info(f"Removing existing key file: {key_file}")
+                key_file.unlink()
+
+            # Remove existing key if present
             result = subprocess.run(
-                ["aea", "-s", "remove-key", ledger.value],
+                ["aea", "-s", "remove-key", default_ledger],
                 capture_output=True,
                 text=True,
             )
             if "no key registered" not in result.stderr.lower():
-                self.logger.info(f"Removed existing {ledger.value} key")
+                self.logger.info(f"Removed existing {default_ledger} key")
+
+            # Generate and add new key
+            self.logger.info(f"Generating key for {default_ledger}...")
+            generate_result = subprocess.run(
+                ["aea", "-s", "generate-key", default_ledger],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            if generate_result.returncode != 0:
+                self.logger.error(f"Key generation failed: {generate_result.stderr}")
+                raise RuntimeError("Key generation failed")
+
+            add_result = subprocess.run(
+                ["aea", "-s", "add-key", default_ledger, f"{default_ledger}_private_key.txt"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            if add_result.returncode != 0:
+                self.logger.error(f"Key addition failed: {add_result.stderr}")
+                raise RuntimeError("Key addition failed")
+
+            self.logger.info(f"{default_ledger} key setup complete ✅")
         except (subprocess.SubprocessError, OSError) as e:
-            self.logger.warning(f"Error while removing {ledger.value} key: {str(e)}")
-
-        key_pattern = f"*{ledger.value}_private_key.txt"
-        key_files = list(Path(".").glob(key_pattern)) + list(Path("..").glob(key_pattern))
-
-        if key_files:
-            key_file = key_files[0]
-            if key_file.parent != Path("."):
-                self.logger.info(f"Found {ledger.value} key in {key_file.parent}, copying...")
-                try:
-                    self.execute_command(f"cp {key_file} ./{ledger.value}_private_key.txt")
-                except (subprocess.SubprocessError, OSError) as e:
-                    self.logger.error(f"Failed to copy {ledger.value} key: {str(e)}")
-                    raise
-            else:
-                self.logger.info(f"Found {ledger.value} key in current directory")
-
-            try:
-                self.execute_command(f"aea -s add-key {ledger.value} {ledger.value}_private_key.txt")
-            except (subprocess.SubprocessError, OSError) as e:
-                self.logger.error(f"Failed to add {ledger.value} key: {str(e)}")
-                raise
-        else:
-            self.logger.info(f"No existing {ledger.value} key found, generating new one...")
-            try:
-                self.execute_command(f"aea -s generate-key {ledger.value}")
-                self.execute_command(f"aea -s add-key {ledger.value} {ledger.value}_private_key.txt")
-            except (subprocess.SubprocessError, OSError) as e:
-                self.logger.error(f"Failed to generate and add {ledger.value} key: {str(e)}")
-                raise
-
-        self.logger.info(f"{ledger.value.capitalize()} key setup complete ✅")
+            self.logger.error(f"Failed to generate and add {default_ledger} key: {str(e)}")
+            raise
 
     def install_dependencies(self) -> None:
         """Install agent dependencies."""
@@ -298,7 +317,13 @@ def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         agent_public_id = PublicId.from_str(id_str)
     logger = ctx.obj["LOGGER"]
 
-    runner = AgentRunner(agent_name=agent_public_id, verbose=verbose, force=force, logger=logger, no_fetch=not fetch)
+    runner = AgentRunner(
+        agent_name=agent_public_id,
+        verbose=verbose,
+        force=force,
+        logger=logger,
+        no_fetch=not fetch,
+    )
     runner.run()
     logger.info("Agent run complete. 😎")
 
