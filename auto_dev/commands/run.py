@@ -20,7 +20,7 @@ from aea.configurations.base import PackageType
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 
 from auto_dev.base import build_cli
-from auto_dev.utils import map_os_to_env_vars, load_autonolas_yaml
+from auto_dev.utils import change_dir, map_os_to_env_vars, load_autonolas_yaml
 from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
@@ -47,11 +47,9 @@ class AgentRunner:
         if not self.check_agent_exists(locally=True, in_packages=False):
             self.logger.error(f"Local agent package {self.agent_name.name} does not exist.")
             sys.exit(1)
-        self.logger.info(f"Found local agent package at {self.agent_name.name}")
-        self.logger.info(f"Changing to directory: {self.agent_name.name}")
-        self.check_tendermint()
-
-        with chdir(agent_path):
+        self.logger.info(f"Changing to directory: {agent_path}")
+        with change_dir(agent_path):
+            self.check_tendermint()
             self.setup_agent()
             self.execute_agent()
         self.stop_tendermint()
