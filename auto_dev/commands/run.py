@@ -29,6 +29,14 @@ from auto_dev.cli_executor import CommandExecutor
 cli = build_cli()
 
 
+class SupportedLedger(Enum):
+    """Supported ledger types."""
+
+    ETHEREUM = "ethereum"
+    COSMOS = "cosmos"
+    SOLANA = "solana"
+
+
 @dataclass
 class AgentRunner:
     """Class to manage running an agent."""
@@ -41,23 +49,17 @@ class AgentRunner:
 
     def run(self) -> None:
         """Run the agent."""
-
-        if self.no_fetch:
+        if not self.no_fetch:
+            self.fetch_agent()
+        else:
             self.logger.info(f"Looking for local agent package in directory {self.agent_name.name}...")
             if not Path(self.agent_name.name).exists():
                 self.logger.error(f"Local agent package {self.agent_name.name} does not exist.")
                 sys.exit(1)
             self.logger.info(f"Found local agent package at {self.agent_name.name}")
-            self.logger.info(f"Changing to directory: {self.agent_name.name}")
-            self.change_directory(self.agent_name.name)
-        else:
-            self.logger.info(f"Fetching agent {self.agent_name} from the local package registry...")
-            if self.check_agent_exists():
-                sys.exit(1)
-            self.fetch_agent()
-            self.logger.info(f"Changing to directory: {self.agent_name.name}")
-            self.change_directory(self.agent_name.name)
 
+        self.logger.info(f"Changing to directory: {self.agent_name.name}")
+        self.change_directory(self.agent_name.name)
         self.check_tendermint()
         self.setup_agent()
         self.execute_agent()
@@ -108,20 +110,11 @@ class AgentRunner:
 
         self.logger.info("Tendermint is running and healthy ✅")
 
-    def check_agent_exists(self) -> bool:
-        """Check if the agent already exists."""
-        if Path(self.agent_name.name).exists() and not self.force:
-            self.logger.error(f"Agent `{self.agent_name}` already exists. Use --force to overwrite.")
-            return True
-        if Path(self.agent_name.name).exists() and self.force:
-            self.logger.info(f"Removing existing agent `{self.agent_name}` due to --force option.")
-            self.execute_command(f"rm -rf {self.agent_name.name}")
-        return False
+    def fetch_agent(self) -> None:
+        """Fetch the agent from registry if needed."""
+        self.logger.info(f"Fetching agent {self.agent_name} from the local package registry...")
 
-    def fetch_agent(self) -> bool:
-        """Fetch the agent."""
-
-        if self.check_agent_exists(locally=True, in_packages=False):
+        if Path(self.agent_name.name).exists():
             if not self.force:
                 self.logger.error(f"Agent `{self.agent_name}` already exists. Use --force to overwrite.")
                 sys.exit(1)
@@ -154,38 +147,67 @@ class AgentRunner:
             self.issue_certificates()
 
             self.logger.info("Agent setup complete. 🎉")
-        except Exception as e:
+        except (subprocess.SubprocessError, OSError, RuntimeError) as e:
             self.logger.error(f"Failed to setup agent: {e}")
             sys.exit(1)
 
     def manage_keys(self) -> None:
-        """Manage Ethereum keys."""
-        self.logger.info("Checking for existing ethereum key...")
+        """Manage keys for supported ledgers."""
+        for ledger in SupportedLedger:
+            try:
+                self.generate_key(ledger)
+            except (subprocess.SubprocessError, OSError, RuntimeError) as e:
+                self.logger.warning(f"Skipping {ledger.value} key generation: {e}")
+
+    def generate_key(self, ledger: SupportedLedger) -> None:
+        """Generate and manage keys for a specific ledger.
+
+        Args:
+            ledger: The ledger type to generate keys for
+        """
+        self.logger.info(f"Checking for existing {ledger.value} key...")
 
         try:
             result = subprocess.run(
-                ["aea", "-s", "remove-key", "ethereum"],
+                ["aea", "-s", "remove-key", ledger.value],
                 capture_output=True,
                 text=True,
             )
             if "no key registered" not in result.stderr.lower():
-                self.logger.info("Removed existing ethereum key")
+                self.logger.info(f"Removed existing {ledger.value} key")
         except (subprocess.SubprocessError, OSError) as e:
-            self.logger.warning(f"Error while removing ethereum key: {e}")
+            self.logger.warning(f"Error while removing {ledger.value} key: {str(e)}")
 
-        if Path("ethereum_private_key.txt").exists():
-            self.logger.info("Found ethereum key in current directory")
-            self.execute_command("aea -s add-key ethereum ethereum_private_key.txt")
-        elif Path("../ethereum_private_key.txt").exists():
-            self.logger.info("Found ethereum key in parent directory, copying...")
-            self.execute_command("cp ../ethereum_private_key.txt ./ethereum_private_key.txt")
-            self.execute_command("aea -s add-key ethereum ethereum_private_key.txt")
+        key_pattern = f"*{ledger.value}_private_key.txt"
+        key_files = list(Path(".").glob(key_pattern)) + list(Path("..").glob(key_pattern))
+
+        if key_files:
+            key_file = key_files[0]
+            if key_file.parent != Path("."):
+                self.logger.info(f"Found {ledger.value} key in {key_file.parent}, copying...")
+                try:
+                    self.execute_command(f"cp {key_file} ./{ledger.value}_private_key.txt")
+                except (subprocess.SubprocessError, OSError) as e:
+                    self.logger.error(f"Failed to copy {ledger.value} key: {str(e)}")
+                    raise
+            else:
+                self.logger.info(f"Found {ledger.value} key in current directory")
+
+            try:
+                self.execute_command(f"aea -s add-key {ledger.value} {ledger.value}_private_key.txt")
+            except (subprocess.SubprocessError, OSError) as e:
+                self.logger.error(f"Failed to add {ledger.value} key: {str(e)}")
+                raise
         else:
-            self.logger.info("No existing ethereum key found, generating new one...")
-            self.execute_command("aea -s generate-key ethereum")
-            self.execute_command("aea -s add-key ethereum ethereum_private_key.txt")
+            self.logger.info(f"No existing {ledger.value} key found, generating new one...")
+            try:
+                self.execute_command(f"aea -s generate-key {ledger.value}")
+                self.execute_command(f"aea -s add-key {ledger.value} {ledger.value}_private_key.txt")
+            except (subprocess.SubprocessError, OSError) as e:
+                self.logger.error(f"Failed to generate and add {ledger.value} key: {str(e)}")
+                raise
 
-        self.logger.info("Ethereum key setup complete ✅")
+        self.logger.info(f"{ledger.value.capitalize()} key setup complete ✅")
 
     def install_dependencies(self) -> None:
         """Install agent dependencies."""
@@ -246,9 +268,9 @@ class AgentRunner:
 )
 @click.option("-v", "--verbose", is_flag=True, help="Verbose mode.", default=False)
 @click.option("--force", is_flag=True, help="Force overwrite of existing agent", default=False)
-@click.option("--no-fetch", is_flag=True, help="Use local agent package instead of fetching", default=False)
+@click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
 @click.pass_context
-def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, no_fetch: bool) -> None:
+def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
     """
     Run an agent from the local packages registry or a local path.
 
@@ -264,12 +286,7 @@ def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, no_fetch: bo
         agent_public_id = PublicId.from_str(id_str)
     logger = ctx.obj["LOGGER"]
 
-    if no_fetch:
-        logger.info(f"Running local agent package {agent_public_id.name}... 🚀")
-    else:
-        logger.info(f"Fetching agent {agent_public_id}... 🚀")
-
-    runner = AgentRunner(agent_name=agent_public_id, verbose=verbose, force=force, logger=logger, no_fetch=no_fetch)
+    runner = AgentRunner(agent_name=agent_public_id, verbose=verbose, force=force, logger=logger, no_fetch=not fetch)
     runner.run()
     logger.info("Agent run complete. 😎")
 
