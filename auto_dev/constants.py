@@ -161,12 +161,3 @@ class Network(Enum):
     OPTIMISM = "optimism"
     OPTIMISM_GOERLI = "optimismGoerli"
     GNOSIS = "gnosis"
-
-COMPONENT_CONFIG_FILES = {
-    "agent": "aea-config.yaml",
-    "skill": "skill.yaml",
-    "contract": "contract.yaml",
-    "protocol": "protocol.yaml",
-    "connection": "connection.yaml",
-    "service": "service.yaml"
-}

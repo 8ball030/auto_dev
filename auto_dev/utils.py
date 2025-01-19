@@ -25,11 +25,15 @@ from aea.cli.utils.config import get_registry_path_from_cli_config
 from aea.cli.utils.context import Context
 from openapi_spec_validator import validate_spec
 from aea.configurations.base import AgentConfig
-from aea.configurations.constants import AGENT, CUSTOM, SERVICE, DEFAULT_AEA_CONFIG_FILE
 from openapi_spec_validator.exceptions import OpenAPIValidationError
+from aea.configurations.data_types import PackageType
+from auto_dev.enums import FileType, FileOperation
+from auto_dev.constants import OS_ENV_MAP, DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE, SupportedOS
+from aea.configurations.base import AgentConfig, _get_default_configuration_file_name_from_type  # noqa
+
 
 from auto_dev.enums import FileType, FileOperation
-from auto_dev.constants import OS_ENV_MAP, DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE, COMPONENT_CONFIG_FILES, SupportedOS
+from auto_dev.constants import OS_ENV_MAP, DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE, SupportedOS
 from auto_dev.exceptions import NotFound, OperationError
 
 
@@ -285,11 +289,11 @@ def remove_suffix(text: str, suffix: str) -> str:
     return text[: -len(suffix)] if suffix and text.endswith(suffix) else text
 
 
-def load_autonolas_yaml(component_type: str, directory: Optional[Union[str, Path]] = None) -> list:
+def load_autonolas_yaml(package_type: PackageType, directory: Optional[Union[str, Path]] = None) -> list:
     """Load a component's yaml configuration file.
 
     Args:
-        component_type: Type of component (agent, skill, contract, protocol)
+        package_type: Type of package (agent, skill, contract, protocol)
         directory: Optional directory path where the config file is located
 
     Returns:
@@ -297,13 +301,10 @@ def load_autonolas_yaml(component_type: str, directory: Optional[Union[str, Path
 
     Raises:
         FileNotFoundError: If the config file doesn't exist
-        ValueError: If invalid component type provided
+        ValueError: If invalid package type provided
     """
-    if not component_type or component_type not in COMPONENT_CONFIG_FILES:
-        msg = f"Invalid component type. Must be one of: {list(COMPONENT_CONFIG_FILES.keys())}"
-        raise ValueError(msg)
 
-    config_file = COMPONENT_CONFIG_FILES[component_type]
+    config_file = _get_default_configuration_file_name_from_type(package_type)
     config_path = Path(directory or ".") / config_file
 
     if not config_path.exists():
@@ -323,7 +324,7 @@ def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[cl
     """Load aea Context and AgentConfig if aea-config.yaml exists."""
 
     def wrapper(ctx: click.Context, *args, **kwargs):
-        agent_config_json = load_autonolas_yaml("agent")[0]
+        agent_config_json = load_autonolas_yaml(PackageType.AGENT)[0]
         registry_path = get_registry_path_from_cli_config()
         ctx.aea_ctx = Context(cwd=".", verbosity="INFO", registry_path=registry_path)
         ctx.aea_ctx.agent_config = AgentConfig.from_json(agent_config_json)
