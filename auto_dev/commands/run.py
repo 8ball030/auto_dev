@@ -229,11 +229,23 @@ class AgentRunner:
                 env_vars=env_vars,
             )
             if not result:
-                self.logger.error("Failed to start Tendermint")
-                sys.exit(1)
+                raise RuntimeError("Docker compose command failed to start Tendermint")
             self.logger.info("Tendermint started successfully")
+        except FileNotFoundError:
+            self.logger.error("Docker compose file not found. Please ensure Tendermint configuration exists.")
+            sys.exit(1)
+        except docker.errors.DockerException as e:
+            self.logger.error(
+                f"Docker error: {str(e)}. Please ensure Docker is running and you have necessary permissions."
+            )
+            sys.exit(1)
         except Exception as e:
-            self.logger.error(f"Error starting Tendermint: {e}")
+            self.logger.error(f"Failed to start Tendermint: {str(e)}")
+            self.logger.error("Please check that:")
+            self.logger.error("1. Docker is installed and running")
+            self.logger.error("2. Docker compose is installed")
+            self.logger.error("3. You have necessary permissions to run Docker commands")
+            self.logger.error("4. The Tendermint configuration file exists and is valid")
             sys.exit(1)
 
     def execute_agent(self) -> None:
