@@ -161,7 +161,7 @@ class ComponentEjector:
 
     def publish_and_lock(self) -> bool:
         """Publish packages and run lock command."""
-        # TODO: Use publish service function for this
+        # need to implement publish service function and use here
         success, _ = self.run_command("aea publish --push-missing --local")
         if not success:
             raise ValueError("Failed to publish packages")
