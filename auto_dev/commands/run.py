@@ -47,11 +47,9 @@ class AgentRunner:
         if not self.check_agent_exists(locally=True, in_packages=False):
             self.logger.error(f"Local agent package {self.agent_name.name} does not exist.")
             sys.exit(1)
-        self.logger.info(f"Found local agent package at {self.agent_name.name}")
-        self.logger.info(f"Changing to directory: {self.agent_name.name}")
-        self.check_tendermint()
-
+        self.logger.info(f"Changing to directory: {agent_path}")
         with change_dir(agent_path):
+            self.check_tendermint()
             self.setup_agent()
             self.execute_agent()
         self.stop_tendermint()
