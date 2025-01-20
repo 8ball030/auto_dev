@@ -6,8 +6,9 @@ from pathlib import Path
 from auto_dev.utils import change_dir
 
 
-def test_eject_metrics_skill_workflow(cli_runner):
+def test_eject_metrics_skill_workflow(cli_runner, test_filesystem):
     """Test the complete workflow of creating an agent and ejecting the metrics skill."""
+    assert str(Path.cwd()) == test_filesystem
     # 1. Create agent with eightballer/base template
     agent_name = "test_agent"
     create_cmd = [
@@ -24,35 +25,29 @@ def test_eject_metrics_skill_workflow(cli_runner):
     result = runner.execute()
     assert runner.return_code == 0
 
-    try:
-        # 2. CD into the agent directory
-        agent_dir = Path(agent_name)
-        assert agent_dir.exists(), f"Agent directory {agent_dir} was not created"
-        # cd into the agent directory
-        with change_dir(agent_dir):
-            # 3. Eject the metrics skill
-            eject_cmd = [
-                "adev",
-                "-v",
-                "eject",
-                "skill",
-                "eightballer/metrics",
-                "new_author/better_skill",
-            ]
-            runner.execute(eject_cmd)
-            assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
-            assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
-            assert runner.return_code == 0
-    finally:
-        # Cleanup: Remove the agent directory and packages directory
-        if Path(agent_name).exists():
-            shutil.rmtree(agent_name)
-        if Path("packages").exists():
-            shutil.rmtree("packages")
+    # 2. CD into the agent directory
+    agent_dir = Path(agent_name)
+    assert agent_dir.exists(), f"Agent directory {agent_dir} was not created"
+    # cd into the agent directory
+    with change_dir(agent_dir):
+        # 3. Eject the metrics skill
+        eject_cmd = [
+            "adev",
+            "-v",
+            "eject",
+            "skill",
+            "eightballer/metrics",
+            "new_author/better_skill",
+        ]
+        runner.execute(eject_cmd)
+        assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
+        assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
+        assert runner.return_code == 0
 
 
-def test_eject_metrics_skill_skip_deps(cli_runner):
+def test_eject_metrics_skill_skip_deps(cli_runner, test_filesystem):
     """Test ejecting the metrics skill with skip-dependencies flag."""
+    assert str(Path.cwd()) == test_filesystem
     # 1. Create agent with eightballer/base template
     agent_name = "test_agent"
     create_cmd = [
@@ -69,29 +64,22 @@ def test_eject_metrics_skill_skip_deps(cli_runner):
     result = runner.execute()
     assert runner.return_code == 0
 
-    try:
-        # 2. CD into the agent directory
-        agent_dir = Path(agent_name)
-        assert agent_dir.exists(), f"Agent directory {agent_dir} was not created"
-        # cd into the agent directory
-        with change_dir(agent_dir):
-            # 3. Eject the metrics skill with skip-dependencies
-            eject_cmd = [
-                "adev",
-                "-v",
-                "eject",
-                "skill",
-                "eightballer/metrics",
-                "new_author/better_skill",
-                "--skip-dependencies",
-            ]
-            runner.execute(eject_cmd)
-            assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
-            assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
-            assert runner.return_code == 0
-    finally:
-        # Cleanup: Remove the agent directory and packages directory
-        if Path(agent_name).exists():
-            shutil.rmtree(agent_name)
-        if Path("packages").exists():
-            shutil.rmtree("packages")
+    # 2. CD into the agent directory
+    agent_dir = Path(agent_name)
+    assert agent_dir.exists(), f"Agent directory {agent_dir} was not created"
+    # cd into the agent directory
+    with change_dir(agent_dir):
+        # 3. Eject the metrics skill with skip-dependencies
+        eject_cmd = [
+            "adev",
+            "-v",
+            "eject",
+            "skill",
+            "eightballer/metrics",
+            "new_author/better_skill",
+            "--skip-dependencies",
+        ]
+        runner.execute(eject_cmd)
+        assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
+        assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
+        assert runner.return_code == 0
