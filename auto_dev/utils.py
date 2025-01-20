@@ -315,7 +315,6 @@ def load_autonolas_yaml(package_type: PackageType, directory: Optional[Union[str
     config_yaml = list(yaml.safe_load_all(config_path.read_text(encoding=DEFAULT_ENCODING)))
     return config_yaml
 
-
 def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[click.Context, Any, Any], Any]:
     """Load aea Context and AgentConfig if aea-config.yaml exists."""
 
