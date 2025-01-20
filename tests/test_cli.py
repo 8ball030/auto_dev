@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from auto_dev.constants import DEFAULT_AUTHOR
+from auto_dev.commands.create import AGENT_PUBLISHED_SUCCESS_MSG
 
 
 def test_lint_fails(cli_runner, test_filesystem):
@@ -78,3 +79,4 @@ def test_create_with_publish_no_packages(cli_runner, test_filesystem):
     assert runner.execute()
     assert "No such file or directory" not in runner.output
     assert runner.return_code == 0, f"Command failed': {runner.output}"
+    assert AGENT_PUBLISHED_SUCCESS_MSG in runner.output, f"Expected message not found in output: {runner.output}"
