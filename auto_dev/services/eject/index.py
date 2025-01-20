@@ -1,6 +1,7 @@
 """Service functions for the eject command."""
 
 import shutil
+import logging
 from typing import List, Tuple, Optional
 from pathlib import Path
 from dataclasses import field, dataclass
@@ -12,7 +13,7 @@ from aea.configurations.base import (
 )
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 
-from auto_dev.utils import FileType, change_dir, write_to_file, load_autonolas_yaml
+from auto_dev.utils import FileType, change_dir, get_logger, write_to_file, load_autonolas_yaml
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.services.dependencies.index import DependencyBuilder
 
@@ -35,6 +36,7 @@ class ComponentEjector:
         """Initialize the ejector with configuration."""
         self.config = config
         self.executor = CommandExecutor([""])  # Placeholder, will be set per command
+        self.logger = get_logger(__name__)
 
     def run_command(self, command: str, shell: bool = False) -> Tuple[bool, int]:
         """Run a command using the executor and return success and exit code."""
@@ -74,7 +76,7 @@ class ComponentEjector:
             if not self._fingerprint_component(PublicId(new_author, new_name), component_type):
                 raise ValueError(f"Failed to fingerprint component {new_author}/{new_name}")
 
-            print(f"Successfully ejected and fingerprinted {component_id} to {new_author}/{new_name}")
+            self.logger.info(f"Successfully ejected and fingerprinted {component_id} to {new_author}/{new_name}")
             return True
 
         except Exception as e:
@@ -130,7 +132,7 @@ class ComponentEjector:
 
         for path in possible_paths:
             if path.exists():
-                print(f"Cleaning up existing directory: {path}")
+                self.logger.info(f"Cleaning up existing directory: {path}")
                 shutil.rmtree(path)
 
         packages_base.mkdir(parents=True, exist_ok=True)
@@ -155,7 +157,7 @@ class ComponentEjector:
                 continue
 
             if self.eject_component(dep, self.config.fork_id.author, dep.name, component_type.value):
-                print(f"Successfully ejected dependency {dep}")
+                self.logger.info(f"Successfully ejected dependency {dep}")
                 return dep
         return None
 
