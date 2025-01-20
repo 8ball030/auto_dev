@@ -5,7 +5,7 @@ from rich.progress import track
 from aea.configurations.base import PublicId
 
 from auto_dev.base import build_cli
-from auto_dev.services.eject.index import EjectConfig, eject_component
+from auto_dev.services.eject.index import EjectConfig, ComponentEjector
 
 
 cli = build_cli()
@@ -25,18 +25,40 @@ cli = build_cli()
     type=str,
 )
 @click.option(
-    "--skip-dependencies",
+    "--skip-dependencies/--no-skip-dependencies",
     is_flag=True,
     help="Skip ejecting dependencies (they must already be ejected)",
 )
 @click.pass_context
 def eject(ctx, component_type: str, public_id: str, fork_id: str, skip_dependencies: bool) -> None:
-    """
-    Eject a component and its dependencies to a new fork.
+    """Eject a component and its dependencies to a new fork.
 
-    Example usage:
-        adev eject skill eightballer/metrics my_org/metrics
-        adev eject skill eightballer/metrics my_org/metrics --skip-dependencies
+    This command allows you to fork an existing component (skill, contract, connection, or protocol)
+    to a new author and name while preserving its functionality. It handles dependency management
+    and configuration updates automatically.
+
+    Component Types:
+        - skill: Agent skills (e.g., price_estimation, nft_trading)
+        - contract: Smart contracts (e.g., token_bridge, amm_contract)
+        - connection: Network connections (e.g., http_client, websocket)
+        - protocol: Communication protocols (e.g., fipa, http)
+
+    Example Usage:
+
+        # Basic ejection of a skill:
+        adev eject skill valory/price_estimation myorg/custom_price
+
+        # Eject a contract without its dependencies:
+        adev eject contract valory/gnosis_safe myorg/safe --skip-dependencies
+
+        # Eject a connection with all dependencies:
+        adev eject connection valory/http_client myorg/custom_http
+
+        # Eject a protocol to a new name under same author:
+        adev eject protocol valory/http valory/custom_http
+
+        # Eject a skill with complex dependencies:
+        adev eject skill valory/price_estimation_abci myorg/price_abci
 
     Args:
         component_type: Type of the component (skill, contract, connection, protocol)
@@ -62,8 +84,9 @@ def eject(ctx, component_type: str, public_id: str, fork_id: str, skip_dependenc
         logger.info(f"Ejecting {public_id} to {fork_id}...")
         logger.info("Analyzing dependency tree...")
 
-        # Perform ejection
-        ejected_components = eject_component(config)
+        # Create ejector and perform ejection
+        ejector = ComponentEjector(config)
+        ejected_components = ejector.eject()
 
         if not ejected_components:
             logger.error("Failed to eject any components!")

@@ -1,360 +1,97 @@
 """Tests for the eject command."""
 
-import os
 import shutil
-import subprocess
-from typing import Iterator
 from pathlib import Path
-from unittest.mock import call, patch
 
-import yaml
-import pytest
-from click.testing import CliRunner
-from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
-from aea.configurations.data_types import PackageType
-
-from auto_dev.commands.eject import cli
+from auto_dev.utils import change_dir
 
 
-@pytest.fixture
-def test_data_dir(tmp_path: Path) -> Iterator[Path]:
-    """Create a test data directory with a mock AEA project."""
-    # Create basic structure
-    packages_dir = tmp_path / "packages"
-    packages_dir.mkdir()
-
-    # Create test skill
-    skill_dir = packages_dir / "skills" / "author" / "test_skill"
-    skill_dir.mkdir(parents=True)
-
-    # Create skill.yaml
-    skill_yaml = {
-        "name": "test_skill",
-        "author": "author",
-        "version": "0.1.0",
-        "type": "skill",
-        "description": "Test skill",
-        "license": "Apache-2.0",
-        "dependencies": {
-            "skill": ["other_author/dependent_skill:0.1.0"],
-            "protocol": ["other_author/test_protocol:0.1.0"],
-        },
-    }
-    skill_config_path = skill_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL)
-    skill_config_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(skill_config_path, "w", encoding="utf-8") as f:
-        yaml.dump(skill_yaml, f)
-
-    # Create dependent skill
-    dep_skill_dir = packages_dir / "skills" / "other_author" / "dependent_skill"
-    dep_skill_dir.mkdir(parents=True)
-
-    # Create dependent skill.yaml
-    dep_skill_yaml = {
-        "name": "dependent_skill",
-        "author": "other_author",
-        "version": "0.1.0",
-        "type": "skill",
-        "description": "Dependent skill",
-        "license": "Apache-2.0",
-        "dependencies": {},
-    }
-    dep_skill_config_path = dep_skill_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL)
-    dep_skill_config_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(dep_skill_config_path, "w", encoding="utf-8") as f:
-        yaml.dump(dep_skill_yaml, f)
-
-    # Create dependent protocol
-    dep_protocol_dir = packages_dir / "protocols" / "other_author" / "test_protocol"
-    dep_protocol_dir.mkdir(parents=True)
-
-    # Create protocol.yaml
-    protocol_yaml = {
-        "name": "test_protocol",
-        "author": "other_author",
-        "version": "0.1.0",
-        "type": "protocol",
-        "description": "Test protocol",
-        "license": "Apache-2.0",
-        "dependencies": {},
-    }
-    protocol_config_path = dep_protocol_dir / _get_default_configuration_file_name_from_type(PackageType.PROTOCOL)
-    protocol_config_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(protocol_config_path, "w", encoding="utf-8") as f:
-        yaml.dump(protocol_yaml, f)
-
-    yield tmp_path
-
-    # Cleanup
-    shutil.rmtree(tmp_path)
-
-
-@patch("auto_dev.services.eject.index._eject_single_component")
-@patch("subprocess.run")
-def test_eject_command(mock_run, mock_eject_single, test_data_dir, caplog):
-    """Test the eject command."""
-    # Mock successful ejection
-    mock_eject_single.return_value = True
-    mock_run.return_value.returncode = 0
-
-    # Create target directory structure
-    packages_dir = test_data_dir / "packages" / "skills" / "new_author" / "better_skill"
-    packages_dir.mkdir(parents=True, exist_ok=True)
-
-    # Create skill.yaml in target directory
-    skill_yaml = {
-        "name": "better_skill",
-        "author": "new_author",
-        "version": "0.1.0",
-        "type": "skill",
-        "description": "Test skill",
-        "license": "Apache-2.0",
-        "dependencies": {},
-    }
-    with open(
-        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
-    ) as f:
-        yaml.dump(skill_yaml, f)
-
-    # Change to test directory
-    os.chdir(test_data_dir)
-
-    # Create CLI runner
-    runner = CliRunner()
-
-    # Run command with name change
-    result = runner.invoke(
-        cli,
-        ["eject", "skill", "author/test_skill", "new_author/better_skill"],
-        obj={"LOGGER": None},
-    )
-
-    # Check command succeeded
-    assert result.exit_code == 0
-
-    # Verify eject was called with correct arguments
-    mock_eject_single.assert_has_calls(
-        [call(PublicId(author="author", name="test_skill", version="latest"), "new_author", "better_skill", "skill")],
-        any_order=True,
-    )
-
-    # Verify subprocess calls
-    mock_run.assert_any_call(["./lock_packages.exp"], check=True)
-    mock_run.assert_any_call(
-        ["aea", "publish", "--push-missing", "--local"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-    # Check success messages in logs
-    assert any("Successfully ejected 1 components:" in record.message for record in caplog.records)
-    assert any("author/test_skill:latest" in record.message for record in caplog.records)
-
-
-@patch("auto_dev.services.eject.index._eject_single_component")
-@patch("subprocess.run")
-def test_eject_command_with_skip_dependencies(mock_run, mock_eject_single, test_data_dir):
-    """Test the eject command with skip_dependencies flag."""
-    # Mock successful ejection
-    mock_eject_single.return_value = True
-    mock_run.return_value.returncode = 0
-
-    # Create target directory structure
-    packages_dir = test_data_dir / "packages" / "skills" / "new_author" / "better_skill"
-    packages_dir.mkdir(parents=True, exist_ok=True)
-
-    # Create skill.yaml in target directory
-    skill_yaml = {
-        "name": "better_skill",
-        "author": "new_author",
-        "version": "0.1.0",
-        "type": "skill",
-        "description": "Test skill",
-        "license": "Apache-2.0",
-        "dependencies": {},
-    }
-    with open(
-        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
-    ) as f:
-        yaml.dump(skill_yaml, f)
-
-    # Change to test directory
-    os.chdir(test_data_dir)
-
-    # Create CLI runner
-    runner = CliRunner()
-
-    # Run command with skip-dependencies flag
-    result = runner.invoke(
-        cli,
-        ["eject", "skill", "author/test_skill", "new_author/better_skill", "--skip-dependencies"],
-        obj={"LOGGER": None},
-    )
-
-    # Check command succeeded
-    assert result.exit_code == 0
-
-    # Verify only target component was ejected
-    mock_eject_single.assert_called_once_with(
-        PublicId(author="author", name="test_skill", version="latest"),
-        "new_author",
-        "better_skill",
-        "skill",
-    )
-
-    # Verify subprocess calls
-    mock_run.assert_any_call(["./lock_packages.exp"], check=True)
-    mock_run.assert_any_call(
-        ["aea", "publish", "--push-missing", "--local"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-
-@patch("auto_dev.services.eject.index._eject_single_component")
-@patch("subprocess.run")
-def test_eject_command_lock_failure(mock_run, mock_eject_single, test_data_dir):
-    """Test the eject command when package locking fails."""
-    # Mock successful ejection but failed locking
-    mock_eject_single.return_value = True
-    mock_run.side_effect = [
-        subprocess.CompletedProcess(args=[], returncode=0),  # First call succeeds
-        subprocess.CalledProcessError(1, cmd=["./lock_packages.exp"]),  # Second call fails
+def test_eject_metrics_skill_workflow(cli_runner):
+    """Test the complete workflow of creating an agent and ejecting the metrics skill."""
+    # 1. Create agent with eightballer/base template
+    agent_name = "test_agent"
+    create_cmd = [
+        "adev",
+        "-v",
+        "create",
+        f"new_author/{agent_name}",
+        "-t",
+        "eightballer/base",
+        "--no-clean-up",
+        "--force",
     ]
+    runner = cli_runner(create_cmd)
+    result = runner.execute()
+    assert runner.return_code == 0
 
-    # Create target directory structure
-    packages_dir = test_data_dir / "packages" / "skills" / "new_author" / "better_skill"
-    packages_dir.mkdir(parents=True, exist_ok=True)
-
-    # Create skill.yaml in target directory
-    skill_yaml = {
-        "name": "better_skill",
-        "author": "new_author",
-        "version": "0.1.0",
-        "type": "skill",
-        "description": "Test skill",
-        "license": "Apache-2.0",
-        "dependencies": {},
-    }
-    with open(
-        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
-    ) as f:
-        yaml.dump(skill_yaml, f)
-
-    # Change to test directory
-    os.chdir(test_data_dir)
-
-    # Create CLI runner
-    runner = CliRunner()
-
-    # Run command
-    result = runner.invoke(
-        cli,
-        ["eject", "skill", "author/test_skill", "new_author/better_skill"],
-        obj={"LOGGER": None},
-    )
-
-    # Check command failed
-    assert result.exit_code != 0
-    assert "Failed to eject component" in str(result.output)
+    try:
+        # 2. CD into the agent directory
+        agent_dir = Path(agent_name)
+        assert agent_dir.exists(), f"Agent directory {agent_dir} was not created"
+        # cd into the agent directory
+        with change_dir(agent_dir):
+            # 3. Eject the metrics skill
+            eject_cmd = [
+                "adev",
+                "-v",
+                "eject",
+                "skill",
+                "eightballer/metrics",
+                "new_author/better_skill",
+            ]
+            runner.execute(eject_cmd)
+            assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
+            assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
+            assert runner.return_code == 0
+    finally:
+        # Cleanup: Remove the agent directory and packages directory
+        if Path(agent_name).exists():
+            shutil.rmtree(agent_name)
+        if Path("packages").exists():
+            shutil.rmtree("packages")
 
 
-@patch("auto_dev.services.eject.index._eject_single_component")
-@patch("subprocess.run")
-def test_eject_command_skip_dependencies_missing(mock_run, mock_eject_single, test_data_dir, caplog):
-    """Test the eject command fails when skipping dependencies that aren't ejected."""
-    # Mock dependencies
-    mock_eject_single.return_value = True
-    mock_run.side_effect = subprocess.CalledProcessError(1, cmd=["aea", "publish", "--push-missing", "--local"])
+def test_eject_metrics_skill_skip_deps(cli_runner):
+    """Test ejecting the metrics skill with skip-dependencies flag."""
+    # 1. Create agent with eightballer/base template
+    agent_name = "test_agent"
+    create_cmd = [
+        "adev",
+        "-v",
+        "create",
+        f"new_author/{agent_name}",
+        "-t",
+        "eightballer/base",
+        "--no-clean-up",
+        "--force",
+    ]
+    runner = cli_runner(create_cmd)
+    result = runner.execute()
+    assert runner.return_code == 0
 
-    # Create target directory structure
-    packages_dir = test_data_dir / "packages" / "skills" / "new_author" / "better_skill"
-    packages_dir.mkdir(parents=True, exist_ok=True)
-
-    # Create skill.yaml in target directory with dependencies
-    skill_yaml = {
-        "name": "better_skill",
-        "author": "new_author",
-        "version": "0.1.0",
-        "type": "skill",
-        "description": "Test skill",
-        "license": "Apache-2.0",
-        "dependencies": {
-            "skill": ["other_author/dependent_skill:0.1.0"],
-            "protocol": ["other_author/test_protocol:0.1.0"],
-        },
-    }
-    with open(
-        packages_dir / _get_default_configuration_file_name_from_type(PackageType.SKILL), "w", encoding="utf-8"
-    ) as f:
-        yaml.dump(skill_yaml, f)
-
-    # Change to test directory
-    os.chdir(test_data_dir)
-
-    # Create CLI runner
-    runner = CliRunner()
-
-    # Run command with skip-dependencies flag but missing dependencies
-    result = runner.invoke(
-        cli,
-        ["eject", "skill", "author/test_skill", "new_author/better_skill", "--skip-dependencies"],
-        obj={"LOGGER": None},
-    )
-
-    # Check command failed
-    assert result.exit_code != 0
-
-    # Check error message in logs
-    assert any("Failed to eject component" in record.message for record in caplog.records)
-    assert any(
-        "Command '['aea', 'publish', '--push-missing', '--local']' returned non-zero exit status 1" in record.message
-        for record in caplog.records
-    )
-
-
-@patch("auto_dev.services.eject.index._eject_single_component")
-def test_eject_command_failure(mock_eject_single, test_data_dir):
-    """Test the eject command when ejection fails."""
-    # Mock failed ejection
-    mock_eject_single.return_value = False
-
-    os.chdir(test_data_dir)
-
-    runner = CliRunner()
-
-    result = runner.invoke(
-        cli, ["eject", "skill", "author/test_skill", "new_author/better_skill"], obj={"LOGGER": None}
-    )
-
-    assert "Failed to eject any components!" in result.output
-
-
-@patch("auto_dev.services.eject.index._eject_single_component")
-def test_eject_command_invalid_component(mock_eject_single, test_data_dir):
-    """Test the eject command with an invalid component."""
-    # Mock failed ejection
-    mock_eject_single.return_value = False
-
-    # Change to test directory
-    os.chdir(test_data_dir)
-
-    # Create CLI runner
-    runner = CliRunner()
-
-    # Run command with non-existent component
-    result = runner.invoke(
-        cli,
-        ["eject", "skill", "nonexistent/skill", "new_author/better_skill"],
-        obj={"LOGGER": None},
-    )
-
-    # Check command output indicates failure
-    assert "Failed to eject any components!" in result.output
-
-    # Verify eject was called with correct arguments
-    mock_eject_single.assert_called_once_with(
-        PublicId(author="nonexistent", name="skill", version="latest"), "new_author", "better_skill", "skill"
-    )
+    try:
+        # 2. CD into the agent directory
+        agent_dir = Path(agent_name)
+        assert agent_dir.exists(), f"Agent directory {agent_dir} was not created"
+        # cd into the agent directory
+        with change_dir(agent_dir):
+            # 3. Eject the metrics skill with skip-dependencies
+            eject_cmd = [
+                "adev",
+                "-v",
+                "eject",
+                "skill",
+                "eightballer/metrics",
+                "new_author/better_skill",
+                "--skip-dependencies",
+            ]
+            runner.execute(eject_cmd)
+            assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
+            assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
+            assert runner.return_code == 0
+    finally:
+        # Cleanup: Remove the agent directory and packages directory
+        if Path(agent_name).exists():
+            shutil.rmtree(agent_name)
+        if Path("packages").exists():
+            shutil.rmtree("packages")

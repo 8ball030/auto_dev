@@ -3,6 +3,7 @@
 - print metadata: we read in a meta data file and print it in a way that can be copy pasted into the frontend.
 """
 
+import os
 import sys
 import json
 
@@ -10,7 +11,7 @@ import yaml
 import rich_click as click
 from rich import print_json
 from aea.helpers.cid import to_v1
-from aea.configurations.base import PublicId
+from aea.configurations.base import PublicId, ComponentType, _get_default_configuration_file_name_from_type  # noqa
 from aea_cli_ipfs.ipfs_utils import IPFSTool
 from aea.configurations.constants import (
     AGENT,
@@ -28,8 +29,9 @@ from aea.configurations.constants import (
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType
-from auto_dev.utils import write_to_file, build_dependency_tree_for_component
+from auto_dev.utils import write_to_file
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.services.dependencies.index import DependencyBuilder
 
 
 cli = build_cli()
@@ -188,21 +190,23 @@ class Dependency(PublicId):
     component_type: str
 
 
-def build_dependency_tree_for_metadata_components(component) -> list[str]:
+def build_dependency_tree_for_metadata_components(component: str) -> dict:
     """Build dependency tree for metadata components.
 
     Args:
         component: Component identifier string in format 'type/author/name'
 
     Returns:
-        List of dependencies for the component
+        Dictionary mapping dependency types to sets of dependencies
     """
     component_type = component.split("/")[0]
     component_author = component.split("/")[1]
     component_name = component.split("/")[2]
     public_id = PublicId(component_author, component_name.split(":")[0])
     component_path = f"packages/{public_id.author}/{component_type}s/{public_id.name}"
-    return build_dependency_tree_for_component(component_path, component_type)
+
+    builder = DependencyBuilder(component_path, component_type)
+    return builder.build()
 
 
 @cli.command()

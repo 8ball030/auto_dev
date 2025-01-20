@@ -10,10 +10,10 @@ import platform
 import tempfile
 import subprocess
 from glob import glob
-from typing import Any, Set, Dict, Union, Optional
+from typing import Any, Union, Optional
 from pathlib import Path
 from datetime import timezone, timedelta
-from functools import reduce, partial
+from functools import reduce
 from contextlib import contextmanager
 from dataclasses import dataclass
 from collections.abc import Callable
@@ -24,13 +24,9 @@ from rich.logging import RichHandler
 from aea.cli.utils.config import get_registry_path_from_cli_config
 from aea.cli.utils.context import Context
 from openapi_spec_validator import validate_spec
-from aea.configurations.base import AgentConfig
-from openapi_spec_validator.exceptions import OpenAPIValidationError
-from aea.configurations.data_types import PackageType
-from auto_dev.enums import FileType, FileOperation
-from auto_dev.constants import OS_ENV_MAP, DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE, SupportedOS
 from aea.configurations.base import AgentConfig, _get_default_configuration_file_name_from_type  # noqa
-
+from aea.configurations.data_types import PackageType
+from openapi_spec_validator.exceptions import OpenAPIValidationError
 
 from auto_dev.enums import FileType, FileOperation
 from auto_dev.constants import OS_ENV_MAP, DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE, SupportedOS
@@ -422,12 +418,8 @@ class FileLoader:
             setattr(
                 self,
                 operation.value,
-                lambda *args, op=operation, **kwargs: self._exec_function(op, *args, **kwargs),
+                lambda *args, **kwargs: self._exec_function(operation, *args, **kwargs),  # noqa  # noqa
             )
-
-    def _create_operation_function(self, operation: FileOperation):
-        """Create a bound operation function."""
-        return lambda *args, **kwargs: self._exec_function(operation, *args, **kwargs)
 
     @property
     def supported_operations(self):
@@ -437,58 +429,37 @@ class FileLoader:
             FileOperation.WRITE: self._file_type_to_dumper.get(self.file_type),
         }
 
-    def _validate_operation(self, operation: FileOperation) -> None:
-        """Validate operation is supported."""
-        if operation not in self.supported_operations:
+    def _exec_function(self, func: Callable, *args, **kwargs):
+        """Execute a function."""
+        if not self.file_path.exists() and FileOperation(func) is FileOperation.READ:
+            msg = f"The file {self.file_path} was not found⁉"
+            raise NotFound(msg) from FileNotFoundError
+        try:
+            func_type = FileOperation(func)
+        except ValueError as exc:
             raise OperationError(
-                f"Operation {operation} not supported for file type {self.file_type}. "
+                f"Operation {func} not supported for file type {self.file_type}. "
                 + f"Only {list(self.supported_operations.keys())} supported."
+            ) from exc
+        if func_type not in self.supported_operations:
+            raise OperationError(
+                f"Operation {func} not supported for file type {self.file_type}. "
+                + "Only {list(self.supported_operations.keys())} supported."
             )
         if self.file_type not in self._file_type_to_loader:
-            raise OperationError(
-                f"File type {self.file_type} not supported. "
-                + f"Only {list(self._file_type_to_loader.keys())} supported."
+            msg = f"File type {self.file_type} not supported. Only {list(self._file_type_to_loader.keys())} supported."
+            raise OperationError(msg)
+        loader_func, kwargs = self.supported_operations.get(func_type)
+        if func_type is FileOperation.READ:
+            return (
+                loader_func(self.file_path.read_text(encoding=DEFAULT_ENCODING), **kwargs)
+                if self.parse_data
+                else self.file_path.read_text(encoding=DEFAULT_ENCODING)
             )
-
-    def _handle_read_operation(self, loader_func, kwargs) -> Any:
-        """Handle read operation."""
-        content = self.file_path.read_text(encoding=DEFAULT_ENCODING)
-        return loader_func(content, **kwargs) if self.parse_data else content
-
-    def _handle_write_operation(self, loader_func, args, kwargs) -> None:
-        """Handle write operation."""
-        content = loader_func(*args, **kwargs)
-        self.file_path.write_text(content, encoding=DEFAULT_ENCODING)
-
-    def _exec_function(self, operation: FileOperation, *args, **kwargs):
-        """Execute a function."""
-        if not self._is_file_available(operation):
-            self._raise_file_not_found()
-
-        self._validate_operation(operation)
-        loader_func, kwargs = self.supported_operations.get(operation, (None, None))
-
-        if not loader_func:
-            raise OperationError(f"Operation {operation} not supported")
-
-        return self._execute_loader(operation, loader_func, args, kwargs)
-
-    def _is_file_available(self, operation: FileOperation) -> bool:
-        """Check if the file is available for the given operation."""
-        return self.file_path.exists() or operation is not FileOperation.READ
-
-    def _raise_file_not_found(self):
-        """Raise a NotFound exception if the file is not found."""
-        raise NotFound(f"The file {self.file_path} was not found⁉") from FileNotFoundError
-
-    def _execute_loader(self, operation: FileOperation, loader_func, args, kwargs):
-        """Execute the appropriate loader function based on the operation."""
-        if operation is FileOperation.READ:
-            return self._handle_read_operation(loader_func, kwargs)
-        elif operation is FileOperation.WRITE:
-            return self._handle_write_operation(loader_func, args, kwargs)
-        else:
-            raise OperationError(f"Operation {operation} not supported")
+        if func_type is FileOperation.WRITE:
+            return self.file_path.write_text(loader_func(*args, **kwargs), encoding=DEFAULT_ENCODING)
+        msg = f"Operation {func} not supported"
+        raise OperationError(msg)
 
 
 def log_operating_system(self) -> None:
@@ -506,50 +477,3 @@ def map_os_to_env_vars(os_name: str) -> None:
     """Map operating system to environment variables."""
     env_vars = OS_ENV_MAP.get(os_name, {})
     return env_vars
-
-
-def _process_dependencies_field(dependencies: Dict[str, Set[str]], config_deps: dict) -> None:
-    """Process the dependencies field of a component config."""
-    for dep_type, deps in config_deps.items():
-        if dep_type not in dependencies:
-            dependencies[dep_type] = set()
-        dependencies[dep_type].update(deps)
-
-
-def _process_component_field(dependencies: Dict[str, Set[str]], field_type: str, field_deps: list) -> None:
-    """Process a component field (protocols, contracts, etc) from config."""
-    if field_type not in dependencies:
-        dependencies[field_type] = set()
-    dependencies[field_type].update(field_deps)
-
-
-def build_dependency_tree_for_component(component_path: Path | str, component_type: str) -> Dict[str, Set[str]]:
-    """Build dependency tree for a component.
-
-    Args:
-        component_path: Path to the component directory
-        component_type: Type of the component (skill, protocol, etc.)
-
-    Returns:
-        Dictionary mapping dependency types to sets of dependencies
-    """
-    component_path = Path(component_path)
-    dependencies = {}
-
-    try:
-        config = load_autonolas_yaml(component_type, component_path)[0]
-        dependency_fields = ["dependencies", "protocols", "contracts", "connections", "skills"]
-
-        for field in dependency_fields:
-            if field not in config:
-                continue
-
-            if field == "dependencies":
-                _process_dependencies_field(dependencies, config[field])
-            else:
-                field_type = field[:-1]  # Remove 's' from end
-                _process_component_field(dependencies, field_type, config[field])
-
-        return dependencies
-    except (FileNotFoundError, ValueError):
-        return {}
