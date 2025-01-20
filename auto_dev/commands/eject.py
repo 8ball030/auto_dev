@@ -5,6 +5,7 @@ from rich.progress import track
 from aea.configurations.base import PublicId
 
 from auto_dev.base import build_cli
+from auto_dev.constants import DEFAULT_AUTHOR
 from auto_dev.services.eject.index import EjectConfig, ComponentEjector
 
 
@@ -45,20 +46,19 @@ def eject(ctx, component_type: str, public_id: str, fork_id: str, skip_dependenc
 
     Example Usage:
 
-        # Basic ejection of a skill:
-        adev eject skill valory/price_estimation myorg/custom_price
+        # Eject a skill:
+        adev eject skill eightballer/metrics new_author/better_metrics
 
         # Eject a contract without its dependencies:
-        adev eject contract valory/gnosis_safe myorg/safe --skip-dependencies
+        adev eject contract valory/gnosis_safe new_author/safe --skip-dependencies
 
-        # Eject a connection with all dependencies:
-        adev eject connection valory/http_client myorg/custom_http
+        # Eject a connection:
+        adev eject connection valory/http_client new_author/custom_http
 
-        # Eject a protocol to a new name under same author:
-        adev eject protocol valory/http valory/custom_http
+        # Eject a protocol:
+        adev eject protocol open_aea/signing new_author/custom_signing
 
-        # Eject a skill with complex dependencies:
-        adev eject skill valory/price_estimation_abci myorg/price_abci
+
 
     Args:
         component_type: Type of the component (skill, contract, connection, protocol)
