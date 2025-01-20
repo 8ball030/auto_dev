@@ -94,7 +94,7 @@ class ComponentEjector:
 
     def _fingerprint_component(self, component_id: PublicId, component_type: str) -> bool:
         """Run fingerprint command for a component."""
-        success, _ = self.run_command(f"aea fingerprint {component_type} {component_id.author}/{component_id.name}")
+        success, _ = self.run_command(f"aea -s fingerprint {component_type} {component_id.author}/{component_id.name}")
         return success
 
     def update_agent_config(self, agent_config_path: Path) -> None:
