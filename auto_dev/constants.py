@@ -11,7 +11,8 @@ from aea.cli.utils.config import get_or_create_cli_config
 DEFAULT_ENCODING = "utf-8"
 DEFAULT_TZ = "UTC"
 DEFAULT_TIMEOUT = 10
-DEFAULT_AUTHOR = "eighballer"
+DEFAULT_AUTHOR = "author"
+DEFAULT_AGENT_NAME = "agent"
 # package directory
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_RUFF_CONFIG = Path(PACKAGE_DIR) / "data" / "ruff.toml"

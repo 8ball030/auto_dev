@@ -22,7 +22,7 @@ from auto_dev.utils import (
     folder_swapper,
     has_package_code_changed,
 )
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_AGENT_NAME
 
 
 TEST_PACKAGES_JSON = {
@@ -198,7 +198,7 @@ def test_load_aea_ctx(dummy_agent_tim):
     result = decorated_func(mock_context, "arg1", "arg2", kwarg1="value1", kwarg2="value2")
 
     ctx, args, kwargs = result
-    assert ctx.aea_ctx.agent_config.name == "tim"
+    assert ctx.aea_ctx.agent_config.name == DEFAULT_AGENT_NAME
     assert args == ("arg1", "arg2")
     assert kwargs == {"kwarg1": "value1", "kwarg2": "value2"}
 

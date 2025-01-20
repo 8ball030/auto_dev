@@ -8,7 +8,14 @@ import pytest
 from aea.configurations.base import PublicId
 
 from auto_dev.utils import isolated_filesystem
-from auto_dev.constants import DEFAULT_ENCODING, SAMPLE_PACKAGE_FILE, SAMPLE_PACKAGES_JSON, AUTONOMY_PACKAGES_FILE
+from auto_dev.constants import (
+    DEFAULT_AUTHOR,
+    DEFAULT_ENCODING,
+    DEFAULT_AGENT_NAME,
+    SAMPLE_PACKAGE_FILE,
+    SAMPLE_PACKAGES_JSON,
+    AUTONOMY_PACKAGES_FILE,
+)
 from auto_dev.cli_executor import CommandExecutor
 
 
@@ -89,7 +96,7 @@ def cli_runner():
 def dummy_agent_tim(test_packages_filesystem) -> Path:
     """Fixture for dummy agent tim."""
     assert Path.cwd() == Path(test_packages_filesystem)
-    agent = PublicId.from_str("dummy_author/tim")
+    agent = PublicId.from_str(f"{DEFAULT_AUTHOR}/{DEFAULT_AGENT_NAME}")
     command = f"adev create {agent!s} -t eightballer/base --no-clean-up"
     command_executor = CommandExecutor(command)
     result = command_executor.execute(verbose=True, shell=True)

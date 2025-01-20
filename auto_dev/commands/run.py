@@ -13,8 +13,9 @@ from textwrap import dedent
 from dataclasses import dataclass
 
 import docker
+import requests
 import rich_click as click
-from docker.errors import NotFound
+from docker.errors import APIError, NotFound
 from aea.skills.base import PublicId
 from aea.configurations.base import PackageType
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
@@ -60,10 +61,35 @@ class AgentRunner:
         if locally and in_packages:
             raise UserInputError("Cannot check both locally and in packages.")
         if locally:
-            return Path(self.agent_name.name).exists() or Path(DEFAULT_AEA_CONFIG_FILE).exists()
+            return self._is_locally_fetched() or self._is_in_agent_dir()
         if in_packages:
-            return Path(f"packages/{self.agent_name.author}/agents/{self.agent_name.name}").exists()
+            return self._is_in_packages()
         return False
+
+    def _is_locally_fetched(self):
+        return Path(self.agent_name.name).exists()
+
+    def _is_in_agent_dir(self):
+        return Path(DEFAULT_AEA_CONFIG_FILE).exists()
+
+    def _is_in_packages(self):
+        return Path(self.agent_package_path).exists()
+
+    @property
+    def agent_package_path(self):
+        """Get the agent package path."""
+        return Path("packages") / self.agent_name.author / "agents" / self.agent_name.name
+
+    @property
+    def agent_dir(self) -> Path:
+        """Get the agent directory based on where it is found."""
+        if self._is_in_agent_dir():
+            return Path(".")
+        if self._is_locally_fetched():
+            return Path(self.agent_name.name)
+        if self._is_in_packages():
+            return self.agent_package_path
+        raise UserInputError(f"Agent not found. {self.agent_name} not found in local packages or agent directory.")
 
     def stop_tendermint(self) -> None:
         """Stop Tendermint."""
@@ -75,28 +101,26 @@ class AgentRunner:
         """Check if Tendermint is running."""
         self.logger.info("Checking Tendermint status...")
         docker_engine = docker.from_env()
+        os_name = platform.system()
         container_name = "tm_0"
+        tm_overrides = map_os_to_env_vars(os_name)
         try:
-            self.logger.info(f"Looking for Tendermint container: {container_name}")
+            self.logger.debug(f"Looking for Tendermint container: {container_name}")
             res = docker_engine.containers.get(container_name)
             self.logger.info(f"Found Tendermint container with status: {res.status}")
             if res.status == "exited":
                 res.remove()
                 time.sleep(0.2)
                 self.check_tendermint(retries + 1)
-
         except (subprocess.CalledProcessError, RuntimeError, NotFound) as e:
             self.logger.info(f"Tendermint container not found or error: {e}")
             if retries > 3:
                 self.logger.error(f"Tendermint is not running. Please install and run Tendermint using Docker. {e}")
                 sys.exit(1)
             self.logger.info("Starting Tendermint... 🚀")
-            os_name = platform.system()
-            tm_overrides = map_os_to_env_vars(os_name)
             self.start_tendermint(tm_overrides)
             time.sleep(2)
             return self.check_tendermint(retries + 1)
-
         if res.status != "running":
             self.logger.error("Tendermint is not healthy. Please check the logs.")
             sys.exit(1)
