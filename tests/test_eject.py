@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 
 from auto_dev.utils import change_dir
+from auto_dev.constants import DEFAULT_AUTHOR
 
 
 def test_eject_metrics_skill_workflow(cli_runner, test_filesystem):
@@ -15,7 +16,7 @@ def test_eject_metrics_skill_workflow(cli_runner, test_filesystem):
         "adev",
         "-v",
         "create",
-        f"new_author/{agent_name}",
+        f"{DEFAULT_AUTHOR}/{agent_name}",
         "-t",
         "eightballer/base",
         "--no-clean-up",
@@ -37,11 +38,11 @@ def test_eject_metrics_skill_workflow(cli_runner, test_filesystem):
             "eject",
             "skill",
             "eightballer/metrics",
-            "new_author/better_skill",
+            f"{DEFAULT_AUTHOR}/metrics",
         ]
         runner.execute(eject_cmd)
-        assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
-        assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
+        assert f'Agent "{agent_name}" successfully saved in packages folder.' in runner.output
+        assert f"Agent packages/{DEFAULT_AUTHOR}/agents/{agent_name} created successfully." in runner.output
         assert runner.return_code == 0
 
 
@@ -54,7 +55,7 @@ def test_eject_metrics_skill_skip_deps(cli_runner, test_filesystem):
         "adev",
         "-v",
         "create",
-        f"new_author/{agent_name}",
+        f"{DEFAULT_AUTHOR}/{agent_name}",
         "-t",
         "eightballer/base",
         "--no-clean-up",
@@ -76,10 +77,10 @@ def test_eject_metrics_skill_skip_deps(cli_runner, test_filesystem):
             "eject",
             "skill",
             "eightballer/metrics",
-            "new_author/better_skill",
+            f"{DEFAULT_AUTHOR}/metrics",
             "--skip-dependencies",
         ]
         runner.execute(eject_cmd)
-        assert 'Agent "test_agent" successfully saved in packages folder.' in runner.output
-        assert "Agent packages/new_author/agents/test_agent created successfully." in runner.output
+        assert f'Agent "{agent_name}" successfully saved in packages folder.' in runner.output
+        assert f"Agent packages/{DEFAULT_AUTHOR}/agents/{agent_name} created successfully." in runner.output
         assert runner.return_code == 0
