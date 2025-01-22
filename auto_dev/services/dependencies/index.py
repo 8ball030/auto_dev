@@ -69,5 +69,5 @@ class DependencyBuilder:
                     builder.process_component_field(field_type, config[field])
 
             return builder.dependencies
-        except (FileNotFoundError, ValueError):
-            raise ValueError(f"Failed to build dependency tree for component {component_path}")
+        except (FileNotFoundError, ValueError) as e:
+            raise ValueError(f"Failed to build dependency tree for component {component_path}") from e
