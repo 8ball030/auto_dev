@@ -204,8 +204,7 @@ class ComponentEjector:
     def _handle_component_dependencies(self) -> List[PublicId]:
         """Build and handle component dependencies."""
         component_dir = Path.cwd() / self.config.component_type / self.config.public_id.name
-        builder = DependencyBuilder(component_dir, self.config.component_type)
-        deps = builder.build()
+        deps = DependencyBuilder.build_dependency_tree_for_component(component_dir, self.config.component_type)
         return self.handle_dependencies(deps)
 
     def _update_and_cleanup(self) -> None:

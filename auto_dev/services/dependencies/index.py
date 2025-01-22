@@ -1,7 +1,8 @@
 """Service for handling component dependencies."""
 
-from typing import Dict, Set
+from typing import Set, Dict
 from pathlib import Path
+
 from auto_dev.utils import load_autonolas_yaml
 
 
@@ -10,7 +11,7 @@ class DependencyBuilder:
 
     def __init__(self, component_path: Path | str, component_type: str):
         """Initialize the dependency builder.
-        
+
         Args:
             component_path: Path to the component directory
             component_type: Type of the component (skill, protocol, etc.)
@@ -21,7 +22,7 @@ class DependencyBuilder:
 
     def process_dependencies_field(self, config_deps: dict) -> None:
         """Process the dependencies field of a component config.
-        
+
         Args:
             config_deps: Dependencies configuration from component config
         """
@@ -32,7 +33,7 @@ class DependencyBuilder:
 
     def process_component_field(self, field_type: str, field_deps: list) -> None:
         """Process a component field (protocols, contracts, etc) from config.
-        
+
         Args:
             field_type: Type of the component field
             field_deps: List of dependencies for this field
@@ -41,14 +42,20 @@ class DependencyBuilder:
             self.dependencies[field_type] = set()
         self.dependencies[field_type].update(field_deps)
 
-    def build(self) -> Dict[str, Set[str]]:
-        """Build dependency tree for the component.
-
+    @classmethod
+    def build_dependency_tree_for_component(
+        cls, component_path: Path | str, component_type: str
+    ) -> Dict[str, Set[str]]:
+        """Build dependency tree for a component.
+        Args:
+            component_path: Path to the component directory
+            component_type: Type of the component (skill, protocol, etc.)
         Returns:
             Dictionary mapping dependency types to sets of dependencies
         """
         try:
-            config = load_autonolas_yaml(self.component_type, self.component_path)[0]
+            builder = cls(component_path, component_type)
+            config = load_autonolas_yaml(component_type, builder.component_path)[0]
             dependency_fields = ["dependencies", "protocols", "contracts", "connections", "skills"]
 
             for field in dependency_fields:
@@ -56,25 +63,11 @@ class DependencyBuilder:
                     continue
 
                 if field == "dependencies":
-                    self.process_dependencies_field(config[field])
+                    builder.process_dependencies_field(config[field])
                 else:
                     field_type = field[:-1]  # Remove 's' from end
-                    self.process_component_field(field_type, config[field])
+                    builder.process_component_field(field_type, config[field])
 
-            return self.dependencies
+            return builder.dependencies
         except (FileNotFoundError, ValueError):
             return {}
-
-
-def build_dependency_tree_for_component(component_path: Path | str, component_type: str) -> Dict[str, Set[str]]:
-    """Build dependency tree for a component.
-
-    Args:
-        component_path: Path to the component directory
-        component_type: Type of the component (skill, protocol, etc.)
-
-    Returns:
-        Dictionary mapping dependency types to sets of dependencies
-    """
-    builder = DependencyBuilder(component_path, component_type)
-    return builder.build()

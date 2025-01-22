@@ -205,8 +205,7 @@ def build_dependency_tree_for_metadata_components(component: str) -> dict:
     public_id = PublicId(component_author, component_name.split(":")[0])
     component_path = f"packages/{public_id.author}/{component_type}s/{public_id.name}"
 
-    builder = DependencyBuilder(component_path, component_type)
-    return builder.build()
+    return DependencyBuilder.build_dependency_tree_for_component(component_path, component_type)
 
 
 @cli.command()
