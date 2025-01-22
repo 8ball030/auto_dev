@@ -91,6 +91,7 @@ class HandlerScaffolder:
     def extract_schema(self, operation: Operation) -> Optional[str]:
         """Extract schema from an operation."""
         if not operation.responses:
+            self.logger.debug("No responses found")
             return None
 
         success_response = next(
@@ -106,12 +107,14 @@ class HandlerScaffolder:
 
         try:
             schema = parse_schema_like(content.media_type_schema)
+            self.logger.debug(f"Parsed schema: {schema}")
             ref = None
 
             if isinstance(schema, Reference):
                 ref = schema.ref
             elif isinstance(schema, Schema):
-                if schema.type == "array" and schema.items:
+                self.logger.debug(f"Schema is a Schema object with type: {schema.type}")
+                if str(schema.type) == "array" and schema.items:
                     items = parse_schema_like(schema.items)
                     if isinstance(items, Reference):
                         ref = items.ref
@@ -119,7 +122,6 @@ class HandlerScaffolder:
                     ref = next((s.ref for s in schema.allOf if isinstance(s, Reference)), None)
                 elif hasattr(schema, "oneOf"):
                     ref = next((s.ref for s in schema.oneOf if isinstance(s, Reference)), None)
-
             return ref.split("/")[-1] if ref else None
         except AttributeError:
             self.logger.exception(f"Could not extract schema from response: {content}")

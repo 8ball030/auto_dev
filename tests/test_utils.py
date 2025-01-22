@@ -68,10 +68,20 @@ dependencies:
 }
 
 
-def test_get_logger():
+def test_get_logger(capsys):
     """Test get_logger."""
+    # Test default level (INFO)
     log = get_logger()
-    assert log.level == 20
+    assert log.level == 20  # INFO level
+
+    # Test DEBUG level
+    log = get_logger(log_level="DEBUG")
+    log.debug("Debug message")
+    log.info("Info message")
+    captured = capsys.readouterr()
+    assert log.level == 10  # DEBUG level
+    assert "Debug message" in captured.out
+    assert "Info message" in captured.out
 
 
 def test_get_packages(test_packages_filesystem):
