@@ -70,4 +70,4 @@ class DependencyBuilder:
 
             return builder.dependencies
         except (FileNotFoundError, ValueError):
-            return {}
+            raise ValueError(f"Failed to build dependency tree for component {component_path}")
