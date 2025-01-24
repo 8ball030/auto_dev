@@ -10,6 +10,8 @@ nav:
     - Overview: usage.md
     - FSM: fsm.md
     - OpenAPI: openapi.md
+  - Guides:
+    - Whale Watcher Agent: whale_watcher.md
   - API Reference:
     - Overview: api/index.md
     - auto_dev: api/auto_dev.md
