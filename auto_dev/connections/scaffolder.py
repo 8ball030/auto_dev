@@ -170,7 +170,7 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
         doc = "".join(part.format(**self.kwargs) + "\n" for part in TEST_CONNECTION_TEMPLATE)
         self.test_connection.write_text(doc)
 
-        doc = "".join(part.format(**self.kwargs) + "\n" for part in HEADER)
+        doc = "".join(part.format(**self.kwargs) + "\n" for part in HEADER.split("\n"))
         self.test_connection_init = self.tests / "__init__.py"
         self.test_connection_init.write_text(doc)
 

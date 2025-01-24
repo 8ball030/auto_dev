@@ -2,8 +2,7 @@
 
 from pathlib import Path
 
-from auto_dev.constants import DEFAULT_AUTHOR
-from auto_dev.commands.create import AGENT_PUBLISHED_SUCCESS_MSG
+from auto_dev.constants import DEFAULT_AUTHOR, AGENT_PUBLISHED_SUCCESS_MSG
 
 
 def test_lint_fails(cli_runner, test_filesystem):

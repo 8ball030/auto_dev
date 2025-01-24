@@ -10,18 +10,18 @@ def check_path(path: str, verbose: bool = False) -> bool:
     """Check the path for linting errors.
     :param path: The path to check.
     """
-    with isolated_filesystem(True):
-        command = CommandExecutor(
-            [
-                "poetry",
-                "run",
-                "ruff",
-                "check",
-                "--fix",
-                "--unsafe-fixes",
-                path,
-                "--config",
-                str(DEFAULT_RUFF_CONFIG),
-            ]
-        )
-        return command.execute(verbose=verbose)
+    command = CommandExecutor(
+        [
+            "poetry",
+            "run",
+            "ruff",
+            "check",
+            "--fix",
+            "--unsafe-fixes",
+            path,
+            "--config",
+            str(DEFAULT_RUFF_CONFIG),
+        ]
+    )
+    # We now 
+    return command.execute(verbose=verbose)

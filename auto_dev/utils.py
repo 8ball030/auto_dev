@@ -21,10 +21,15 @@ from collections.abc import Callable
 import yaml
 import rich_click as click
 from rich.logging import RichHandler
+from aea.skills.base import PublicId
 from aea.cli.utils.config import get_registry_path_from_cli_config
 from aea.cli.utils.context import Context
 from openapi_spec_validator import validate_spec
-from aea.configurations.base import AgentConfig, _get_default_configuration_file_name_from_type  # noqa
+from aea.configurations.base import (
+    DEFAULT_AEA_CONFIG_FILE,
+    AgentConfig,
+    _get_default_configuration_file_name_from_type,  # noqa
+)
 from aea.configurations.data_types import PackageType
 from openapi_spec_validator.exceptions import OpenAPIValidationError
 
@@ -470,3 +475,23 @@ def map_os_to_env_vars(os_name: str) -> None:
     """Map operating system to environment variables."""
     env_vars = OS_ENV_MAP.get(os_name, {})
     return env_vars
+
+
+def update_author(public_id: PublicId) -> None:
+    """Update the author in the recently created agent"""
+
+    complete_agent_config = load_autonolas_yaml(PackageType.AGENT)
+    agent_config, *_ = complete_agent_config
+    for key in ["author", "agent_name"]:
+        public_id.agent_name = public_id.name
+        if key not in agent_config:
+            msg = f"Key {key} not found in agent config. Please check the agent config file."
+            raise KeyError(msg)
+        if agent_config[key] != getattr(public_id, key):
+            click.secho(
+                f"Updating `{key}` in aea-config.yaml from {agent_config[key]} to {getattr(public_id, key)}",
+                fg="yellow",
+            )
+            agent_config[key] = getattr(public_id, key)
+            complete_agent_config[0] = agent_config
+            write_to_file(DEFAULT_AEA_CONFIG_FILE, complete_agent_config, FileType.YAML)

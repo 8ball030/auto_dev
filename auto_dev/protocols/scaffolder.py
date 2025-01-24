@@ -17,7 +17,7 @@ from aea.protocols.generator.base import ProtocolGenerator
 
 from auto_dev.fmt import Formatter
 from auto_dev.utils import currenttz, get_logger, remove_prefix, camel_to_snake, snake_to_camel
-from auto_dev.constants import DEFAULT_TZ, DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
+from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.data.connections.template import HEADER
 
 

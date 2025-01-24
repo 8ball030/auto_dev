@@ -5,18 +5,17 @@ import os
 from pathlib import Path
 
 import pytest
-from aea.configurations.base import PublicId
 
 from auto_dev.utils import isolated_filesystem
 from auto_dev.constants import (
-    DEFAULT_AUTHOR,
     DEFAULT_ENCODING,
-    DEFAULT_AGENT_NAME,
+    DEFAULT_PUBLIC_ID,
     SAMPLE_PACKAGE_FILE,
     SAMPLE_PACKAGES_JSON,
     AUTONOMY_PACKAGES_FILE,
 )
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.services.package_manager.index import PackageManager
 
 
 OPENAPI_TEST_CASES = [
@@ -96,7 +95,7 @@ def cli_runner():
 def dummy_agent_tim(test_packages_filesystem) -> Path:
     """Fixture for dummy agent tim."""
     assert Path.cwd() == Path(test_packages_filesystem)
-    agent = PublicId.from_str(f"{DEFAULT_AUTHOR}/{DEFAULT_AGENT_NAME}")
+    agent = DEFAULT_PUBLIC_ID
     command = f"adev create {agent!s} -t eightballer/base --no-clean-up"
     command_executor = CommandExecutor(command)
     result = command_executor.execute(verbose=True, shell=True)
@@ -105,3 +104,24 @@ def dummy_agent_tim(test_packages_filesystem) -> Path:
         raise ValueError(msg)
     os.chdir(agent.name)
     return True
+
+
+@pytest.fixture
+def dummy_agent_default(test_packages_filesystem) -> Path:
+    """Fixture for dummy agent default."""
+    assert Path.cwd() == Path(test_packages_filesystem)
+    agent = DEFAULT_PUBLIC_ID
+    command = f"adev create {agent!s} -t eightballer/base --no-clean-up --no-publish"
+    command_executor = CommandExecutor(command)
+    result = command_executor.execute(verbose=True, shell=True)
+    if not result:
+        msg = f"CLI command execution failed: `{command}`"
+        raise ValueError(msg)
+    os.chdir(agent.name)
+    return True
+
+
+@pytest.fixture
+def package_manager():
+    """Fixture for PackageManager."""
+    return PackageManager(verbose=True)

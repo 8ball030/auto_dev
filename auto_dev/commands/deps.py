@@ -32,6 +32,7 @@ import sys
 import shutil
 import logging
 import traceback
+from copy import deepcopy
 from enum import Enum
 from typing import Dict, List
 from pathlib import Path
@@ -129,6 +130,7 @@ def main(
     child_repo: Path,
     logger: logging.Logger,
     auto_confirm: bool = False,
+    manual: bool = False,
 ) -> None:
     """We run the main function."""
     try:
@@ -140,8 +142,14 @@ def main(
     if not proposed:
         logger.info("No changes required. 😎")
         return False
-    for package_name, package_hash in proposed.items():
-        logger.info(f"Updating {package_name} to {package_hash}")
+
+    for package_name, package_hash in deepcopy(proposed).items():
+        logger.info(f"Detected change from {package_name} to {package_hash}")
+        if manual:
+            incude = click.confirm("Include dependecy in proposed updates?")
+            if not incude:
+                proposed.pop(package_name)
+
     if not auto_confirm:
         click.confirm("Do you want to update the package?", abort=True)
     logger.info("Updating the packages json... 📝")
@@ -291,6 +299,12 @@ def deps(
     type=DependencyLocation,
     help="The location of the dependency.",
 )
+@click.option(
+    "--manual",
+    default=False,
+    help="Auto approve the changes.",
+    is_flag=True,
+)
 @deps.command()
 @click.pass_context
 def update(
@@ -299,6 +313,7 @@ def update(
     child_repo: Path,
     location: DependencyLocation = DependencyLocation.LOCAL,
     auto_confirm: bool = False,
+    manual: bool = False,
 ) -> None:
     """We update aea packages.json dependencies from a parent repo.
     Example usage:
@@ -314,7 +329,9 @@ def update(
     logger = ctx.obj["LOGGER"]
     logger.info("Updating the dependencies... 📝")
 
-    result = main(parent_repo=parent_repo, child_repo=child_repo, auto_confirm=auto_confirm, logger=logger)
+    result = main(
+        parent_repo=parent_repo, child_repo=child_repo, auto_confirm=auto_confirm, logger=logger, manual=manual
+    )
     if not result:
         sys.exit(1)
     logger.info("Done. 😎")
@@ -408,7 +425,7 @@ open_aea_repo = GitDependency(
 
 auto_dev_repo = GitDependency(
     name="autonomy-dev",
-    version="0.2.89",
+    version="0.2.90",
     location=DependencyLocation.REMOTE,
     url="https://api.github.com/repos/8ball030/auto_dev",
     extras=["all"],
@@ -611,7 +628,7 @@ def verify(
             if diffs:
                 print_json(data=diffs)
                 if not auto_approve:
-                    click.confirm("Do you want to update the package?\n", abort=True)
+                    click.confirm("Do you want to update all the packages?\n", abort=True)
                 update_package_json(repo=Path(), proposed_dependency_updates=diffs)
                 remove_old_package(repo=Path(), proposed_dependency_updates=diffs)
                 changes.append(dependency.name)

@@ -8,12 +8,10 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
-import json
 from typing import Optional
 from pathlib import Path
 
 import yaml
-import tomli
 import rich_click as click
 from web3 import Web3
 from jinja2 import Environment, FileSystemLoader

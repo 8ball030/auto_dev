@@ -1,6 +1,5 @@
 """This module contains the logic for the fmt command."""
 
-import shutil
 from pathlib import Path
 
 import rich_click as click
@@ -9,13 +8,12 @@ from aea.configurations.data_types import PackageType
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType
-from auto_dev.utils import change_dir, get_packages, write_to_file, load_autonolas_yaml
+from auto_dev.utils import change_dir, get_packages, update_author, write_to_file, load_autonolas_yaml
 from auto_dev.constants import AUTO_DEV_FOLDER, AUTONOMY_PACKAGES_FILE
 from auto_dev.exceptions import OperationError
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.services.package_manager.index import PackageManager
 
-
-AGENT_PUBLISHED_SUCCESS_MSG = "Agent published successfully."
 
 cli = build_cli()
 
@@ -27,61 +25,6 @@ def get_available_agents() -> list[str]:
 
 
 available_agents = get_available_agents()
-
-
-def update_author(public_id: PublicId) -> None:
-    """Update the author in the recently created agent"""
-
-    with change_dir(public_id.name):
-        complete_agent_config = load_autonolas_yaml(PackageType.AGENT)
-
-        agent_config = complete_agent_config[0]
-        if agent_config["author"] != public_id.author:
-            click.secho(
-                f"Updating author in aea-config.yaml from {agent_config['author']} to {public_id.author}",
-                fg="yellow",
-            )
-            agent_config["author"] = public_id.author
-            complete_agent_config[0] = agent_config
-            write_to_file("aea-config.yaml", complete_agent_config, FileType.YAML)
-
-
-def publish_agent(public_id: PublicId, verbose: bool) -> None:
-    """Publish an agent.
-    :param public_id: the public_id of the agent.
-    """
-    publish_commands = [
-        "aea publish --push-missing --local",
-    ]
-    with change_dir(public_id.name):
-        # we have to do a horrible hack here, regards to the customs as they are not being published.
-        # please see issue.
-        agent_config_yaml = load_autonolas_yaml(PackageType.AGENT)
-        for package in agent_config_yaml[0]["customs"]:
-            custom_id = PublicId.from_str(package)
-            # We need to copy the customs to the parent now.
-            customs_path = Path("vendor") / custom_id.author / "customs" / custom_id.name
-            package_path = Path("..") / "packages" / custom_id.author / "customs" / custom_id.name
-            if not package_path.exists():
-                shutil.copytree(
-                    customs_path,
-                    package_path,
-                )
-
-        for command in publish_commands:
-            command = CommandExecutor(
-                command.split(" "),
-            )
-            click.secho(f"Executing command: {command.command}", fg="yellow")
-            result = command.execute(verbose=verbose)
-            if not result:
-                msg = f"""
-                Command failed: {command.command}
-                Error: {command.stderr}
-                stdout: {command.stdout}"""
-                click.secho(msg, fg="red")
-                raise OperationError(msg)
-            click.secho(AGENT_PUBLISHED_SUCCESS_MSG, fg="green")
 
 
 @cli.command()
@@ -109,16 +52,16 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
         `adev create -t eightballer/frontend_agent new_author/new_agent`
     """
     agent_name = public_id.name
-
+    verbose = ctx.obj["VERBOSE"]
+    logger = ctx.obj["LOGGER"]
     package_path = str(Path("packages") / public_id.author / "agents" / public_id.name)
-
     for name in [
         agent_name,
         package_path,
     ]:
         is_proposed_path_exists = Path(name).exists()
         if is_proposed_path_exists and not force:
-            msg = (f"Directory {name} already exists. Please remove it or use the --force flag to overwrite it.",)
+            msg = f"Directory {name} already exists. " "Please remove it or use the --force flag to overwrite it."
             click.secho(
                 msg,
                 fg="red",
@@ -146,9 +89,7 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
                 raise OperationError(msg)
             click.secho("Command executed successfully.", fg="green")
 
-    verbose = ctx.obj["VERBOSE"]
-    logger = ctx.obj["LOGGER"]
-    logger.info(f"Creating agent {name} from template {template}")
+    logger.info(f"Creating agent {agent_name} from template {template}")
 
     ipfs_hash = available_agents[template]
 
@@ -168,18 +109,17 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
             return OperationError(msg)
         click.secho("Command executed successfully.", fg="yellow")
 
-    update_author(public_id=public_id)
-    if publish:
-        # We check if there is a local registry.
-
-        if not Path("packages").exists():
-            command = CommandExecutor(["poetry", "run", "autonomy", "packages", "init"])
-            result = command.execute(verbose=verbose)
-            if not result:
-                msg = f"Command failed: {command.command}"
-                click.secho(msg, fg="red")
-                return OperationError()
-        publish_agent(public_id, verbose)
+    with change_dir(agent_name):
+        update_author(public_id=public_id)
+        if publish:
+            try:
+                package_manager = PackageManager(verbose=verbose)
+                # We're already in the agent directory after update_author
+                package_manager.publish_agent(force=force)
+                click.secho("Agent published successfully.", fg="green")
+            except OperationError as e:
+                click.secho(str(e), fg="red")
+                raise click.Abort() from e
 
     if clean_up:
         command = CommandExecutor(
@@ -193,7 +133,7 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
         if not result:
             msg = f"Command failed: {command.command}"
             click.secho(msg, fg="red")
-            return OperationError()
-        click.secho(f"Agent {name} cleaned up successfully.", fg="green")
+            return OperationError(msg)
+        click.secho(f"Agent {agent_name} cleaned up successfully.", fg="green")
 
-    click.secho(f"Agent {name} created successfully.", fg="green")
+    click.secho(f"Agent {agent_name} created successfully.", fg="green")

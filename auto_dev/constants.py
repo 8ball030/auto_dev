@@ -6,6 +6,7 @@ from enum import Enum
 from pathlib import Path
 
 from aea.cli.utils.config import get_or_create_cli_config
+from aea.configurations.data_types import PublicId
 
 
 DEFAULT_ENCODING = "utf-8"
@@ -13,6 +14,7 @@ DEFAULT_TZ = "UTC"
 DEFAULT_TIMEOUT = 10
 DEFAULT_AUTHOR = "author"
 DEFAULT_AGENT_NAME = "agent"
+DEFAULT_PUBLIC_ID = PublicId.from_str(f"{DEFAULT_AUTHOR}/{DEFAULT_AGENT_NAME}")
 # package directory
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_RUFF_CONFIG = Path(PACKAGE_DIR) / "data" / "ruff.toml"
@@ -108,6 +110,7 @@ BASE_FSM_SKILLS = {
     "reset_pause_abci": "bafybeibqz7y3i4aepuprhijwdydkcsbqjtpeea6gdzpp5fgc6abrvjz25a",
     "termination_abci": "bafybeieb3gnvjxxsh73g67m7rivzknwb63xu4qeagpkv7f4mqz33ecikem",
 }
+AGENT_PUBLISHED_SUCCESS_MSG = "Agent published successfully."
 
 
 class CheckResult(Enum):
