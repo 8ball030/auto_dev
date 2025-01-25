@@ -2,6 +2,7 @@
 
 import os
 from dataclasses import dataclass
+import sys
 
 import rich_click as click
 import pkg_resources
@@ -58,15 +59,10 @@ def build_cli(plugins=False):
         type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
     )
     @click.option("-n", "--num-processes", default=0, help="Number of processes to use for linting", type=int)
-    @click.option("--version", is_flag=True, help="Print the version and exit")
     @click.option("--remote", is_flag=True, help="Use the remote server wherever possible")
     @click.pass_context
     def cli(ctx, log_level=False, verbose=False, num_processes=1, version=False, remote=False) -> None:
         """Cli development tooling."""
-        if version:
-            version = pkg_resources.get_distribution("autonomy-dev").version
-            click.echo(version)
-            ctx.exit()
         ctx.obj = {}
         ctx.obj["VERBOSE"] = verbose
         ctx.obj["LOGGER"] = get_logger(log_level=log_level)
@@ -78,7 +74,7 @@ def build_cli(plugins=False):
         # get the version from the package
         version = pkg_resources.get_distribution("autonomy-dev").version
 
-        ctx.obj["LOGGER"].info(f"Starting Auto Dev v{version} ...")
+        ctx.obj["LOGGER"].debug(f"Starting Auto Dev v{version} ...")
         # we get the version from the package
         if verbose:
             ctx.obj["LOGGER"].info("Verbose mode enabled")
@@ -86,6 +82,16 @@ def build_cli(plugins=False):
             ctx.obj["LOGGER"].debug(f"Using {num_processes} processes for processing")
         if log_level:
             ctx.obj["LOGGER"].debug(f"Setting log level to {log_level}")
+
+    # we add a version command
+    @cli.command()
+    @click.pass_context
+    def version(ctx) -> None:
+        """Print the version."""
+        version = pkg_resources.get_distribution("autonomy-dev").version
+        click.echo(version)
+    
+    cli.add_command(version)
 
     if plugins:
         plugins = CLIs().get_all_commands()

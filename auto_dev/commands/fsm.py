@@ -49,8 +49,8 @@ def from_file(fsm_spec: str, fsm_name: str, in_type: str, output: str) -> None:
     We parse an fsm file, in order to covnert between mermaid and fsm_spec.
 
     Example Usage:
-    `adev fsm from-file auto_dev/data/fsm/fsm_specification.yaml testAbciApp`
-    `adev fsm from-file auto_dev/data/fsm/fsm_specification.yaml testAbciApp --output fsm_spec`
+    `adev fsm from-file auto_dev/data/fsm/samples/fsm_specification.yaml testAbciApp`
+    `adev fsm from-file auto_dev/data/fsm/samples/fsm_specification.yaml testAbciApp --output fsm_spec`
     """
 
     fsm = INPUT_TO_FUNC[in_type](fsm_spec, label=fsm_name)
