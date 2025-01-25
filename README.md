@@ -34,36 +34,26 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
 - Test suite scaffolding
 
 ### Creating New Github Projects
+
 We can make an autonomy repo
 ```bash
 adev repo scaffold fun_new_hack
 cd fun_new_hack
 ```
 
-<!-- We link to a gif -->
+![asciicast](docs/assets/create_repo.gif)
 
-[![asciicast](docs/assets/create_repo.gif)]
-
-Which gives us a new repository fully setup to develop an autonomy project.
-We also install dependencies
-The expected output is as below.
-
-```output
-INFO     Starting Auto Dev v0.2.84 ...                                                                                                                                           
-INFO     Creating a new autonomy repo.                                                                                                                                           
-Scaffolding autonomy repo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
-INFO     Installing host deps. This may take a while!                                                                                                                            
-INFO     Initialising autonomy packages.                                                                                                                                         
-INFO     Autonomy successfully setup. 
-```
 
 ### Creating a new Agent
 
-Once we have a new project, we can build new agents from templates (The `--help` command will display the available templates.
+Once we have a new project, we can build new agents from templates 
+There are a number of templates available and the `--help` flag will display the available options.
 
-```
+```bash
 adev create author/cool_agent
 ```
+
+![asciicast](docs/assets/create_agent.gif)
 
 By default, we provide a simple server with ping pong via websockets available at localhost:5555
 
@@ -83,11 +73,6 @@ There are a number of useful command tools available.
     C). dependency management `adev deps update`
 
 - Scaffolding: Tooling to auto generate repositories and components.
-
-
-### Create
-
-- Templated agents for speedy proof of concept and getting started fast.
 
 
 ### Scaffolding of Components

@@ -8,11 +8,14 @@ set -euo pipefail
 
 source scripts/demos/base.sh
 
-gum format "Starting the demo"
-
 create_new_agent
 
-gum format "Demo complete"
+gum format """
+Now, we already have our new agent!
+AND We have converted it to a service ready to be deployed.
+We can see it in the local packages directory.
+"""
+tree -L 3 packages/author
 
 
 

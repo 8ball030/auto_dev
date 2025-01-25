@@ -62,21 +62,15 @@ function create_new_agent() {
     gum format "Creating a new agent."
     gum format """
     We can now create a new agent for our project.
-    This will create a new agent with the name '$AGENT_NAME'.
-    The agent will be published in the local packages directory for the project.
+    This will create an agent with the name '$AGENT_NAME'.
+    The agent will be published in the local packages directory 
     """
     sleep $SLEEP_TIME
     call_and_wait "adev create author/$AGENT_NAME" $SLEEP_TIME
 
-    # We convert to a service
-    call_and_wait "adev convert agent-to-service author/$AGENT_NAME author/cool_service" $SLEEP_TIME
+    # # We convert to a service
+    # call_and_wait "adev convert agent-to-service author/$AGENT_NAME author/cool_service" $SLEEP_TIME
 
-    gum format """
-    Now, we already have our new agent!
-    AND We have converted it to a service ready to be deployed.
-    We can see it in the local packages directory.
-    """
-    tree -L 3 packages/author
     sleep $SLEEP_TIME
 }
 
