@@ -16,7 +16,6 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -72,6 +71,7 @@ isort = "^5.13.2"
 openapi-spec-validator = "0.2.8"
 
 mkdocstrings = {extras = ["python"], version = ">=0.25.2,<0.28.0"}
+
 [tool.poetry.dev-dependencies]
 responses = "^0.23.1"
 mkdocs = "^1.6.0"

@@ -65,7 +65,7 @@ class AgentRunner:
         if locally and in_packages:
             raise UserInputError("Cannot check both locally and in packages.")
         if locally:
-            return self._is_locally_fetched() or self._is_in_agent_dir()
+            return self._is_locally_fetched() or self.is_in_agent_dir()
         if in_packages:
             return self._is_in_packages()
         return False
