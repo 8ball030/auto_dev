@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from auto_dev.constants import JINJA_TEMPLATE_FOLDER
 
@@ -13,7 +13,9 @@ class BasePackageScaffolder:
     def _post_init(self):
         """Post init function."""
         self.template_dir = Path(JINJA_TEMPLATE_FOLDER) / self.package_type
-        self.env = Environment(loader=FileSystemLoader(self.template_dir), autoescape=True)
+        self.env = Environment(
+            loader=FileSystemLoader(self.template_dir), autoescape=select_autoescape(["html", "xml"])
+        )
 
     def generate(self) -> None:
         """Scaffold the package.

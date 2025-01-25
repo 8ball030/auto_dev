@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import docker
 import requests
 import rich_click as click
-from docker.errors import APIError, NotFound
+from docker.errors import NotFound
 from aea.skills.base import PublicId
 from aea.configurations.base import PackageType
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
@@ -63,7 +63,8 @@ class AgentRunner:
         """Check if the agent exists."""
 
         if locally and in_packages:
-            raise UserInputError("Cannot check both locally and in packages.")
+            msg = "Cannot check both locally and in packages."
+            raise UserInputError(msg)
         if locally:
             return self._is_locally_fetched() or self.is_in_agent_dir()
         if in_packages:
@@ -89,12 +90,13 @@ class AgentRunner:
     def agent_dir(self) -> Path:
         """Get the agent directory based on where it is found."""
         if self.is_in_agent_dir():
-            return Path(".")
+            return Path()
         if self._is_locally_fetched():
             return Path(self.agent_name.name)
         if self._is_in_packages():
             return self.agent_package_path
-        raise UserInputError(f"Agent not found. {self.agent_name} not found in local packages or agent directory.")
+        msg = f"Agent not found. {self.agent_name} not found in local packages or agent directory."
+        raise UserInputError(msg)
 
     def stop_tendermint(self) -> None:
         """Stop Tendermint."""
@@ -122,7 +124,7 @@ class AgentRunner:
         except (subprocess.CalledProcessError, RuntimeError, NotFound) as e:
             self.logger.info(f"Tendermint container not found or error: {e}")
             if retries > 3:
-                self.logger.error(f"Tendermint is not running. Please install and run Tendermint using Docker. {e}")
+                self.logger.exception(f"Tendermint is not running. Please install and run Tendermint using Docker. {e}")
                 sys.exit(1)
             self.logger.info("Starting Tendermint... 🚀")
             self.start_tendermint(tm_overrides)
@@ -133,6 +135,7 @@ class AgentRunner:
             sys.exit(1)
 
         self.logger.info("Tendermint is running and healthy ✅")
+        return None
 
     def attempt_hard_reset(self, attempts: int = 0) -> None:
         """Attempt to hard reset Tendermint."""
@@ -199,10 +202,8 @@ class AgentRunner:
             self.logger.info(f"Processing ledger: {ledger}")
             self.setup_ledger_key(ledger, generate_keys)
 
-    def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Path = None) -> None:
-        """
-        Setup the agent with the ledger key.
-        """
+    def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Path | None = None) -> None:
+        """Setup the agent with the ledger key."""
         key_file = Path(f"{ledger}_private_key.txt")
         commands_to_errors = []
         if existing_key_file:
@@ -242,18 +243,19 @@ class AgentRunner:
                 env_vars=env_vars,
             )
             if not result:
-                raise RuntimeError("Docker compose command failed to start Tendermint")
+                msg = "Docker compose command failed to start Tendermint"
+                raise RuntimeError(msg)
             self.logger.info("Tendermint started successfully")
         except FileNotFoundError:
-            self.logger.error("Docker compose file not found. Please ensure Tendermint configuration exists.")
+            self.logger.exception("Docker compose file not found. Please ensure Tendermint configuration exists.")
             sys.exit(1)
         except docker.errors.DockerException as e:
-            self.logger.error(
-                f"Docker error: {str(e)}. Please ensure Docker is running and you have necessary permissions."
+            self.logger.exception(
+                f"Docker error: {e!s}. Please ensure Docker is running and you have necessary permissions."
             )
             sys.exit(1)
         except Exception as e:
-            self.logger.error(f"Failed to start Tendermint: {str(e)}")
+            self.logger.exception(f"Failed to start Tendermint: {e!s}")
 
             msg = dedent("""
                          Please check that:
@@ -262,14 +264,15 @@ class AgentRunner:
                          3. You have necessary permissions to run Docker commands
                          4. The Tendermint configuration file exists and is valid
                          """)
-            self.logger.error(msg)
+            self.logger.exception(msg)
             sys.exit(1)
 
     def execute_agent(
         self,
     ) -> None:
         """Execute the agent.
-        - args: background (bool): Run the agent in the background."""
+        - args: background (bool): Run the agent in the background.
+        """
         self.logger.info("Starting agent execution...")
         try:
             result = self.execute_command("aea -s run", verbose=True)
@@ -279,7 +282,7 @@ class AgentRunner:
                 self.logger.error("Agent execution failed.")
                 sys.exit(1)
         except RuntimeError as error:
-            self.logger.error(f"Agent ended with error: {error}")
+            self.logger.exception(f"Agent ended with error: {error}")
         self.logger.info("Agent execution complete. 😎")
 
     def execute_command(self, command: str, verbose=None, env_vars=None) -> None:
@@ -292,8 +295,14 @@ class AgentRunner:
         if not result:
             self.logger.error(f"Command failed: {command}")
             self.logger.error(f"Error: {cli_executor.stderr}")
-            raise RuntimeError(f"Command failed: {command}")
+            msg = f"Command failed: {command}"
+            raise RuntimeError(msg)
         return result
+
+    def get_version(self) -> str:
+        """Get the version of the agent."""
+        agent_config = load_autonolas_yaml(PackageType.AGENT, self.agent_dir)[0]
+        return agent_config["version"]
 
 
 @cli.command()
@@ -307,8 +316,7 @@ class AgentRunner:
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
 @click.pass_context
 def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
-    """
-    Run an agent from the local packages registry or a local path.
+    """Run an agent from the local packages registry or a local path.
 
     Example usage:
         adev run eightballer/my_agent  # Fetch and run from registry
@@ -318,8 +326,7 @@ def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         # We set fetch to false if the agent is not provided, as we assume the user wants to run the agent locally.
         fetch = False
         agent_config = load_autonolas_yaml(PackageType.AGENT)[0]
-        id_str = f"{agent_config['author']}/{agent_config['agent_name']}:{agent_config['version']}"
-        agent_public_id = PublicId.from_str(id_str)
+        agent_public_id = PublicId.from_json(agent_config)
     logger = ctx.obj["LOGGER"]
 
     runner = AgentRunner(
