@@ -40,6 +40,10 @@ adev repo scaffold fun_new_hack
 cd fun_new_hack
 ```
 
+<!-- We link to a gif -->
+
+[![asciicast](docs/assets/create_repo.gif)]
+
 Which gives us a new repository fully setup to develop an autonomy project.
 We also install dependencies
 The expected output is as below.
