@@ -312,6 +312,7 @@ def load_autonolas_yaml(package_type: PackageType, directory: str | Path | None 
     if not config_path.exists():
         msg = f"Could not find {config_path}, are you in the correct directory?"
         raise FileNotFoundError(msg)
+    
     return list(yaml.safe_load_all(config_path.read_text(encoding=DEFAULT_ENCODING)))
 
 

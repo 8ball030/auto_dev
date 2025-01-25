@@ -1,18 +1,23 @@
 """Command."""
 
+from datetime import datetime
 import shutil
 from pathlib import Path
 
 import rich_click as click
 from aea.configurations.base import PublicId, PackageType
 from aea.configurations.constants import PACKAGES, SERVICES, DEFAULT_SERVICE_CONFIG_FILE
+import yaml
 
 from auto_dev.base import build_cli
-from auto_dev.utils import get_logger, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.data.connections.template import HEADER
 from auto_dev.exceptions import UserInputError
 from auto_dev.scaffolder import BasePackageScaffolder
 from auto_dev.commands.run import AgentRunner
+from auto_dev.utils import get_logger, load_autonolas_yaml
+
+from collections import OrderedDict
 
 
 JINJA_SUFFIX = ".jinja"
@@ -20,6 +25,17 @@ JINJA_SUFFIX = ".jinja"
 logger = get_logger()
 
 cli = build_cli(plugins=False)
+
+
+import yaml
+from collections import OrderedDict
+
+# Add a custom representer for OrderedDict if it's causing issues
+def ordered_dict_representer(dumper, value):
+    return dumper.represent_mapping('tag:yaml.org,2002:map', value.items())
+
+yaml.add_representer(OrderedDict, ordered_dict_representer)
+
 
 
 @cli.group()
@@ -75,16 +91,24 @@ class ConvertCliTool(BasePackageScaffolder):
     def create_service(self, agent_config, overrides, number_of_agents):
         """Create the service from a jinja template."""
         template = self.get_template(self.template_name)
+
+        override_strings = yaml.safe_dump(overrides, default_flow_style=False, sort_keys=False)
+
+
+
         rendered = template.render(
             agent_public_id=self.agent_public_id,
             service_public_id=self.service_public_id,
             agent_config=agent_config,
-            overrides=overrides,
+            overrides=override_strings,
             number_of_agents=number_of_agents,
         )
         code_dir = Path(PACKAGES) / self.service_public_id.author / SERVICES / self.service_public_id.name
         code_dir.mkdir(parents=True, exist_ok=True)
         code_path = code_dir / self.template_name.split(JINJA_SUFFIX)[0]
+        
+        print(rendered )
+        print(code_path)
         code_path.write_text(rendered, DEFAULT_ENCODING)
 
     def check_if_service_exists(
