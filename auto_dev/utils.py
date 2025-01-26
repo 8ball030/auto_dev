@@ -304,7 +304,7 @@ def load_autonolas_yaml(package_type: PackageType, directory: Optional[Union[str
         raise FileNotFoundError(msg)
 
     with open(file_path, encoding=DEFAULT_ENCODING) as file:
-        return yaml.safe_load(file)
+        return list(yaml.safe_load_all(file))
 
 
 def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[click.Context, Any, Any], Any]:
