@@ -269,8 +269,12 @@ def snake_to_camel(string: str):
 
 
 def camel_to_snake(string: str):
-    """Convert camel case to snake case."""
-    return "".join(["_" + i.lower() if i.isupper() else i for i in string]).lstrip("_")
+    """Convert a string from camel case to snake case.
+    Note: If the string is all uppercase, it will be converted to lowercase.
+    """
+    if string.isupper():
+        return string.lower()
+    return "".join("_" + c.lower() if c.isupper() else c for c in string).lstrip("_")
 
 
 def remove_prefix(text: str, prefix: str) -> str:
