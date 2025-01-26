@@ -1,17 +1,18 @@
 Name                             Stmts   Miss  Cover   Missing
 --------------------------------------------------------------
 auto_dev/__init__.py                 0      0   100%
-auto_dev/base.py                    60     60     0%   3-94
-auto_dev/check_dependencies.py     236    236     0%   28-452
-auto_dev/cli.py                      4      4     0%   3-9
-auto_dev/cli_executor.py            73     73     0%   8-110
-auto_dev/constants.py               59     59     0%   3-167
-auto_dev/enums.py                   40     40     0%   3-61
-auto_dev/exceptions.py               8      8     0%   4-32
-auto_dev/fmt.py                     59     59     0%   3-112
-auto_dev/lint.py                     7      7     0%   3-27
+auto_dev/base.py                    60      3    95%   79, 89-90
+auto_dev/check_dependencies.py     229    229     0%   26-440
+auto_dev/cli.py                      4      1    75%   9
+auto_dev/cli_executor.py            71     35    51%   31, 47, 53-55, 57-60, 64-97
+auto_dev/constants.py               58      0   100%
+auto_dev/enums.py                   40      0   100%
+auto_dev/exceptions.py               8      0   100%
+auto_dev/fmt.py                     59     43    27%   16-17, 21-22, 27-45, 50, 60-61, 66-80, 85-97, 102-112
+auto_dev/lint.py                     5      2    60%   12-26
 auto_dev/local_fork.py              52     52     0%   3-95
-auto_dev/test.py                    16     16     0%   3-39
-auto_dev/utils.py                  275    275     0%   3-473
+auto_dev/scaffolder.py              19      4    79%   25, 29, 34, 39
+auto_dev/test.py                    15     10    33%   25-38
+auto_dev/utils.py                  286    172    40%   72, 76, 111-112, 116, 129-136, 141-186, 215-220, 226-230, 239-263, 268, 275-277, 282, 287, 313-314, 323-327, 336-338, 343-363, 368-382, 387-393, 415-417, 426, 433-461, 466-473, 478, 484-494
 --------------------------------------------------------------
-TOTAL                              889    889     0%
+TOTAL                              906    551    39%
