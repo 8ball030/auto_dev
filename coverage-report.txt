@@ -17,8 +17,8 @@ auto_dev/utils.py                    286    286     0%   3-494
 docs/__init__.py                       0      0   100%
 docs/hooks.py                         35     35     0%   3-75
 scripts/__init__.py                    0      0   100%
-scripts/generate_command_docs.py      67     67     0%   8-202
+scripts/generate_command_docs.py      87     87     0%   8-229
 site/__init__.py                       0      0   100%
 site/hooks.py                         35     35     0%   3-75
 ----------------------------------------------------------------
-TOTAL                               1043   1043     0%
+TOTAL                               1063   1063     0%

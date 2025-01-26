@@ -15,7 +15,7 @@ from auto_dev.constants import (
     AUTONOMY_PACKAGES_FILE,
 )
 from auto_dev.cli_executor import CommandExecutor
-from scripts.generate_command_docs import main as generate_docs
+from scripts.generate_command_docs import generate_docs
 from auto_dev.services.package_manager.index import PackageManager
 
 
