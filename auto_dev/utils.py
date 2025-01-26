@@ -248,26 +248,24 @@ def folder_swapper(dir_a: Union[str, Path], dir_b: Union[str, Path]):
     shutil.copytree(dir_a, dir_a_backup)
     shutil.copytree(dir_b, dir_b_backup)
 
-    try:
-        # Swap contents
+    def overwrite(source_dir: Path, target_dir: Path) -> None:
         shutil.rmtree(dir_a)
         shutil.rmtree(dir_b)
-        shutil.copytree(dir_b_backup, dir_a)
-        shutil.copytree(dir_a_backup, dir_b)
+        shutil.copytree(source_dir, dir_a)
+        shutil.copytree(target_dir, dir_b)
+
+    try:
+        overwrite(dir_b_backup, dir_a_backup)
         yield
     finally:
-        # Restore original contents
-        shutil.rmtree(dir_a)
-        shutil.rmtree(dir_b)
-        shutil.copytree(dir_a_backup, dir_a)
-        shutil.copytree(dir_b_backup, dir_b)
+        overwrite(dir_a_backup, dir_b_backup)
         shutil.rmtree(dir_a_backup.parent)
         shutil.rmtree(dir_b_backup.parent)
 
 
 def snake_to_camel(string: str):
-    """Convert snake case to camel case."""
-    return "".join(word.title() for word in string.split("_"))
+    """Convert a string from snake case to camel case."""
+    return "".join(word.capitalize() for word in string.split("_"))
 
 
 def camel_to_snake(string: str):
@@ -276,35 +274,40 @@ def camel_to_snake(string: str):
 
 
 def remove_prefix(text: str, prefix: str) -> str:
-    """Remove prefix from text."""
-    if text.startswith(prefix):
-        return text[len(prefix) :]
-    return text
+    """str.removeprefix."""
+    return text[len(prefix) :] if prefix and text.startswith(prefix) else text
 
 
 def remove_suffix(text: str, suffix: str) -> str:
-    """Remove suffix from text."""
-    if text.endswith(suffix):
-        return text[: -len(suffix)]
-    return text
+    """str.removesuffix."""
+    return text[: -len(suffix)] if suffix and text.endswith(suffix) else text
 
 
 def load_autonolas_yaml(package_type: PackageType, directory: Optional[Union[str, Path]] = None) -> list:
-    """Load autonolas yaml file."""
-    directory = directory or Path.cwd()
-    directory = Path(directory)
-    if not directory.exists():
-        msg = f"Directory {directory} does not exist"
-        raise FileNotFoundError(msg)
+    """Load a component's yaml configuration file.
 
-    file_name = _get_default_configuration_file_name_from_type(package_type)
-    file_path = directory / file_name
-    if not file_path.exists():
-        msg = f"File {file_path} does not exist"
-        raise FileNotFoundError(msg)
+    Args:
+    ----
+        package_type: Type of package (agent, skill, contract, protocol)
+        directory: Optional directory path where the config file is located
 
-    with open(file_path, encoding=DEFAULT_ENCODING) as file:
-        return list(yaml.safe_load_all(file))
+    Returns:
+    -------
+        List of yaml documents from the file
+
+    Raises:
+    ------
+        FileNotFoundError: If the config file doesn't exist
+        ValueError: If invalid package type provided
+
+    """
+
+    config_file = _get_default_configuration_file_name_from_type(package_type)
+    config_path = Path(directory or ".") / config_file
+    if not config_path.exists():
+        msg = f"Could not find {config_path}, are you in the correct directory?"
+        raise FileNotFoundError(msg)
+    return list(yaml.safe_load_all(config_path.read_text(encoding=DEFAULT_ENCODING)))
 
 
 def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[click.Context, Any, Any], Any]:

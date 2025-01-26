@@ -13,8 +13,8 @@ auto_dev/lint.py                     5      5     0%   3-26
 auto_dev/local_fork.py              53     53     0%   3-96
 auto_dev/scaffolder.py              19     19     0%   3-43
 auto_dev/test.py                    15     15     0%   3-38
-auto_dev/utils.py                  295    295     0%   3-485
+auto_dev/utils.py                  284    284     0%   3-488
 site/__init__.py                     0      0   100%
 site/hooks.py                       35     35     0%   3-75
 --------------------------------------------------------------
-TOTAL                              906    906     0%
+TOTAL                              895    895     0%
