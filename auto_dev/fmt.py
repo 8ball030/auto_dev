@@ -103,10 +103,10 @@ def multi_thread_fmt(paths, verbose, num_processes, remote=False):
     with Pool(num_processes) as pool:
         results = pool.map(formatter.format, paths)
 
-    # We chekc with the local formatter if the remote formatter fails
+    # We check with the local formatter if the remote formatter fails
     local_formatter = Formatter(verbose, remote=False)
     for i, result in enumerate(results):
         if not result:
             results[i] = local_formatter.format(paths[i])
 
-    return dict(zip(paths, results, strict=False))
+    return dict(zip(paths, results))
