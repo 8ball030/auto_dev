@@ -36,33 +36,33 @@ cli = build_cli()
 )
 @click.pass_context
 def lint(ctx, path, changed_only) -> None:
-    """Run linting checks on code.
+    r"""Run linting checks on code.
 
-    Optional Parameters:
-        path: Path to code to lint. Default: None
-            - If not provided, lints all packages
-            - Can be file or directory path
-            - Must exist in workspace
-        changed_only: Only lint files that have changed. Default: False
-            - Uses git to detect changes
-            - Only lints files with uncommitted changes
-            - Ignores untracked files
+    Optional Parameters:\n
+        path (-p): Path to code to lint. (Default: None)\n
+        - If not provided, lints all packages\n
+        - Can be file or directory path\n
+        - Must exist in workspace\n
+        changed_only (-co): Only lint files that have changed. (Default: False)\n
+        - Uses git to detect changes\n
+        - Only lints files with uncommitted changes\n
+        - Ignores untracked files\n
 
     Usage:
-        Lint all packages:
-            adev lint
+        Lint all packages:\n
+            adev lint\n
 
-        Lint specific path:
-            adev lint -p ./my_package
+        Lint specific path:\n
+            adev lint -p ./my_package\n
 
-        Lint only changed files:
-            adev lint --changed-only
+        Lint only changed files:\n
+            adev lint --changed-only\n
 
-        Lint specific path and only changed files:
-            adev lint -p ./my_package --changed-only
+        Lint specific path and only changed files:\n
+            adev lint -p ./my_package --changed-only\n
 
-        Lint with verbose output:
-            adev lint -v
+        Lint with verbose output:\n
+            adev lint -v\n
 
     Notes
     -----
@@ -87,6 +87,7 @@ def lint(ctx, path, changed_only) -> None:
             - Rule enabling/disabling
             - File/directory exclusions
             - Line length settings
+
     """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]

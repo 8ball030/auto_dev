@@ -227,28 +227,28 @@ class LoggingScaffolder(BaseScaffolder):
 
 @cli.group()
 def augment() -> None:
-    """Commands for augmenting project components.
+    r"""Commands for augmenting project components.
 
-    Available Commands:
-        logging: Add logging handlers to AEA configuration
-        customs: Augment customs components with OpenAPI3 handlers
+    Available Commands:\n
+        logging: Add logging handlers to AEA configuration\n
+        customs: Augment customs components with OpenAPI3 handlers\n
     """
 
 
 @augment.command()
 @click.argument("handlers", nargs=-1, type=click.Choice(HANDLERS.keys()), required=True)
 def logging(handlers) -> None:
-    """Augment AEA logging configuration with additional handlers.
+    r"""Augment AEA logging configuration with additional handlers.
 
-    Required Parameters:
-        handlers: One or more handlers to add (console, http, logfile)
+    Required Parameters:\n
+        handlers: One or more handlers to add (console, http, logfile)\n
 
-    Usage:
-        Add console handler:
-            adev augment logging console
+    Usage:\n
+        Add console handler:\n
+            adev augment logging console\n
 
-        Add multiple handlers:
-            adev augment logging console http logfile
+        Add multiple handlers:\n
+            adev augment logging console http logfile\n
 
     Notes
     -----
@@ -311,18 +311,18 @@ def connection(connections) -> None:
 @click.option("--use-daos", is_flag=True, default=False, help="Augment OpenAPI3 handlers with DAOs")
 @click.pass_context
 def customs(ctx, component_type, auto_confirm, use_daos):
-    """Augment a customs component with OpenAPI3 handlers.
+    r"""Augment a customs component with OpenAPI3 handlers.
 
     Required Parameters:
         component_type: Type of component to augment (currently only openapi3)
 
-    Optional Parameters:
-        auto_confirm: Skip confirmation prompts. Default: False
-        use_daos: Include DAO integration in handlers. Default: False
+    Optional Parameters:\n
+        auto_confirm: Skip confirmation prompts. (Default: False)\n
+        use_daos: Include DAO integration in handlers. (Default: False)\n
 
-    Usage:
-        Basic OpenAPI3 augmentation:
-            adev augment customs openapi3
+    Usage:\n
+        Basic OpenAPI3 augmentation:\n
+            adev augment customs openapi3\n
 
         With DAO integration:
             adev augment customs openapi3 --use-daos

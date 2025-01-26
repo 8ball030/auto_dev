@@ -40,14 +40,14 @@ cli = build_cli()
 # we have a new command group called scaffold.
 @cli.group()
 def scaffold() -> None:
-    """Commands for scaffolding new components.
+    r"""Commands for scaffolding new components.
 
-    Available Commands:
-        contract: Scaffold a smart contract component
-        fsm: Scaffold a Finite State Machine (FSM)
-        protocol: Scaffold a protocol component
-        connection: Scaffold a connection component
-        handler: Generate an AEA handler from OpenAPI 3 specification
+    Available Commands:\n
+        contract: Scaffold a smart contract component\n
+        fsm: Scaffold a Finite State Machine (FSM)\n
+        protocol: Scaffold a protocol component\n
+        connection: Scaffold a connection component\n
+        handler: Generate an AEA handler from OpenAPI 3 specification\n
     """
 
 
@@ -115,19 +115,19 @@ def _process_from_file(ctx, yaml_dict, network, read_functions, write_functions,
 @click.option("--write-functions", default=None, help="Comma separated list of write functions to scaffold.")
 @click.pass_context
 def contract(ctx, public_id, address, network, read_functions, write_functions, from_abi, from_file):
-    """Scaffold a smart contract component.
+    r"""Scaffold a smart contract component.
 
     Required Parameters:
         Either one of:
             public_id: The public ID of the contract (author/name format).
-            from_file: Path to file containing contract addresses and names.
+            from_file(--from-file): Path to file containing contract addresses and names.
 
-    Optional Parameters:
-        address: Contract address on the blockchain. Default: null address
-        from_abi: Path to ABI file to use for scaffolding. Default: None
-        network: Blockchain network to fetch ABI from. Default: ethereum
-        read_functions: Comma-separated list of read functions to include. Default: None (all)
-        write_functions: Comma-separated list of write functions to include. Default: None (all)
+    Optional Parameters:\n
+        address(--address): Contract address on the blockchain. (Default: null address)\n
+        from_abi(--from-abi): Path to ABI file to use for scaffolding. (Default: None)\n
+        network(--network): Blockchain network to fetch ABI from. (Default: ethereum)\n
+        read_functions(--read-functions): Comma-separated list of read functions to include. (Default: None (all))\n
+        write_functions(--write-functions): Comma-separated list of write functions to include. (Default: None (all))\n
 
     Usage:
         Scaffold from address:

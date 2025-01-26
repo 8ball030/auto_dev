@@ -49,16 +49,16 @@ cli = build_cli()
 )
 @click.pass_context
 def improve(ctx, path, type_of_repo, author, name, yes) -> None:
-    """Verify and improve repository structure and files.
+    r"""Verify and improve repository structure and files.
 
-    Required Parameters:
-        type_of_repo: Type of repository to verify (autonomy, python)
-        author: Author of the repository
-        name: Name of the repository
+    Required Parameters:\n
+        type_of_repo (-t): Type of repository to verify (autonomy, python)\n
+        author (--author): Author of the repository\n
+        name (--name): Name of the repository\n
 
-    Optional Parameters:
-        path: Path to repository to verify. Default: current directory
-        yes: Auto-confirm all prompts. Default: False
+    Optional Parameters:\n
+        path (-p): Path to repository to verify. (Default: current directory)\n
+        yes (-y): Auto-confirm all prompts. (Default: False)\n
 
     Usage:
         Verify current directory:

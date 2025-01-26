@@ -91,11 +91,11 @@ def get_metadata(root, name, hash_, target_id):
 
 @cli.group()
 def metadata() -> None:
-    """Commands for generating and managing package metadata.
+    r"""Commands for generating and managing package metadata.
 
-    Available Commands:
-        generate: Generate metadata JSON files for packages.
-        validate: Validate existing metadata files.
+    Available Commands:\n
+        generate: Generate metadata JSON files for packages\n
+        validate: Validate existing metadata files\n
     """
 
 
@@ -129,16 +129,16 @@ def metadata() -> None:
     default=False,
 )
 def generate(root, target_name, target_id, strict, all) -> None:  # pylint: disable=redefined-builtin
-    """Generate metadata JSON files for packages.
+    r"""Generate metadata JSON files for packages.
 
-    Required Parameters:
-        root: Path to root directory containing packages.json. Default: current directory
-        target_name: Name of the package to generate metadata for (e.g., contract/author/name/version)
-        target_id: Identifier for the metadata file (used in output filename)
+    Required Parameters:\n
+        root: Path to root directory containing packages.json. Default: current directory\n
+        target_name: Name of the package to generate metadata for (e.g., contract/author/name/version)\n
+        target_id: Identifier for the metadata file (used in output filename)\n
 
-    Optional Parameters:
-        strict: Enable strict validation of metadata. Default: False
-        all: Generate metadata for all packages. Default: False
+    Optional Parameters:\n
+        strict: Enable strict validation of metadata. (Default: False)\n
+        all: Generate metadata for all packages. (Default: False)\n
 
     Usage:
         Generate for specific package:
@@ -152,10 +152,10 @@ def generate(root, target_name, target_id, strict, all) -> None:  # pylint: disa
 
     Notes
     -----
-        - Reads package information from packages.json
-        - Generates metadata files in mints/<target_id>.json
-        - Strict mode enforces additional validation
-        - Can process single package or all packages
+    - Reads package information from packages.json
+    - Generates metadata files in mints/<target_id>.json
+    - Strict mode enforces additional validation
+    - Can process single package or all packages
 
     """
     if not target_id and not all:
@@ -262,22 +262,22 @@ def build_dependency_tree_for_component(component) -> list[str]:
 )
 @click.pass_context
 def validate(ctx, metadata_file) -> None:
-    """Validate metadata files for packages.
+    r"""Validate metadata files for packages.
 
     Required Parameters:
-        metadata_file: Path to the metadata JSON file to validate
+        metadata_file: Path to the metadata JSON file to validate\n
 
     Usage:
-        Validate a metadata file:
-            adev metadata validate mints/01.json
+        Validate a metadata file:\n
+            adev metadata validate mints/01.json\n
 
     Notes
     -----
-        - Validates the metadata file format and content
-        - Checks if all dependencies are minted
-        - Verifies component status in mapping.txt
-        - Displays detailed validation results with verbose flag
-        - Exits with error if validation fails
+        - Validates the metadata file format and content\n
+        - Checks if all dependencies are minted\n
+        - Verifies component status in mapping.txt\n
+        - Displays detailed validation results with verbose flag\n
+        - Exits with error if validation fails\n
 
     """
     verbose = ctx.obj["VERBOSE"]

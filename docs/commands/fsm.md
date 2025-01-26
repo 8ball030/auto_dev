@@ -1,43 +1,47 @@
-## Description
+# fsm
 
+## Table of Contents
+- [Description](#description)
+- [Subcommands](#subcommands)
+  - [from-file](#from-file)
+
+
+## Description
 ::: auto_dev.commands.fsm.fsm
     options:
       show_root_heading: false
+      show_root_toc_entry: false
+      members_order: source
       show_source: false
-      show_signature: true
-      show_signature_annotations: true
+      show_signature: false
+      show_signature_annotations: false
+      show_object_full_path: false
       docstring_style: sphinx
       show_docstring_parameters: true
       show_docstring_returns: false
       show_docstring_raises: false
       show_docstring_examples: true
-      docstring_section_style: table
+      docstring_section_style: list
       heading_level: 2
+      heading_text: Description
 
-## Usage
+## Subcommands
 
-```bash
-adev fsm [OPTIONS] [ARGS]
-```
-
-Additionally, you can view the parameters for the command using:
-```bash
-adev fsm --help
-```
-
-
-## From File
-
+### from-file
 ::: auto_dev.commands.fsm.from_file
     options:
       show_root_heading: false
+      show_root_toc_entry: false
+      members_order: source
       show_source: false
-      show_signature: true
-      show_signature_annotations: true
+      show_signature: false
+      show_signature_annotations: false
+      show_object_full_path: false
       docstring_style: sphinx
       show_docstring_parameters: true
       show_docstring_returns: false
       show_docstring_raises: false
       show_docstring_examples: true
-      docstring_section_style: table
-      heading_level: 2
+      docstring_section_style: list
+      heading_level: 3
+      heading_text: Description

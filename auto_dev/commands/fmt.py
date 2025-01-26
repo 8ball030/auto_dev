@@ -27,30 +27,30 @@ cli = build_cli()
 )
 @click.pass_context
 def fmt(ctx, path, changed_only) -> None:
-    """Format code using the configured formatters.
+    r"""Format code using the configured formatters.
 
-    Optional Parameters:
-        path: Path to code to format. Default: None
-            - If not provided, formats all packages
-            - Can be file or directory path
-            - Must exist in workspace
-        changed_only: Only format files that have changed. Default: False
-            - Uses git to detect changes
-            - Only formats files with uncommitted changes
-            - Ignores untracked files
+    Optional Parameters:\n
+        path (-p): Path to code to format. (Default: None)\n
+            - If not provided, formats all packages\n
+            - Can be file or directory path\n
+            - Must exist in workspace\n
+        changed_only (-co): Only format files that have changed. (Default: False)\n
+            - Uses git to detect changes\n
+            - Only formats files with uncommitted changes\n
+            - Ignores untracked files\n
 
     Usage:
-        Format all packages:
-            adev fmt
+        Format all packages:\n
+            adev fmt\n
 
-        Format specific path:
-            adev fmt -p ./my_package
+        Format specific path:\n
+            adev fmt -p ./my_package\n
 
-        Format only changed files:
-            adev fmt --changed-only
+        Format only changed files:\n
+            adev fmt --changed-only\n
 
-        Format specific path and only changed files:
-            adev fmt -p ./my_package --changed-only
+        Format specific path and only changed files:\n
+            adev fmt -p ./my_package --changed-only\n
 
     Notes
     -----
@@ -63,6 +63,7 @@ def fmt(ctx, path, changed_only) -> None:
         - Exits with error if any formatting fails
         - Can be integrated into pre-commit hooks
         - Respects .gitignore patterns
+
     """
     verbose = ctx.obj["VERBOSE"]
     num_processes = ctx.obj["NUM_PROCESSES"]

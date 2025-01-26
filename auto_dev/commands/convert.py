@@ -128,19 +128,19 @@ class ConvertCliTool(BasePackageScaffolder):
 def agent_to_service(
     agent_public_id: PublicId, service_public_id: PublicId, number_of_agents: int = 1, force: bool = False
 ) -> None:
-    """Convert an autonomous agent into a deployable service.
+    r"""Convert an autonomous agent into a deployable service.
 
-    Required Parameters:
-        agent_public_id: Public ID of the source agent (author/name format)
-        service_public_id: Public ID for the target service (author/name format)
+    Required Parameters:\n
+        agent_public_id: Public ID of the source agent (author/name format)\n
+        service_public_id: Public ID for the target service (author/name format)\n
 
-    Optional Parameters:
-        number_of_agents: Number of agent instances in the service. Default: 1
-        force: Overwrite existing service if it exists. Default: False
+    Optional Parameters:\n
+        number_of_agents (-n): Number of agent instances in the service. (Default: 1)\n
+        force (-f): Overwrite existing service if it exists. (Default: False)\n
 
-    Usage:
-        Basic conversion:
-            adev convert agent-to-service author/my_agent author/my_service
+    Usage:\n
+        Basic conversion:\n
+            adev convert agent-to-service author/my_agent author/my_service\n
 
         With multiple agent instances:
             adev convert agent-to-service author/my_agent author/my_service --number_of_agents 3

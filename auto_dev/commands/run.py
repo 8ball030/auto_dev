@@ -316,46 +316,56 @@ class AgentRunner:
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
 @click.pass_context
 def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
-    """Run an agent from the local packages registry or a local path.
+    r"""Run an agent from the local packages registry or a local path.
 
-    Required Parameters:
+    Required Parameters:\n
         agent_public_id: The public ID of the agent (author/name format).
             If not provided, uses the current directory's agent.
 
-    Optional Parameters:
-        verbose: Enable verbose logging. Shows detailed output during execution. Default: False
-        force: Force overwrite if agent exists locally. Default: False
-        fetch: Whether to fetch agent from registry or use local package. Default: True
-            - If True: Fetches agent from local registry
-            - If False: Uses agent from current directory or packages
+    Optional Parameters:\n
+        verbose (-v): Enable verbose logging. Shows detailed output during execution. (Default: False)\n
+        force (-f): Force overwrite if agent exists locally. (Default: False)\n
+        fetch (--fetch/--no-fetch): Whether to fetch agent from registry or use local package. (Default: True)\n
+        - If True: Fetches agent from local registry\n
+        - If False: Uses agent from current directory or packages\n
 
     Usage:
-        Run from registry:
-            adev run eightballer/my_agent
+        ```bash
+        # Run from registry
+        adev run eightballer/my_agent
 
-        Run local agent:
-            adev run eightballer/my_agent --no-fetch
+        # Run local agent
+        adev run eightballer/my_agent --no-fetch
 
-        Run with verbose output:
-            adev run eightballer/my_agent -v
+        # Run with verbose output
+        adev run eightballer/my_agent -v
 
-        Run with force overwrite:
-            adev run eightballer/my_agent --force
+        # Run with force overwrite
+        adev run eightballer/my_agent --force
 
-        Run from current directory:
-            adev run
+        # Run from current directory
+        adev run
+        ```
 
     Notes
     -----
-        - Automatically handles:
-            - Agent setup and key generation
-            - Dependency installation
-            - Certificate management
-            - Tendermint node management
-        - Requires Docker for Tendermint
-        - Validates agent configuration
+        Automatic Handling:
+        - Agent setup and key generation
+        - Dependency installation
+        - Certificate management
+        - Tendermint node management
+
+        Requirements:
+        - Docker for Tendermint
+        - Valid agent configuration
+        - Network connectivity
+
+        Features:
         - Supports multiple blockchain networks
-        - Can run agents in development or production mode
+        - Development and production modes
+        - Automatic dependency resolution
+        - Certificate management
+
     """
     if not agent_public_id:
         # We set fetch to false if the agent is not provided, as we assume the user wants to run the agent locally.

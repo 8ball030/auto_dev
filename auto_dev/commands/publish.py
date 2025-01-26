@@ -27,13 +27,13 @@ cli = build_cli()
 )
 @click.pass_context
 def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
-    """Publish an agent to the local registry.
+    r"""Publish an agent to the local registry.
 
-    Required Parameters:
-        public_id: The public ID of the agent (author/name format).
+    Required Parameters:\n
+        public_id: The public ID of the agent (author/name format).\n
 
-    Optional Parameters:
-        force: Force overwrite if package exists. Default: False
+    Optional Parameters:\n
+        force (--force/--no-force): Force overwrite if package exists. (Default: False)\n
 
     Usage:
         Basic publish:

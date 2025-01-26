@@ -17,75 +17,76 @@ import click
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Command configuration
-COMMANDS = [
-    "run",
-    "create",
-    "lint",
-    "publish",
-    "test",
-    "improve",
-    "release",
-    "metadata",
-    "fmt",
-    "scaffold",
-    "deps",
-    "convert",
-    "repo",
-    "fsm",
-    "augment",
-]
+
+def discover_commands() -> list[str]:
+    """Discover all available commands by scanning the commands directory.
+
+    Returns
+    -------
+        List of command names (without .py extension)
+
+    """
+    commands_dir = Path(__file__).parent.parent / "auto_dev" / "commands"
+    commands = []
+
+    for file_path in commands_dir.glob("*.py"):
+        # Skip __init__.py and any other special files
+        if file_path.stem.startswith("_"):
+            continue
+        commands.append(file_path.stem)
+
+    return sorted(commands)
 
 
 @dataclass
 class DocTemplates:
     """Templates for documentation generation."""
 
-    COMMAND = """## Description
+    COMMAND = """# {command_name}
 
+## Table of Contents
+- [Description](#description)
+{toc_subcommands}
+
+## Description
 ::: auto_dev.commands.{command_name}.{command_name}
     options:
       show_root_heading: false
+      show_root_toc_entry: false
+      members_order: source
       show_source: false
-      show_signature: true
-      show_signature_annotations: true
+      show_signature: false
+      show_signature_annotations: false
+      show_object_full_path: false
       docstring_style: sphinx
       show_docstring_parameters: true
       show_docstring_returns: false
       show_docstring_raises: false
       show_docstring_examples: true
-      docstring_section_style: table
+      docstring_section_style: list
       heading_level: 2
-
-## Usage
-
-```bash
-adev {command_name} [OPTIONS] [ARGS]
-```
-
-Additionally, you can view the parameters for the command using:
-```bash
-adev {command_name} --help
-```
-
-{subcommands}"""
+      heading_text: Description{subcommands_section}"""
 
     SUBCOMMAND = """
-## {subcommand_title}
 
+### {cmd_name}
 ::: auto_dev.commands.{command_name}.{subcommand_func}
     options:
       show_root_heading: false
+      show_root_toc_entry: false
+      members_order: source
       show_source: false
-      show_signature: true
-      show_signature_annotations: true
+      show_signature: false
+      show_signature_annotations: false
+      show_object_full_path: false
       docstring_style: sphinx
       show_docstring_parameters: true
       show_docstring_returns: false
       show_docstring_raises: false
       show_docstring_examples: true
-      docstring_section_style: table
-      heading_level: 2"""
+      docstring_section_style: list
+      heading_level: 3
+      heading_text: Description"""
 
 
 class CommandDocGenerator:
@@ -160,43 +161,69 @@ class CommandDocGenerator:
         doc_path = self.docs_dir / f"{command}.md"
         subcommands = self.get_subcommands(command)
 
-        # Generate subcommand documentation
-        subcommands_text = ""
-        for cmd_name, func_name in subcommands:
-            subcommands_text += self.templates.SUBCOMMAND.format(
-                subcommand_title=cmd_name.replace("-", " ").title(), command_name=command, subcommand_func=func_name
-            )
+        # Generate table of contents for subcommands
+        toc_subcommands = ""
+        subcommands_section = ""
+
+        if subcommands:
+            toc_subcommands = "- [Subcommands](#subcommands)\n"
+            for cmd_name, _ in subcommands:
+                toc_subcommands += f"  - [{cmd_name}](#{cmd_name.lower()})\n"
+
+            # Generate subcommand documentation
+            subcommands_text = ""
+            for cmd_name, func_name in subcommands:
+                subcommands_text += self.templates.SUBCOMMAND.format(
+                    command_name=command, cmd_name=cmd_name, subcommand_func=func_name
+                )
+            subcommands_section = f"\n\n## Subcommands{subcommands_text}"
 
         try:
             doc_path.write_text(
-                self.templates.COMMAND.format(command_name=command, subcommands=subcommands_text), encoding="utf-8"
+                self.templates.COMMAND.format(
+                    command_name=command, toc_subcommands=toc_subcommands, subcommands_section=subcommands_section
+                ),
+                encoding="utf-8",
             )
             logger.info(f"Generated documentation for {command}")
         except OSError as e:
             logger.exception(f"Failed to write documentation for {command}: {e}")
 
 
-def main() -> None:
+def generate_docs() -> None:
     """Generate documentation for all commands."""
-    docs_dir = Path("docs/commands")
-    assets_dir = Path("docs/assets")
+    # Setup directory paths
+    docs_dir = Path("docs")
+    commands_dir = docs_dir / "commands"
 
-    # Preserve assets directory if it exists
-    if assets_dir.exists():
-        logger.info("Preserving existing docs/assets directory")
+    # Create commands directory if it doesn't exist
     try:
-        docs_dir.mkdir(parents=True, exist_ok=True)
+        commands_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Ensured commands directory exists: {commands_dir}")
     except OSError as e:
-        logger.exception(f"Failed to create docs directory: {e}")
+        logger.exception(f"Failed to create directory {commands_dir}: {e}")
         return
 
-    generator = CommandDocGenerator(docs_dir)
-    for command in COMMANDS:
+    # Generate documentation
+    generator = CommandDocGenerator(commands_dir)
+    commands = discover_commands()
+    logger.info(f"Discovered {len(commands)} commands: {', '.join(commands)}")
+
+    for command in commands:
         try:
             generator.generate_command_doc(command)
+            logger.info(f"Generated documentation for {command}")
         except Exception as e:
             logger.exception(f"Failed to generate documentation for {command}: {e}")
 
+    logger.info("Documentation generation complete!")
+
+
+def on_config(config):
+    """MkDocs hook to generate command documentation when building docs."""
+    generate_docs()
+    return config
+
 
 if __name__ == "__main__":
-    main()
+    generate_docs()

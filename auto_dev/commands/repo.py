@@ -180,11 +180,11 @@ class RepoScaffolder:
 # We create a new command group
 @cli.group()
 def repo() -> None:
-    """Repository management commands.
+    r"""Repository management commands.
 
-    Available Commands:
-        scaffold: Create and initialize a new repository with template files
-        update_deps: Update and lock repository dependencies
+    Available Commands:\n
+        scaffold: Create and initialize a new repository with template files\n
+        update_deps: Update and lock repository dependencies\n
     """
 
 
@@ -197,17 +197,17 @@ def repo() -> None:
 @click.option("--initial-commit/--no-commit", is_flag=True, help="Add the initial commit. Requires git", default=True)
 @click.pass_context
 def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_commit) -> None:
-    """Create a new repository and scaffold necessary files.
+    r"""Create a new repository and scaffold necessary files.
 
-    Required Parameters:
-        name: Name of the repository to create
+    Required Parameters:\n
+        name: Name of the repository to create\n
 
-    Optional Parameters:
-        type_of_repo: Type of repository to scaffold (autonomy, python). Default: autonomy
-        force: Overwrite existing repository if it exists. Default: False
-        auto_approve: Skip confirmation prompts. Default: False
-        install: Install dependencies after scaffolding. Default: True
-        initial_commit: Create initial git commit. Default: True
+    Optional Parameters:\n
+        type_of_repo (-t): Type of repository to scaffold (autonomy, python). (Default: autonomy)\n
+        force (-f): Overwrite existing repository if it exists. (Default: False)\n
+        auto_approve (-aa): Skip confirmation prompts. (Default: False)\n
+        install (--install/--no-install): Install dependencies after scaffolding. (Default: True)\n
+        initial_commit (--initial-commit/--no-commit): Create initial git commit. (Default: True)\n
 
     Usage:
         Create basic autonomy repo:
@@ -348,25 +348,25 @@ def update_against_version_set(logger, dry_run: bool = False) -> list[str]:
 )
 @click.pass_context
 def update_deps(ctx, lock: bool) -> None:
-    """Update and lock repository dependencies.
+    r"""Update and lock repository dependencies.
 
     Optional Parameters:
-        lock: Lock dependencies after updating. Default: False
+        lock: Lock dependencies after updating. Default: False\n
 
     Usage:
-        Update dependencies:
-            adev repo update-deps
+        Update dependencies:\n
+            adev repo update-deps\n
 
-        Update and lock dependencies:
-            adev repo update-deps --lock
+        Update and lock dependencies:\n
+            adev repo update-deps --lock\n
 
     Notes
     -----
-        - Updates dependencies in packages.json
-        - Optionally locks dependency versions
-        - Checks for changes in dependency files
-        - Prompts to commit changes if detected
-        - Exits with error if uncommitted changes exist
+        - Updates dependencies in packages.json\n
+        - Optionally locks dependency versions\n
+        - Checks for changes in dependency files\n
+        - Prompts to commit changes if detected\n
+        - Exits with error if uncommitted changes exist\n
 
     """
     logger = ctx.obj["LOGGER"]
