@@ -6,6 +6,7 @@ It is used by the lint and test functions.
 """
 
 import subprocess
+from typing import Union, Optional
 
 from .utils import get_logger
 
@@ -16,7 +17,7 @@ logger = get_logger()
 class CommandExecutor:
     """A simple command executor."""
 
-    def __init__(self, command: str | list[str], cwd: str | None = None):
+    def __init__(self, command: Union[str, list[str]], cwd: Optional[str] = None):
         """Initialize the command executor."""
         self.command = command
         self.cwd = str(cwd) if cwd else "."
@@ -25,7 +26,7 @@ class CommandExecutor:
         self.return_code = None
         self.exception = None
 
-    def execute(self, stream=False, verbose: bool = True, shell: bool = False, env_vars: dict | None = None) -> bool:
+    def execute(self, stream=False, verbose: bool = True, shell: bool = False, env_vars: Optional[dict] = None) -> bool:
         """Execute the command."""
         if stream:
             return self._execute_stream(verbose, shell, env_vars)
@@ -59,7 +60,9 @@ class CommandExecutor:
             self.exception = error
             return False
 
-    def _execute_stream(self, verbose: bool = True, shell: bool = False, env_vars: dict | None = None) -> bool | None:
+    def _execute_stream(
+        self, verbose: bool = True, shell: bool = False, env_vars: Optional[dict] = None
+    ) -> Optional[bool]:
         """Stream the command output. Especially useful for long running commands."""
         logger.debug(f"Executing command:\n\"\"\n{' '.join(self.command)}\n\"\"")
         try:

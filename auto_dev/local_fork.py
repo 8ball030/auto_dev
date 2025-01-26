@@ -3,6 +3,7 @@
 import time
 import platform
 import subprocess
+from typing import Optional
 from dataclasses import dataclass
 
 import requests
@@ -23,7 +24,7 @@ class DockerFork:
 
     host: str = "http://localhost"
     port: int = 8546
-    container: Container | None = None
+    container: Optional[Container] = None
     run_command: str = "--fork-url '{fork_url}' --fork-block-number {fork_block_number} --host 0.0.0.0 --port {port}"
 
     def stop(self) -> None:

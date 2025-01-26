@@ -8,6 +8,7 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
+from typing import Optional
 from pathlib import Path
 
 import yaml
@@ -43,7 +44,7 @@ def scaffold() -> None:
     """Scaffold a (set of) components."""
 
 
-def validate_address(address: str, logger, contract_name: str | None = None) -> str | None:
+def validate_address(address: str, logger, contract_name: Optional[str] = None) -> Optional[str]:
     """Convert address to checksum format and validate it."""
     if address == DEFAULT_NULL_ADDRESS:
         return address
@@ -63,7 +64,7 @@ def _process_from_block_explorer(validated_address, name, logger, scaffolder):
     return new_contract
 
 
-def _process_from_abi(from_abi: str, validated_address: str, name: str, logger, scaffolder) -> object | None:
+def _process_from_abi(from_abi: str, validated_address: str, name: str, logger, scaffolder) -> Optional[object]:
     """Process contract from ABI file."""
     logger.info(f"Using ABI file: {from_abi}")
     try:

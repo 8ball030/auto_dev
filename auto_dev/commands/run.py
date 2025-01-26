@@ -7,7 +7,7 @@ import shutil
 import platform
 import subprocess
 from copy import deepcopy
-from typing import Any
+from typing import Any, Optional
 from pathlib import Path
 from textwrap import dedent
 from dataclasses import dataclass
@@ -202,7 +202,7 @@ class AgentRunner:
             self.logger.info(f"Processing ledger: {ledger}")
             self.setup_ledger_key(ledger, generate_keys)
 
-    def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Path | None = None) -> None:
+    def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Optional[Path] = None) -> None:
         """Setup the agent with the ledger key."""
         key_file = Path(f"{ledger}_private_key.txt")
         commands_to_errors = []

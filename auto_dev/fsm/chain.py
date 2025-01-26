@@ -1,5 +1,6 @@
 """Module to allow the chaining of multiple FSMs together."""
 
+from typing import Optional
 from dataclasses import dataclass
 
 from auto_dev.fsm.fsm import FsmSpec
@@ -17,7 +18,7 @@ class Chainer:
     """The chainer class allows us to chain together multiple FSMs."""
 
     fsms: list[FsmSpec]
-    chained_fsm: FsmSpec | None = None
+    chained_fsm: Optional[FsmSpec] = None
 
     def validate(self) -> None:
         """We validate the FSMs."""

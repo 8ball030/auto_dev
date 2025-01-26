@@ -1,6 +1,7 @@
 """This module contains the service logic for publishing agents."""
 
 import shutil
+from typing import Optional
 from pathlib import Path
 
 from aea.configurations.base import PublicId
@@ -111,7 +112,7 @@ class PackageManager:
     def publish_agent(
         self,
         force: bool = False,
-        new_public_id: PublicId | None = None,
+        new_public_id: Optional[PublicId] = None,
     ) -> None:
         """Publish an agent.
 

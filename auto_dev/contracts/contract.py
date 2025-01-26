@@ -1,6 +1,7 @@
 """Module to represent a contract."""
 
 import json
+from typing import Optional
 from pathlib import Path
 
 import yaml
@@ -47,9 +48,7 @@ class Contract:
                     "The ABI uses 'constant' instead of 'stateMutability'. "
                     "Please provide an ABI from Solidity 0.6 or later."
                 )
-                raise UnsupportedSolidityVersion(
-                    msg
-                )
+                raise UnsupportedSolidityVersion(msg)
         w3_contract = self.web3.eth.contract(address=self.address, abi=abi)
         for function in w3_contract.all_functions():
             mutability = function.abi["stateMutability"]
@@ -62,7 +61,7 @@ class Contract:
                 raise ValueError(msg)
 
     def __init__(
-        self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Web3 | None = None
+        self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Optional[Web3] = None
     ):
         """Initialise the contract."""
         self.author = author

@@ -1,7 +1,7 @@
 """OpenAPI Utilities."""
 
 import re
-from typing import Any
+from typing import Any, Union, Optional
 
 from pydantic import ValidationError
 
@@ -43,7 +43,7 @@ def load_openapi_spec(file_path: str, logger) -> OpenAPI:
         raise ScaffolderError(msg) from e
 
 
-def get_crud_classification(openapi_spec: OpenAPI, logger) -> list[dict] | None:
+def get_crud_classification(openapi_spec: OpenAPI, logger) -> Optional[list[dict]]:
     """Get CRUD classification from OpenAPI spec."""
     classifications = []
     for path, path_item in openapi_spec.paths.items():
@@ -56,7 +56,7 @@ def get_crud_classification(openapi_spec: OpenAPI, logger) -> list[dict] | None:
                 continue
 
         for method in ["get", "post", "put", "delete", "patch", "options", "head", "trace"]:
-            operation: Operation | None = getattr(path_item, method.lower(), None)
+            operation: Optional[Operation] = getattr(path_item, method.lower(), None)
             if operation:
                 if method in {"patch", "options", "head", "trace"}:
                     msg = f"Method {method.upper()} is not currently supported"
@@ -122,7 +122,7 @@ def classify_post_operation(operation: Operation, path: str, logger) -> str:
     return crud_type
 
 
-def parse_schema_like(data: dict[str, Any] | Reference | Schema) -> Schema | Reference:
+def parse_schema_like(data: Union[dict[str, Any], Reference, Schema]) -> Union[Schema, Reference]:
     """Parse a schema-like object."""
     if isinstance(data, Schema | Reference):
         return data

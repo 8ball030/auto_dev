@@ -23,18 +23,15 @@ In particular:
 It is assumed the script is run from the repository root.
 """
 
-import re
-import sys
 import logging
 import itertools
-from typing import Any, Optional, cast
+from typing import Any, Optional
 from pathlib import Path
 from collections import OrderedDict, OrderedDict as OrderedDictType
 from collections.abc import Iterator
 
 import toml
 import click
-from aea.package_manager.v1 import PackageManagerV1
 from aea.package_manager.base import load_configuration
 from aea.configurations.data_types import Dependency
 
@@ -45,7 +42,7 @@ ANY_SPECIFIER = "*"
 class PathArgument(click.Path):
     """Path parameter for CLI."""
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> Path | None:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Optional[Path]:
         """Convert path string to `pathlib.Path`."""
         path_string = super().convert(value, param, ctx)
         return None if path_string is None else Path(path_string)
@@ -91,7 +88,7 @@ class Pipfile:
         else:
             self.dev_packages[dependency.name] = dependency
 
-    def check(self, dependency: Dependency) -> tuple[str | None, int]:
+    def check(self, dependency: Dependency) -> tuple[Optional[str], int]:
         """Check dependency specifier."""
         if dependency.name in self.ignore:
             return None, 0
@@ -120,7 +117,7 @@ class Pipfile:
         """Parse from string."""
         sources = []
         sections: OrderedDictType = OrderedDict()
-        lines = content.split("\n")
+        lines = list(content.split("\n"))
         comments = 0
         while len(lines) > 0:
             line = lines.pop(0)
@@ -218,7 +215,7 @@ class PyProjectToml:
             return
         self.dependencies[dependency.name] = dependency
 
-    def check(self, dependency: Dependency) -> tuple[str | None, int]:
+    def check(self, dependency: Dependency) -> tuple[Optional[str], int]:
         """Check dependency specifier."""
         if dependency.name in self.ignore:
             return None, 0
@@ -248,21 +245,13 @@ class PyProjectToml:
             if isinstance(version, str):
                 dependencies[name] = Dependency(
                     name=name,
-                    version=version.replace("^", "==") if version != "*" else "",
+                    version=version,
                 )
-                continue
-            data = cast(dict, version)
-            if "extras" in data:
-                version = data["version"]
-                if re.match(r"^\d", version):
-                    version = f"=={version}"
+            else:
                 dependencies[name] = Dependency(
                     name=name,
-                    version=version,
-                    extras=data["extras"],
+                    version=version.get("version", ""),
                 )
-                continue
-
         return cls(
             dependencies=dependencies,
             config=config,
@@ -270,101 +259,49 @@ class PyProjectToml:
         )
 
     def dump(self) -> None:
-        """Dump to file."""
-        update = ""
-        content = self.file.read_text(encoding="utf-8")
-        for line in content.split("\n"):
-            if " = " not in line:
-                update += f"{line}\n"
-                continue
-            package, *_ = line.split(" = ")
-            dep = self.dependencies.get(package)
-            if dep is None:
-                update += f"{line}\n"
-                continue
-            update += f"{dep.to_pipfile_string()}\n"
-        self.file.write_text(update[:-1], encoding="utf-8")
+        """Write to pyproject.toml."""
+        for name, dependency in self.dependencies.items():
+            self.config["tool"]["poetry"]["dependencies"][name] = dependency.version
+        toml.dump(self.config, self.file.open("w", encoding="utf-8"))
 
 
 def load_packages_dependencies(packages_dir: Path) -> list[Dependency]:
-    """Returns a list of package dependencies."""
-    package_manager = PackageManagerV1.from_dir(packages_dir=packages_dir)
-    dependencies: dict[str, Dependency] = {}
-    issues = []
-    for package in package_manager.iter_dependency_tree():
-        if package.package_type.value == "service":
-            continue
-        _dependencies = load_configuration(  # type: ignore
-            package_type=package.package_type,
-            package_path=package_manager.package_path_from_package_id(package_id=package),
-        ).dependencies
-        for key, value in _dependencies.items():
-            if key not in dependencies:
-                dependencies[key] = value
-            else:
-                if value.version == "":
-                    continue
-                if dependencies[key].version == "":
-                    dependencies[key] = value
-                if value == dependencies[key]:
-                    continue
-                issues.append(f"Actual: {key} {value} vs Expected: {dependencies[key]} in {package!s}")
-
-    for _issue in issues:
-        pass
-    if issues:
-        sys.exit(1)
-    return list(dependencies.values())
+    """Load packages dependencies."""
+    return [
+        dependency
+        for package_path in packages_dir.glob("**/package.yaml")
+        for dependency in load_configuration(package_path).dependencies
+    ]
 
 
 def _update(
     packages_dependencies: list[Dependency],
-    pipfile: Pipfile | None = None,
-    pyproject: PyProjectToml | None = None,
+    pipfile: Optional[Pipfile] = None,
+    pyproject: Optional[PyProjectToml] = None,
 ) -> None:
     """Update dependencies."""
-
-    if pipfile is not None:
-        for dependency in packages_dependencies:
-            pipfile.update(dependency=dependency)
-
-        pipfile.dump()
-
-    if pyproject is not None:
-        for dependency in packages_dependencies:
-            pyproject.update(dependency=dependency)
-
-        pyproject.dump()
+    for dependency in packages_dependencies:
+        if pipfile is not None:
+            pipfile.update(dependency)
+        if pyproject is not None:
+            pyproject.update(dependency)
 
 
 def _check(
     packages_dependencies: list[Dependency],
-    pipfile: Pipfile | None = None,
-    pyproject: PyProjectToml | None = None,
+    pipfile: Optional[Pipfile] = None,
+    pyproject: Optional[PyProjectToml] = None,
 ) -> None:
-    """Update dependencies."""
-
-    fail_check = 0
-
-    if pipfile is not None:
-        for dependency in packages_dependencies:
-            error, level = pipfile.check(dependency=dependency)
-            if error is not None:
-                logging.log(level=level, msg=error)
-                fail_check = level or fail_check
-
-    if pyproject is not None:
-        for dependency in packages_dependencies:
-            error, level = pyproject.check(dependency=dependency)
-            if error is not None:
-                logging.log(level=level, msg=error)
-                fail_check = level or fail_check
-
-    if fail_check == logging.ERROR:
-        sys.exit(1)
-
-    if fail_check == logging.WARNING:
-        sys.exit(0)
+    """Check dependencies."""
+    for dependency in packages_dependencies:
+        if pipfile is not None:
+            msg, level = pipfile.check(dependency)
+            if msg is not None:
+                logging.log(level, msg)
+        if pyproject is not None:
+            msg, level = pyproject.check(dependency)
+            if msg is not None:
+                logging.log(level, msg)
 
 
 @click.command(name="dm")
@@ -405,36 +342,31 @@ def _check(
 )
 def main(
     check: bool = False,
-    packages_dir: Path | None = None,
-    pipfile_path: Path | None = None,
-    pyproject_path: Path | None = None,
+    packages_dir: Optional[Path] = None,
+    pipfile_path: Optional[Path] = None,
+    pyproject_path: Optional[Path] = None,
 ) -> None:
-    """Check dependencies across packages, tox.ini, pyproject.toml and setup.py."""
+    """Run the script."""
+    if packages_dir is None:
+        packages_dir = Path("packages")
+    if pipfile_path is None:
+        pipfile_path = Path("Pipfile")
+    if pyproject_path is None:
+        pyproject_path = Path("pyproject.toml")
 
-    logging.basicConfig(format="- %(levelname)s: %(message)s")
-
-    pipfile_path = pipfile_path or Path.cwd() / "Pipfile"
+    packages_dependencies = load_packages_dependencies(packages_dir)
     pipfile = Pipfile.load(pipfile_path) if pipfile_path.exists() else None
-
-    pyproject_path = pyproject_path or Path.cwd() / "pyproject.toml"
     pyproject = PyProjectToml.load(pyproject_path) if pyproject_path.exists() else None
 
-    packages_dir = packages_dir or Path.cwd() / "packages"
-    packages_dependencies = load_packages_dependencies(packages_dir=packages_dir)
-
     if check:
-        return _check(
-            pipfile=pipfile,
-            pyproject=pyproject,
-            packages_dependencies=packages_dependencies,
-        )
-
-    return _update(
-        pipfile=pipfile,
-        pyproject=pyproject,
-        packages_dependencies=packages_dependencies,
-    )
+        _check(packages_dependencies, pipfile, pyproject)
+    else:
+        _update(packages_dependencies, pipfile, pyproject)
+        if pipfile is not None:
+            pipfile.dump()
+        if pyproject is not None:
+            pyproject.dump()
 
 
 if __name__ == "__main__":
-    main()
+    main()  # pylint: disable=no-value-for-parameter

@@ -1,6 +1,6 @@
 """Module contains the Variable class."""
 
-from typing import Any
+from typing import Any, Optional
 from dataclasses import dataclass
 
 from auto_dev.utils import camel_to_snake
@@ -15,9 +15,9 @@ class Variable:
     type: ParamType
     name: str
     internalType: ParamType = None  # noqa
-    components: Any | None = None
-    index: int | None = None
-    indexed: bool | None = None
+    components: Optional[Any] = None
+    index: Optional[int] = None
+    indexed: Optional[bool] = None
 
     def to_str_params(self) -> str:
         """Parse the variable to string to be passed as a parameter to a function."""

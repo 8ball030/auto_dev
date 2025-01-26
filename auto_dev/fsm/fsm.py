@@ -1,6 +1,7 @@
 """Tools to parse fsm specs."""
 
 from string import Template
+from typing import Optional
 from pathlib import Path
 from collections import Counter
 from dataclasses import dataclass
@@ -61,7 +62,7 @@ class FsmSpec:
     transition_func: dict[tuple[str, str], str]
 
     @classmethod
-    def from_yaml(cls, yaml_str: str, label: str | None = None):
+    def from_yaml(cls, yaml_str: str, label: Optional[str] = None):
         """We create a FsmSpec from a yaml string."""
         fsm_spec = yaml.safe_load(yaml_str)
         if label:
@@ -71,7 +72,7 @@ class FsmSpec:
         return cls(**fsm_spec)
 
     @classmethod
-    def from_path(cls, path: Path, label: str | None = None):
+    def from_path(cls, path: Path, label: Optional[str] = None):
         """We create a FsmSpec from a yaml file."""
         with open(path, encoding=DEFAULT_ENCODING) as file_pointer:
             return cls.from_yaml(file_pointer.read(), label)

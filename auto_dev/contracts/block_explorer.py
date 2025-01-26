@@ -1,5 +1,6 @@
 """Module to interact with the blockchain explorer."""
 
+from typing import Optional
 from dataclasses import dataclass
 
 import requests
@@ -28,7 +29,7 @@ class BlockExplorer:
             raise TypeError(msg)
         self.network = network
 
-    def get_abi(self, address: str) -> dict | None:
+    def get_abi(self, address: str) -> Optional[dict]:
         """Get the ABI for the contract at the address.
 
         Args:

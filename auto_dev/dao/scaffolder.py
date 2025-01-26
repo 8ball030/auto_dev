@@ -1,7 +1,7 @@
 """DAOScaffolder class is responsible for scaffolding DAO classes and test scripts."""
 
 import json
-from typing import Any
+from typing import Any, Optional
 from pathlib import Path
 from collections import defaultdict
 
@@ -249,77 +249,95 @@ class DAOScaffolder:
         )
 
     def _save_test_script(self, test_script: str) -> None:
-        test_script_path = Path("tests/test_dao.py")
-        test_script_path.parent.mkdir(parents=True, exist_ok=True)
-        write_to_file(test_script_path, test_script, FileType.PYTHON)
-        self.logger.info(f"Test script saved to: {test_script_path}")
+        try:
+            test_dir = Path("tests")
+            test_dir.mkdir(parents=True, exist_ok=True)
+            file_path = test_dir / "test_daos.py"
+            write_to_file(file_path, test_script, FileType.PYTHON)
+            self.logger.info(f"Saved test script: {file_path}")
+        except OSError as e:
+            self.logger.exception(f"Error saving test script: {e!s}")
+            raise
 
     def _generate_and_save_init_file(self, dao_classes: dict[str, str]) -> None:
         try:
-            model_names = [class_name[:-3] for class_name in dao_classes]
-            file_names = [camel_to_snake(model) for model in model_names]
-            model_file_pairs = list(zip(model_names, file_names, strict=False))
-            init_template = self.env.get_template("__init__.jinja")
-            init_content = init_template.render(model_file_pairs=model_file_pairs)
             dao_dir = Path("daos")
+            dao_dir.mkdir(parents=True, exist_ok=True)
             init_file_path = dao_dir / "__init__.py"
+            imports = []
+            for class_name in dao_classes:
+                snake_case_name = camel_to_snake(class_name[:-3]) + "_dao"
+                imports.append(f"from .{snake_case_name} import {class_name}")
+            init_content = "\n".join(imports)
             write_to_file(init_file_path, init_content, FileType.PYTHON)
-            self.logger.info(f"Generated and saved __init__.py: {init_file_path}")
-        except Exception as e:
-            self.logger.exception(f"Error generating and saving __init__.py: {e!s}")
+            self.logger.info(f"Saved __init__.py: {init_file_path}")
+        except OSError as e:
+            self.logger.exception(f"Error saving __init__.py: {e!s}")
             raise
 
     def identify_persistent_schemas(self, api_spec: dict[str, Any]) -> list[str]:
-        """Identify persistent schemas in the API spec."""
+        """Identify schemas that are likely to be persistent based on their usage in the API."""
         schemas = api_spec.get("components", {}).get("schemas", {})
         schema_usage = defaultdict(set)
 
         self._analyze_paths(api_spec, schema_usage, schemas)
 
-        return [schema for schema, usage in schema_usage.items() if "response" in usage or "nested_request" in usage]
+        persistent_schemas = []
+        for schema_name, usage in schema_usage.items():
+            if "response" in usage and ("request" in usage or "parameter" in usage):
+                persistent_schemas.append(schema_name)
+
+        return persistent_schemas
 
     def _analyze_paths(self, api_spec: dict[str, Any], schema_usage: dict[str, set], schemas: dict[str, Any]) -> None:
-        for path_details in api_spec.get("paths", {}).values():
-            for method_details in path_details.values():
-                self._analyze_method(method_details, schema_usage, schemas)
+        for path_item in api_spec.get("paths", {}).values():
+            for method in ["get", "post", "put", "delete", "patch"]:
+                if method in path_item:
+                    self._analyze_method(path_item[method], schema_usage, schemas)
 
     def _analyze_method(
         self, method_details: dict[str, Any], schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
         if "requestBody" in method_details:
-            self._analyze_content(method_details["requestBody"].get("content", {}), "request", schema_usage, schemas)
+            content = method_details["requestBody"].get("content", {})
+            self._analyze_content(content, "request", schema_usage, schemas)
 
-        for response_details in method_details.get("responses", {}).values():
-            self._analyze_content(response_details.get("content", {}), "response", schema_usage, schemas)
+        if "responses" in method_details:
+            for response in method_details["responses"].values():
+                content = response.get("content", {})
+                self._analyze_content(content, "response", schema_usage, schemas)
 
     def _analyze_content(
         self, content: dict[str, Any], usage_type: str, schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
-        for media_details in content.values():
-            schema = media_details.get("schema", {})
-            if schema.get("type") == "array":
-                self._analyze_schema(schema.get("items", {}), usage_type, schema_usage, schemas)
-            else:
+        for media_type in content.values():
+            if "schema" in media_type:
+                schema = media_type["schema"]
                 self._analyze_schema(schema, usage_type, schema_usage, schemas)
 
     def _analyze_schema(
         self, schema: dict[str, Any], usage_type: str, schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
-        schema_name = self._process_schema(schema)
-        if schema_name:
-            schema_usage[schema_name].add(usage_type)
-            self._analyze_nested_properties(schema_name, usage_type, schema_usage, schemas)
+        if "$ref" in schema:
+            schema_name = self._process_schema(schema)
+            if schema_name:
+                schema_usage[schema_name].add(usage_type)
+                self._analyze_nested_properties(schema_name, usage_type, schema_usage, schemas)
 
     def _analyze_nested_properties(
         self, schema_name: str, usage_type: str, schema_usage: dict[str, set], schemas: dict[str, Any]
     ) -> None:
-        if "properties" in schemas.get(schema_name, {}):
-            for prop in schemas[schema_name].get("properties", {}).values():
+        schema = schemas.get(schema_name, {})
+        for prop in schema.get("properties", {}).values():
+            if "$ref" in prop:
                 nested_schema_name = self._process_schema(prop)
                 if nested_schema_name:
-                    schema_usage[nested_schema_name].add(f"nested_{usage_type}")
+                    schema_usage[nested_schema_name].add(usage_type)
 
-    def _process_schema(self, schema: dict[str, Any]) -> str | None:
+    def _process_schema(self, schema: dict[str, Any]) -> Optional[str]:
+        """Process a schema reference and return the schema name."""
         if "$ref" in schema:
-            return schema["$ref"].split("/")[-1]
+            ref = schema["$ref"]
+            if ref.startswith("#/components/schemas/"):
+                return ref.split("/")[-1]
         return None
