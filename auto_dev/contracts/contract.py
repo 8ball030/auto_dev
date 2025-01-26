@@ -1,7 +1,6 @@
 """Module to represent a contract."""
 
 import json
-from typing import Optional
 from pathlib import Path
 
 import yaml
@@ -42,13 +41,15 @@ class Contract:
 
         # this is added because web is not compatible with pre-Solidity 0.6
         for item in abi:
-            if item.get("type") == "function":
-                if "constant" in item:
-                    raise UnsupportedSolidityVersion(
-                        "Outdated ABI format detected (pre-0.6 Solidity). "
-                        "The ABI uses 'constant' instead of 'stateMutability'. "
-                        "Please provide an ABI from Solidity 0.6 or later."
-                    )
+            if item.get("type") == "function" and "constant" in item:
+                msg = (
+                    "Outdated ABI format detected (pre-0.6 Solidity). "
+                    "The ABI uses 'constant' instead of 'stateMutability'. "
+                    "Please provide an ABI from Solidity 0.6 or later."
+                )
+                raise UnsupportedSolidityVersion(
+                    msg
+                )
         w3_contract = self.web3.eth.contract(address=self.address, abi=abi)
         for function in w3_contract.all_functions():
             mutability = function.abi["stateMutability"]
@@ -61,7 +62,7 @@ class Contract:
                 raise ValueError(msg)
 
     def __init__(
-        self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Optional[Web3] = None
+        self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Web3 | None = None
     ):
         """Initialise the contract."""
         self.author = author
@@ -157,7 +158,5 @@ class Contract:
         self.update_all()
 
     def parse_events(self):
-        """
-        We need to parse the events from the abi.
-        """
+        """We need to parse the events from the abi."""
         self.events = [ContractEvent(**event) for event in self.abi if event["type"] == "event"]

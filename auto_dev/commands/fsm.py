@@ -21,7 +21,7 @@ def fsm() -> None:
 
 
 class FsmType(Enum):
-    """Type of FSM output"""
+    """Type of FSM output."""
 
     MERMAID = "mermaid"
     FSM_SPEC = "fsm_spec"
@@ -45,8 +45,7 @@ INPUT_TO_FUNC = {FsmType.MERMAID.value: FsmSpec.from_mermaid_path, FsmType.FSM_S
     "--output", type=click.Choice([f.value for f in FsmType], case_sensitive=False), default=FsmType.MERMAID.value
 )
 def from_file(fsm_spec: str, fsm_name: str, in_type: str, output: str) -> None:
-    """
-    We parse an fsm file, in order to covnert between mermaid and fsm_spec.
+    """We parse an fsm file, in order to covnert between mermaid and fsm_spec.
 
     Example Usage:
     `adev fsm from-file auto_dev/data/fsm/samples/fsm_specification.yaml testAbciApp`

@@ -1,32 +1,22 @@
 """Protocol scaffolder."""
 
-import re
-import ast
 import datetime
-import tempfile
 import textwrap
-import subprocess
 from typing import Any
 from pathlib import Path
-from itertools import starmap
 from collections import namedtuple
 
-import yaml
 from jinja2 import Environment, FileSystemLoader
-from aea.protocols.generator.base import ProtocolGenerator
 
-from auto_dev.fmt import Formatter
 from auto_dev.enums import BehaviourTypes
-from auto_dev.utils import currenttz, get_logger, remove_prefix, camel_to_snake, snake_to_camel
+from auto_dev.utils import currenttz, get_logger, snake_to_camel
 from auto_dev.fsm.fsm import FsmSpec
-from auto_dev.constants import DEFAULT_TZ, DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
+from auto_dev.constants import JINJA_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
-from auto_dev.protocols.scaffolder import PROTOBUF_TO_PYTHON, ProtocolScaffolder, read_protocol, parse_protobuf_type
-from auto_dev.data.connections.template import HEADER
+from auto_dev.protocols.scaffolder import ProtocolScaffolder, read_protocol
 
 
 ProtocolSpecification = namedtuple("ProtocolSpecification", ["metadata", "custom_types", "speech_acts"])
-
 
 README_TEMPLATE = """
 # {name} Protocol
@@ -63,7 +53,7 @@ for _type in DEFAULT_TYPE_MAP.copy():
         DEFAULT_TYPE_MAP[f"Dict[{_type}, {_type}]"] = {}
 
 
-PYTHHON_KEYWORDS = [
+PYTHON_KEYWORDS = [
     "None",
     "False",
     "True",
@@ -155,7 +145,7 @@ class BehaviourScaffolder(ProtocolScaffolder):
             if failures:
                 raise UserInputError(
                     textwrap.dedent(f"""
-                    Speech act {target} not found in the protocol specification. 
+                    Speech act {target} not found in the protocol specification.
                     Available: {list(speech_acts.keys())}
                     """)
                 )
@@ -168,11 +158,11 @@ class BehaviourScaffolder(ProtocolScaffolder):
         """Scaffold the simple fsm behaviour from a fsm class."""
         del target_speech_acts
 
-        fsm_spec = FsmSpec.from_yaml(Path(self.protocol_specification_path).read_text())
+        fsm_spec = FsmSpec.from_yaml(Path(self.protocol_specification_path).read_text(encoding="utf-8"))
 
         all_states = fsm_spec.states
         states_not_in_initial_or_final = [
-            state for state in all_states if state not in fsm_spec.final_states + [fsm_spec.default_start_state]
+            state for state in all_states if state not in {*fsm_spec.final_states, fsm_spec.default_start_state}
         ]
 
         transitions: list = []
@@ -181,7 +171,7 @@ class BehaviourScaffolder(ProtocolScaffolder):
             source, event = key[1:-1].split(", ")
             transitions.append({"source": source, "event": event, "destination": destination})
 
-        output = self.template.render(
+        self.template.render(
             fsm_spec=fsm_spec,
             class_name=snake_to_camel(fsm_spec.label).capitalize(),
             states=fsm_spec.states,
@@ -191,7 +181,6 @@ class BehaviourScaffolder(ProtocolScaffolder):
             remaining_states=states_not_in_initial_or_final,
             transitions=transitions,
         )
-        print(output)
 
     def _scaffold_protocol(self, target_speech_acts=None) -> None:
         """Scaffold the protocol."""
@@ -213,7 +202,7 @@ class BehaviourScaffolder(ProtocolScaffolder):
         def recursively_extract_all_imports(
             py_type,
         ):
-            if py_type in ["str", "int", "float", "bool"]:
+            if py_type in {"str", "int", "float", "bool"}:
                 return
             if py_type.startswith("List"):
                 type_imports.add("List")
@@ -256,22 +245,14 @@ class BehaviourScaffolder(ProtocolScaffolder):
         if self.verbose:
             self.logger.info(f"Generated output: {output}")
 
-        print(output)
-
     def get_data_types(self, protocol_specification: ProtocolSpecification) -> str:
         """Get the data types."""
-        data_types = protocol_specification.custom_types
-        return data_types
+        return protocol_specification.custom_types
 
 
 def get_py_type_and_args(arg, arg_type, type_map):
-    """
-    Get the python type and arguments from a protobuf type.
-    """
-    if arg in PYTHHON_KEYWORDS:
-        py_arg = f"{arg}_"
-    else:
-        py_arg = arg
+    """Get the python type and arguments from a protobuf type."""
+    py_arg = f"{arg}_" if arg in PYTHON_KEYWORDS else arg
     py_type = (
         arg_type.replace("pt:str", "str")
         .replace("pt:int", "int")
@@ -292,6 +273,7 @@ def get_py_type_and_args(arg, arg_type, type_map):
         elif py_type.startswith("Dict"):
             DEFAULT_TYPE_MAP[py_type] = {}
         else:
-            raise ValueError(f"Type {py_type} not found in the default type map.")
+            msg = f"Type {py_type} not found in the default type map."
+            raise ValueError(msg)
 
     return py_arg, py_type

@@ -34,7 +34,6 @@ import logging
 import traceback
 from copy import deepcopy
 from enum import Enum
-from typing import Dict, List
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -213,20 +212,19 @@ class GitDependency(Dependency):
     """A git dependency."""
 
     type = DependencyType.GIT
-    autonomy_dependencies: Dict[str, Dependency] = None
+    autonomy_dependencies: dict[str, Dependency] = None
     url: str = None
-    plugins: List[str] = None
-    extras: List[str] = None
+    plugins: list[str] = None
+    extras: list[str] = None
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> dict[str, str]:
         """Get the headers."""
-        headers = {
+        return {
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
         }
-        return headers
 
     def get_latest_version(self) -> str:
         """Get the latest version."""
@@ -240,11 +238,12 @@ class GitDependency(Dependency):
         res = requests.get(tag_url, headers=self.headers, timeout=DEFAULT_TIMEOUT)
         if res.status_code != 200:
             if res.status_code == 403:
-                raise AuthenticationError("Error: Rate limit exceeded. Please add a github token.")
-            raise NetworkTimeoutError(f"Error: {res.status_code} {res.text}")
+                msg = "Error: Rate limit exceeded. Please add a github token."
+                raise AuthenticationError(msg)
+            msg = f"Error: {res.status_code} {res.text}"
+            raise NetworkTimeoutError(msg)
         data = res.json()
-        latest_version = data[0]["tag_name"]
-        return latest_version
+        return data[0]["tag_name"]
 
     def get_all_autonomy_packages(self):
         """Read in the autonomy packages. the are located in the remote url."""
@@ -254,11 +253,11 @@ class GitDependency(Dependency):
         data = requests.get(remote_url, headers=self.headers, timeout=DEFAULT_TIMEOUT)
 
         if data.status_code != 200:
-            raise NetworkTimeoutError(f"Error: {data.status_code} {data.text}")
+            msg = f"Error: {data.status_code} {data.text}"
+            raise NetworkTimeoutError(msg)
         dl_url = data.json()["download_url"]
         data = requests.get(dl_url, headers=self.headers, timeout=DEFAULT_TIMEOUT).json()
-        autonomy_packages = data["dev"]
-        return autonomy_packages
+        return data["dev"]
 
 
 @cli.group()
@@ -364,10 +363,10 @@ def generate_gitignore(
 class AutonomyDependencies:
     """A set of autonomy versions."""
 
-    upstream_dependency: List[GitDependency]
+    upstream_dependency: list[GitDependency]
 
     def to_dict(self):
-        """return a list of the upstream dependencies."""
+        """Return a list of the upstream dependencies."""
         return [
             {
                 "name": dependency.name,
@@ -385,10 +384,10 @@ class AutonomyDependencies:
 class PoetryDependencies:
     """A set of poetry dependencies."""
 
-    poetry_dependencies: List[GitDependency]
+    poetry_dependencies: list[GitDependency]
 
     def to_dict(self):
-        """return a list of the poetry dependencies."""
+        """Return a list of the poetry dependencies."""
         return [
             {
                 "name": dependency.name,
@@ -484,7 +483,7 @@ poetry_dependencies:
       - open-aea-ledger-ethereum
       - open-aea-ledger-solana
       - open-aea-ledger-cosmos
-      - open-aea-cli-ipfs   
+      - open-aea-cli-ipfs
 """
 
 
@@ -509,7 +508,7 @@ class VersionSetLoader:
 
     def load_config(self):
         """Load the config file."""
-        with open(self.config_file, "r") as file_pointer:
+        with open(self.config_file, encoding="utf-8") as file_pointer:
             data = yaml.safe_load(file_pointer)
         self.autonomy_dependencies = AutonomyDependencies(
             upstream_dependency=[
@@ -543,16 +542,14 @@ class VersionSetLoader:
 def handle_output(issues, changes) -> None:
     """Handle the output."""
     if issues:
-        for issue in issues:
-            print(issue)
+        for _issue in issues:
+            pass
         sys.exit(1)
 
     if changes:
-        for change in changes:
-            print(f"Updated {change} successfully. ✅")
-        print("Please verify the proposed changes and commit them! 📝")
+        for _change in changes:
+            pass
         sys.exit(1)
-    print("No changes required. 😎")
 
 
 def get_update_command(poetry_dependencies: Dependency) -> str:
@@ -621,9 +618,8 @@ def verify(
             local_packages = get_package_json(Path())["third_party"]
             diffs = {}
             for package_name, package_hash in remote_packages.items():
-                if package_name in local_packages:
-                    if package_hash != local_packages[package_name]:
-                        diffs[package_name] = package_hash
+                if package_name in local_packages and package_hash != local_packages[package_name]:
+                    diffs[package_name] = package_hash
 
             if diffs:
                 print_json(data=diffs)
@@ -638,7 +634,7 @@ def verify(
     issues.extend(poetry_issues)
 
     if issues:
-        click.echo(f"Please run the following command to update the poetry dependencies.")
+        click.echo("Please run the following command to update the poetry dependencies.")
         click.echo(f"{cmd}\n")
         if not auto_approve:
             click.confirm("Do you want to update the poetry dependencies now?", abort=True)

@@ -1,6 +1,4 @@
-"""
-Simple handler scaffolder to allow users to scaffold a new handler from a protocol specification.
-"""
+"""Simple handler scaffolder to allow users to scaffold a new handler from a protocol specification."""
 
 from enum import Enum
 

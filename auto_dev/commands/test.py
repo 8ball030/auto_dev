@@ -1,6 +1,5 @@
 """Test command cli module."""
 
-from pathlib import Path
 
 import rich_click as click
 from rich.progress import track
@@ -42,7 +41,7 @@ def test(ctx, path, watch, coverage_report) -> None:
     if coverage_report:
         cli_runner = CommandExecutor(COVERAGE_COMMAND)
         if not cli_runner.execute(stream=True, shell=True):
-            msg = f"Unable to successfully execute coverage report"
+            msg = "Unable to successfully execute coverage report"
             raise OperationError(msg)
 
     try:

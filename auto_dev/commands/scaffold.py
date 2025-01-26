@@ -8,7 +8,6 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
-from typing import Optional
 from pathlib import Path
 
 import yaml
@@ -44,7 +43,7 @@ def scaffold() -> None:
     """Scaffold a (set of) components."""
 
 
-def validate_address(address: str, logger, contract_name: str = None) -> Optional[str]:
+def validate_address(address: str, logger, contract_name: str | None = None) -> str | None:
     """Convert address to checksum format and validate it."""
     if address == DEFAULT_NULL_ADDRESS:
         return address
@@ -52,7 +51,7 @@ def validate_address(address: str, logger, contract_name: str = None) -> Optiona
         return Web3.to_checksum_address(str(address))
     except ValueError as e:
         name_suffix = f" for {contract_name}" if contract_name else ""
-        logger.error(f"Invalid address format{name_suffix}: {e}")
+        logger.exception(f"Invalid address format{name_suffix}: {e}")
         return None
 
 
@@ -64,7 +63,7 @@ def _process_from_block_explorer(validated_address, name, logger, scaffolder):
     return new_contract
 
 
-def _process_from_abi(from_abi: str, validated_address: str, name: str, logger, scaffolder) -> Optional[object]:
+def _process_from_abi(from_abi: str, validated_address: str, name: str, logger, scaffolder) -> object | None:
     """Process contract from ABI file."""
     logger.info(f"Using ABI file: {from_abi}")
     try:
@@ -72,8 +71,9 @@ def _process_from_abi(from_abi: str, validated_address: str, name: str, logger, 
         logger.info(f"New contract scaffolded from ABI file at {new_contract.path}")
         return new_contract
     except Exception as e:
-        logger.error(f"Failed to process ABI file: {str(e)}")
-        raise ValueError(f"Error processing ABI file: {str(e)}") from e
+        logger.exception(f"Failed to process ABI file: {e!s}")
+        msg = f"Error processing ABI file: {e!s}"
+        raise ValueError(msg) from e
 
 
 def _process_from_file(ctx, yaml_dict, network, read_functions, write_functions, logger):
@@ -127,7 +127,7 @@ def contract(ctx, public_id, address, network, read_functions, write_functions, 
         author = None
 
     # Create the scaffolder before doing any processing
-    block_explorer = BlockExplorer(f"https://abidata.net", network=Network(network))
+    block_explorer = BlockExplorer("https://abidata.net", network=Network(network))
     scaffolder = ContractScaffolder(block_explorer=block_explorer, author=author)
 
     # Process from file if specified
@@ -154,7 +154,8 @@ def contract(ctx, public_id, address, network, read_functions, write_functions, 
 
     if new_contract is None:
         logger.error("Failed to scaffold contract")
-        raise ValueError("Failed to scaffold contract")
+        msg = "Failed to scaffold contract"
+        raise ValueError(msg)
     # Generate and process contract
     logger.info("Generating openaea contract with aea scaffolder.")
     contract_path = scaffolder.generate_openaea_contract(new_contract)
@@ -302,10 +303,10 @@ def behaviour(
     auto_confirm,
     target_speech_acts,
 ) -> None:
-    """
-    Generate an AEA handler from an OpenAPI 3 specification.
+    """Generate an AEA handler from an OpenAPI 3 specification.
 
     Example:
+    -------
     ```
     adev scaffold behaviour openapi.yaml --behaviour-type metrics
     ```
@@ -339,10 +340,10 @@ def behaviour(
 )
 @click.pass_context
 def handlers(ctx, spec_file, handler_type, auto_confirm, target_speech_acts) -> None:
-    """
-    Generate an AEA handler from an OpenAPI 3 specification.
+    """Generate an AEA handler from an OpenAPI 3 specification.
 
     Example:
+    -------
     ```
     adev scaffold behaviour openapi.yaml --behaviour-type metrics
     ```
@@ -372,10 +373,10 @@ def handlers(ctx, spec_file, handler_type, auto_confirm, target_speech_acts) -> 
 )
 @click.pass_context
 def dialogues(ctx, spec_file, dialogue_type, auto_confirm, target_speech_acts) -> None:
-    """
-    Generate an AEA handler from an OpenAPI 3 specification.
+    """Generate an AEA handler from an OpenAPI 3 specification.
 
     Example:
+    -------
     ```
     adev scaffold behaviour openapi.yaml --behaviour-type metrics
     ```
@@ -441,8 +442,9 @@ def dao(ctx, auto_confirm) -> None:
         scaffolder = DAOScaffolder(logger, verbose, auto_confirm, public_id)
         scaffolder.scaffold()
     except Exception as e:
-        logger.error(f"Failed to scaffold DAO: {str(e)}")
-        raise ValueError("Error during DAO scaffolding and test generation") from e
+        logger.exception(f"Failed to scaffold DAO: {e!s}")
+        msg = "Error during DAO scaffolding and test generation"
+        raise ValueError(msg) from e
 
 
 if __name__ == "__main__":

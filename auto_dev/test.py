@@ -8,8 +8,8 @@ import pytest
 
 COVERAGE_COMMAND = f"""coverage report \
                     -m \
-                    --omit='{str(Path('**') / 'tests' / '*.py')}' \
-                    {str(Path() / '**' / '*.py')} > 'coverage-report.txt'
+                    --omit='{Path('**') / 'tests' / '*.py'!s}' \
+                    {Path() / '**' / '*.py'!s} > 'coverage-report.txt'
 """
 
 
@@ -31,9 +31,8 @@ def test_path(
         extra_args.append("-w")
 
     if multiple:
-        extra_args.append("-n")
-        extra_args.append(str(cpu_count()))
+        extra_args.extend(("-n", str(cpu_count())))
 
-    args = [path] + extra_args
+    args = [path, *extra_args]
     res = pytest.main(args)
     return bool(res == 0)

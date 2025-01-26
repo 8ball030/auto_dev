@@ -1,6 +1,5 @@
 """Simple linting tooling for autonomy repos."""
 
-from auto_dev.utils import isolated_filesystem
 from auto_dev.constants import DEFAULT_RUFF_CONFIG
 
 from .cli_executor import CommandExecutor
@@ -23,5 +22,5 @@ def check_path(path: str, verbose: bool = False) -> bool:
             str(DEFAULT_RUFF_CONFIG),
         ]
     )
-    # We now 
+    # We now
     return command.execute(verbose=verbose)

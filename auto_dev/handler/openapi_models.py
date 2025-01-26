@@ -1,7 +1,7 @@
 """OpenAPI Models."""
 
 import enum
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Union
 
 from pydantic import Field, BaseModel, ConfigDict
 
@@ -43,15 +43,15 @@ class DataType(enum.Enum):
 class Schema(BaseModel):
     """OpenAPI Schema Object."""
 
-    title: Optional[str] = None
-    required: Optional[List[str]] = None
-    enum: Optional[List[Any]] = None
-    type: Optional[DataType] = None
-    items: Optional[Union[Reference, "Schema"]] = None
-    properties: Optional[Dict[str, Union[Reference, "Schema"]]] = None
-    description: Optional[str] = None
-    example: Optional[Any] = None
-    x_persistent: Optional[bool] = Field(default=None, alias="x-persistent")
+    title: str | None = None
+    required: list[str] | None = None
+    enum: list[Any] | None = None
+    type: DataType | None = None
+    items: Union[Reference, "Schema"] | None = None
+    properties: dict[str, Union[Reference, "Schema"]] | None = None
+    description: str | None = None
+    example: Any | None = None
+    x_persistent: bool | None = Field(default=None, alias="x-persistent")
 
     model_config = ConfigDict(
         extra="allow",
@@ -62,15 +62,15 @@ class Schema(BaseModel):
 class Example(BaseModel):
     """OpenAPI Example Object."""
 
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    value: Optional[Any] = None
+    summary: str | None = None
+    description: str | None = None
+    value: Any | None = None
 
 
 class Encoding(BaseModel):
     """OpenAPI Encoding Object."""
 
-    content_type: Optional[str] = None
+    content_type: str | None = None
 
     model_config = ConfigDict(
         extra="allow",
@@ -80,10 +80,10 @@ class Encoding(BaseModel):
 class MediaType(BaseModel):
     """OpenAPI Media Type Object."""
 
-    media_type_schema: Optional[Union[Reference, Schema]] = Field(default=None, alias="schema")
-    example: Optional[Any] = None
-    examples: Optional[Dict[str, Union[Example, Reference]]] = None
-    encoding: Optional[Dict[str, Encoding]] = None
+    media_type_schema: Reference | Schema | None = Field(default=None, alias="schema")
+    example: Any | None = None
+    examples: dict[str, Example | Reference] | None = None
+    encoding: dict[str, Encoding] | None = None
 
     model_config = ConfigDict(
         extra="allow",
@@ -94,22 +94,22 @@ class MediaType(BaseModel):
 class Parameter(BaseModel):
     """OpenAPI Parameter Object."""
 
-    description: Optional[str] = None
+    description: str | None = None
     required: bool = False
-    param_schema: Optional[Union[Reference, Schema]] = Field(default=None, alias="schema")
-    example: Optional[Any] = None
-    examples: Optional[Dict[str, Union[Example, Reference]]] = None
-    content: Optional[Dict[str, MediaType]] = None
+    param_schema: Reference | Schema | None = Field(default=None, alias="schema")
+    example: Any | None = None
+    examples: dict[str, Example | Reference] | None = None
+    content: dict[str, MediaType] | None = None
     name: str
     param_in: str = Field(alias="in")
-    schema_: Optional[Dict] = Field(default=None, alias="schema")
+    schema_: dict | None = Field(default=None, alias="schema")
 
 
 class RequestBody(BaseModel):
     """OpenAPI Request Body Object."""
 
-    description: Optional[str] = None
-    content: Dict[str, MediaType]
+    description: str | None = None
+    content: dict[str, MediaType]
     required: bool = False
 
 
@@ -117,41 +117,41 @@ class Response(BaseModel):
     """OpenAPI Response Object."""
 
     description: str
-    content: Optional[Dict[str, MediaType]] = None
-    headers: Optional[Dict[str, Any]] = None
+    content: dict[str, MediaType] | None = None
+    headers: dict[str, Any] | None = None
 
     model_config = ConfigDict(
         extra="allow",
     )
 
 
-Responses = Dict[str, Union[Response, Reference]]
+Responses = dict[str, Response | Reference]
 
 
 class Operation(BaseModel):
     """OpenAPI Operation Object."""
 
-    tags: Optional[List[str]] = None
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    operation_id: Optional[str] = None
-    parameters: Optional[List[Union[Parameter, Reference]]] = None
-    request_body: Optional[Union[RequestBody, Reference]] = None
+    tags: list[str] | None = None
+    summary: str | None = None
+    description: str | None = None
+    operation_id: str | None = None
+    parameters: list[Parameter | Reference] | None = None
+    request_body: RequestBody | Reference | None = None
     responses: Responses
 
 
 class PathItem(BaseModel):
     """OpenAPI Path Item Object."""
 
-    ref: Optional[str] = Field(default=None, alias="$ref")
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    get: Optional[Operation] = None
-    put: Optional[Operation] = None
-    post: Optional[Operation] = None
-    delete: Optional[Operation] = None
-    patch: Optional[Operation] = None
-    parameters: Optional[List[Union[Parameter, Reference]]] = None
+    ref: str | None = Field(default=None, alias="$ref")
+    summary: str | None = None
+    description: str | None = None
+    get: Operation | None = None
+    put: Operation | None = None
+    post: Operation | None = None
+    delete: Operation | None = None
+    patch: Operation | None = None
+    parameters: list[Parameter | Reference] | None = None
 
     model_config = ConfigDict(
         extra="allow",
@@ -162,19 +162,19 @@ class PathItem(BaseModel):
 class Components(BaseModel):
     """OpenAPI Components Object."""
 
-    schemas: Optional[Dict[str, Union[Schema, Reference]]] = None
+    schemas: dict[str, Schema | Reference] | None = None
 
 
-Paths = Dict[str, PathItem]
+Paths = dict[str, PathItem]
 
 
 class OpenAPI(BaseModel):
     """OpenAPI Object."""
 
     openapi: str
-    info: Dict[str, Any]
+    info: dict[str, Any]
     paths: Paths
-    components: Optional[Components] = None
+    components: Components | None = None
 
 
 Schema.model_rebuild()

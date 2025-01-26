@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #
 #   Copyright 2023-2024 Valory AG
@@ -16,8 +15,7 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-"""
-This script checks that the pipfile of the repository meets the requirements.
+"""This script checks that the pipfile of the repository meets the requirements.
 
 In particular:
 - Avoid the usage of "*"
@@ -29,9 +27,10 @@ import re
 import sys
 import logging
 import itertools
-from typing import Any, Dict, List, Tuple, Iterator, Optional, OrderedDict as OrderedDictType, cast
+from typing import Any, Optional, cast
 from pathlib import Path
-from collections import OrderedDict
+from collections import OrderedDict, OrderedDict as OrderedDictType
+from collections.abc import Iterator
 
 import toml
 import click
@@ -46,8 +45,8 @@ ANY_SPECIFIER = "*"
 class PathArgument(click.Path):
     """Path parameter for CLI."""
 
-    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Optional[Path]:
-        """Convert path string to `pathlib.Path`"""
+    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> Path | None:
+        """Convert path string to `pathlib.Path`."""
         path_string = super().convert(value, param, ctx)
         return None if path_string is None else Path(path_string)
 
@@ -63,7 +62,7 @@ class Pipfile:
 
     def __init__(
         self,
-        sources: List[str],
+        sources: list[str],
         packages: OrderedDictType[str, Dependency],
         dev_packages: OrderedDictType[str, Dependency],
         file: Path,
@@ -82,7 +81,7 @@ class Pipfile:
             yield dependency
 
     def update(self, dependency: Dependency) -> None:
-        """Update dependency specifier"""
+        """Update dependency specifier."""
         if dependency.name in self.ignore:
             return
         if dependency.name in self.packages:
@@ -92,8 +91,8 @@ class Pipfile:
         else:
             self.dev_packages[dependency.name] = dependency
 
-    def check(self, dependency: Dependency) -> Tuple[Optional[str], int]:
-        """Check dependency specifier"""
+    def check(self, dependency: Dependency) -> tuple[str | None, int]:
+        """Check dependency specifier."""
         if dependency.name in self.ignore:
             return None, 0
 
@@ -117,7 +116,7 @@ class Pipfile:
         return None, 0
 
     @classmethod
-    def parse(cls, content: str) -> Tuple[List[str], OrderedDictType[str, OrderedDictType[str, Dependency]]]:
+    def parse(cls, content: str) -> tuple[list[str], OrderedDictType[str, OrderedDictType[str, Dependency]]]:
         """Parse from string."""
         sources = []
         sections: OrderedDictType = OrderedDict()
@@ -197,7 +196,7 @@ class PyProjectToml:
     def __init__(
         self,
         dependencies: OrderedDictType[str, Dependency],
-        config: Dict[str, Dict],
+        config: dict[str, dict],
         file: Path,
     ) -> None:
         """Initialize object."""
@@ -212,15 +211,15 @@ class PyProjectToml:
                 yield dependency
 
     def update(self, dependency: Dependency) -> None:
-        """Update dependency specifier"""
+        """Update dependency specifier."""
         if dependency.name in self.ignore:
             return
         if dependency.name in self.dependencies and dependency.version == "":
             return
         self.dependencies[dependency.name] = dependency
 
-    def check(self, dependency: Dependency) -> Tuple[Optional[str], int]:
-        """Check dependency specifier"""
+    def check(self, dependency: Dependency) -> tuple[str | None, int]:
+        """Check dependency specifier."""
         if dependency.name in self.ignore:
             return None, 0
 
@@ -238,7 +237,7 @@ class PyProjectToml:
 
     @classmethod
     def load(cls, pyproject_path: Path) -> Optional["PyProjectToml"]:
-        """Load pyproject.yaml dependencies"""
+        """Load pyproject.yaml dependencies."""
         config = toml.load(pyproject_path)
         dependencies = OrderedDict()
         try:
@@ -252,7 +251,7 @@ class PyProjectToml:
                     version=version.replace("^", "==") if version != "*" else "",
                 )
                 continue
-            data = cast(Dict, version)
+            data = cast(dict, version)
             if "extras" in data:
                 version = data["version"]
                 if re.match(r"^\d", version):
@@ -287,10 +286,10 @@ class PyProjectToml:
         self.file.write_text(update[:-1], encoding="utf-8")
 
 
-def load_packages_dependencies(packages_dir: Path) -> List[Dependency]:
+def load_packages_dependencies(packages_dir: Path) -> list[Dependency]:
     """Returns a list of package dependencies."""
     package_manager = PackageManagerV1.from_dir(packages_dir=packages_dir)
-    dependencies: Dict[str, Dependency] = {}
+    dependencies: dict[str, Dependency] = {}
     issues = []
     for package in package_manager.iter_dependency_tree():
         if package.package_type.value == "service":
@@ -309,19 +308,19 @@ def load_packages_dependencies(packages_dir: Path) -> List[Dependency]:
                     dependencies[key] = value
                 if value == dependencies[key]:
                     continue
-                issues.append(f"Actual: {key} {value} vs Expected: {dependencies[key]} in {str(package)}")
+                issues.append(f"Actual: {key} {value} vs Expected: {dependencies[key]} in {package!s}")
 
-    for issue in issues:
-        print(f"Dependency issue: {issue}")
+    for _issue in issues:
+        pass
     if issues:
         sys.exit(1)
     return list(dependencies.values())
 
 
 def _update(
-    packages_dependencies: List[Dependency],
-    pipfile: Optional[Pipfile] = None,
-    pyproject: Optional[PyProjectToml] = None,
+    packages_dependencies: list[Dependency],
+    pipfile: Pipfile | None = None,
+    pyproject: PyProjectToml | None = None,
 ) -> None:
     """Update dependencies."""
 
@@ -339,16 +338,15 @@ def _update(
 
 
 def _check(
-    packages_dependencies: List[Dependency],
-    pipfile: Optional[Pipfile] = None,
-    pyproject: Optional[PyProjectToml] = None,
+    packages_dependencies: list[Dependency],
+    pipfile: Pipfile | None = None,
+    pyproject: PyProjectToml | None = None,
 ) -> None:
     """Update dependencies."""
 
     fail_check = 0
 
     if pipfile is not None:
-        print("Comparing dependencies from Pipfile and packages")
         for dependency in packages_dependencies:
             error, level = pipfile.check(dependency=dependency)
             if error is not None:
@@ -356,27 +354,17 @@ def _check(
                 fail_check = level or fail_check
 
     if pyproject is not None:
-        print("Comparing dependencies from pyproject.toml and packages")
         for dependency in packages_dependencies:
             error, level = pyproject.check(dependency=dependency)
             if error is not None:
                 logging.log(level=level, msg=error)
                 fail_check = level or fail_check
 
-        print("Comparing dependencies from pyproject.toml and tox")
-
-        print("Comparing dependencies from tox and pyproject.toml")
-
-    print("Comparing dependencies from tox and packages")
     if fail_check == logging.ERROR:
-        print("Dependencies check failed")
         sys.exit(1)
 
     if fail_check == logging.WARNING:
-        print("Please address warnings to avoid errors")
         sys.exit(0)
-
-    print("No issues found")
 
 
 @click.command(name="dm")
@@ -417,11 +405,11 @@ def _check(
 )
 def main(
     check: bool = False,
-    packages_dir: Optional[Path] = None,
-    pipfile_path: Optional[Path] = None,
-    pyproject_path: Optional[Path] = None,
+    packages_dir: Path | None = None,
+    pipfile_path: Path | None = None,
+    pyproject_path: Path | None = None,
 ) -> None:
-    """Check dependencies across packages, tox.ini, pyproject.toml and setup.py"""
+    """Check dependencies across packages, tox.ini, pyproject.toml and setup.py."""
 
     logging.basicConfig(format="- %(levelname)s: %(message)s")
 

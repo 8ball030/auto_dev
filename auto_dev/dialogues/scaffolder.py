@@ -1,6 +1,4 @@
-"""
-Dialogues scaffolder.
-"""
+"""Dialogues scaffolder."""
 
 from enum import Enum
 

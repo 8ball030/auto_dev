@@ -112,9 +112,8 @@ def test_publish_error_messages(package_manager, test_packages_filesystem, dummy
         package_manager.publish_agent()
 
     # Test wrong directory error
-    with pytest.raises(OperationError, match="Not in an agent directory"):
-        with change_dir(".."):
-            package_manager.publish_agent()
+    with pytest.raises(OperationError, match="Not in an agent directory"), change_dir(".."):
+        package_manager.publish_agent()
 
 
 def test_publish_package_creation(package_manager, test_packages_filesystem, dummy_agent_default):

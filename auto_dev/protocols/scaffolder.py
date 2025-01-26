@@ -6,7 +6,6 @@ import datetime
 import tempfile
 import textwrap
 import subprocess
-from typing import Any
 from pathlib import Path
 from itertools import starmap
 from collections import namedtuple
@@ -244,7 +243,7 @@ class CommentSplitter(ast.NodeVisitor):
         return "\n".join(split_lines)
 
     def visit_FunctionDef(self, node):  # noqa
-        """process the function's docstring"""
+        """Process the function's docstring."""
         if ast.get_docstring(node):
             original_docstring = ast.get_docstring(node, clean=False)
             split_docstring = self.split_docstring(original_docstring)
@@ -254,7 +253,7 @@ class CommentSplitter(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Module(self, node):  # noqa
-        """Process the module-level docstring"""
+        """Process the module-level docstring."""
         if ast.get_docstring(node):
             original_docstring = ast.get_docstring(node, clean=False)
             split_docstring = self.split_docstring(original_docstring)
@@ -281,8 +280,10 @@ PROTOBUF_TO_PYTHON = {
 }
 
 
-def parse_protobuf_type(protobuf_type, required_type_imports=[]):
+def parse_protobuf_type(protobuf_type, required_type_imports=None):
     """Parse protobuf type into python type."""
+    if required_type_imports is None:
+        required_type_imports = []
     output = {}
 
     if protobuf_type.startswith("repeated"):
@@ -313,13 +314,11 @@ def parse_protobuf_type(protobuf_type, required_type_imports=[]):
         try:
             attr_name = protobuf_type.split()[1]
         except IndexError as err:
-            raise ValueError(f"Error parsing attribute name from: {protobuf_type}") from err
+            msg = f"Error parsing attribute name from: {protobuf_type}"
+            raise ValueError(msg) from err
 
         output["name"] = attr_name
-        if _type in PROTOBUF_TO_PYTHON:
-            output["type"] = PROTOBUF_TO_PYTHON[_type]
-        else:
-            output["type"] = _type
+        output["type"] = PROTOBUF_TO_PYTHON.get(_type, _type)
     return output
 
 
@@ -432,7 +431,7 @@ class ProtocolScaffolder:
 
     def generate_base_models(self, protocol_path, protocol_name, protocol):
         """Generate base models."""
-        raw_classes, all_dummy_data, enums = self._get_definition_of_custom_types(protocol)
+        _raw_classes, _all_dummy_data, _enums = self._get_definition_of_custom_types(protocol)
         custom_types = protocol_path / "dialogues.py"
         content = custom_types.read_text(encoding=DEFAULT_ENCODING)
         # We want to add to the imports
@@ -448,11 +447,11 @@ class ProtocolScaffolder:
 
         if len(protocol.speech_acts["roles"]) > 1:
             self.logger.error("We do not fully generate all dilogiues classes only support one role in the protocol.")
-        role = list(protocol.speech_acts["roles"].keys())[0]
+        role = next(iter(protocol.speech_acts["roles"].keys()))
 
         content = content.replace(
             "role_from_first_message: Callable[[Message, Address], Dialogue.Role],",
-            f"role_from_first_message: Callable[[Message, Address], Dialogue.Role] = _role_from_first_message,",
+            "role_from_first_message: Callable[[Message, Address], Dialogue.Role] = _role_from_first_message,",
         )
 
         content_lines = content.split("\n")
@@ -482,7 +481,6 @@ class ProtocolScaffolder:
             + content_lines[import_end_line:]
         )
 
-        # noqa
         base_cls_name = f"Base{snake_to_camel(protocol_name.capitalize())}"
 
         dialogues_class_str = textwrap.dedent(f"""
@@ -491,11 +489,10 @@ class ProtocolScaffolder:
             def __init__(self, **kwargs):
                 '''Initialize dialogues.'''
                 Model.__init__(self, keep_terminal_state_dialogues=False, **kwargs)
-                Base{snake_to_camel(protocol_name.capitalize())}Dialogues.__init__(self, 
+                Base{snake_to_camel(protocol_name.capitalize())}Dialogues.__init__(self,
                 self_address=str(self.context.skill_id))
 
         """)
-        # noqa
 
         dialogues_class_ast = ast.parse(dialogues_class_str)
         dialogues_class_str = ast.unparse(dialogues_class_ast)
@@ -513,8 +510,10 @@ class ProtocolScaffolder:
         Formatter(verbose=False, remote=False).format(dialogues_tests)
         Formatter(verbose=False, remote=False).format(custom_types)
 
-    def _get_definition_of_custom_types(self, protocol, required_type_imports=["Any"]):
+    def _get_definition_of_custom_types(self, protocol, required_type_imports=None):
         """Get the definition of data types."""
+        if required_type_imports is None:
+            required_type_imports = ["Any"]
         raw_classes = []
         all_dummy_data = {}
         enums = parse_enums(protocol)
@@ -572,9 +571,7 @@ class ProtocolScaffolder:
         protocol_path,
         required_type_imports,
     ):
-        """
-        Ouput the pydantic models to the custom_types.py file.
-        """
+        """Ouput the pydantic models to the custom_types.py file."""
         new_ast = ast.parse(pydantic_output)
         new_imports = {}
         new_classes = {}
@@ -590,7 +587,8 @@ class ProtocolScaffolder:
             if isinstance(node, ast.ClassDef):
                 new_classes[node.name] = node
                 continue
-            raise ValueError(f"Unknown node type: {node}")
+            msg = f"Unknown node type: {node}"
+            raise ValueError(msg)
 
         # We now read in the custom_types.py file
         custom_types_path = protocol_path / "custom_types.py"
@@ -679,7 +677,7 @@ class ProtocolScaffolder:
                 '''Load test data.'''
                 with open(f"{os.path.dirname(__file__)}/dummy_data.yaml", "r", encoding="utf-8") as f:
                     return yaml.safe_load(f)[custom_type]
-            
+
             """
         )
 
@@ -807,7 +805,7 @@ class ProtocolScaffolder:
                 '''Load test data.'''
                 with open(f"{os.path.dirname(__file__)}/dummy_data.yaml", "r", encoding="utf-8") as f:
                     return yaml.safe_load(f)[custom_type]
-            
+
             """
         )
 

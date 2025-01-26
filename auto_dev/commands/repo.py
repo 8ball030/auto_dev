@@ -116,8 +116,8 @@ class RepoScaffolder:
                 try:
                     content = content.format(**self.scaffold_kwargs)
                 except IndexError as e:
-                    self.logger.error(f"Error formatting {file}")
-                    self.logger.error(f"Error: {e}")
+                    self.logger.exception(f"Error formatting {file}")
+                    self.logger.exception(f"Error: {e}")
                     continue
                 target_file_path = new_repo_dir / rel_path.with_suffix("")
             else:

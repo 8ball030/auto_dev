@@ -1,6 +1,6 @@
 """DAO generator class."""
 
-from typing import Any, Optional
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -16,8 +16,8 @@ class DAOGenerator:
         models: dict[str, Any],
         paths: dict[str, Any],
         component_data: dict[str, Any],
-        author_name: Optional[str] = None,
-        package_name: Optional[str] = None,
+        author_name: str | None = None,
+        package_name: str | None = None,
     ):
         self.models = models
         self.paths = paths

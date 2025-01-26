@@ -150,7 +150,7 @@ def test_from_mermaid_fsm():
 
 # We paramtrise by path
 @pytest.mark.parametrize(
-    "path,expected",
+    ("path", "expected"),
     [
         ("fsm_specification.yaml", EXAMPLE),
     ],
@@ -158,7 +158,7 @@ def test_from_mermaid_fsm():
 def test_from_path(path, expected, test_clean_filesystem):
     """Test that we can create a FsmSpec from a yaml string."""
     assert test_clean_filesystem
-    Path(path).write_text(expected)
+    Path(path).write_text(expected, encoding="utf-8")
     fsm_spec = FsmSpec.from_path(path)
     assert fsm_spec.default_start_state == "RegistrationRound"
     assert fsm_spec.states == [

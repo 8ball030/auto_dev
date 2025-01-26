@@ -1,12 +1,10 @@
 """This module contains the logic for the publish command."""
 
-from pathlib import Path
 
 import rich_click as click
 from aea.configurations.base import PublicId
 
 from auto_dev.base import build_cli
-from auto_dev.utils import change_dir
 from auto_dev.constants import AGENT_PUBLISHED_SUCCESS_MSG
 from auto_dev.exceptions import OperationError
 from auto_dev.commands.run import AgentRunner
@@ -30,10 +28,10 @@ cli = build_cli()
 )
 @click.pass_context
 def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
-    """
-    Publish an agent to the local registry.
+    """Publish an agent to the local registry.
 
     Args:
+    ----
         public_id: The public_id of the agent in the open-autonmy format i.e. `author/agent`.
                    If not provided, assumes you're inside the agent directory. This will be the
                    name of the package published.
@@ -42,6 +40,7 @@ def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
     Example usage:
         From agent directory: `adev publish author/new_agent --force/--no-force`
         With force: `adev publish --force`
+
     """
     verbose = ctx.obj["VERBOSE"]
     logger = ctx.obj["LOGGER"]
@@ -54,8 +53,9 @@ def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
             force=force,
         )
         if not agent_runner.is_in_agent_dir():
+            msg = "Not in an agent directory (aea-config.yaml not found) Please enter the agent directory to publish"
             raise OperationError(
-                "Not in an agent directory (aea-config.yaml not found) Please enter the agent directory to publish"
+                msg
             )
         package_manager = PackageManager(verbose=verbose)
         package_manager.publish_agent(force=force, new_public_id=public_id)
@@ -65,8 +65,8 @@ def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
         click.secho(str(e), fg="red")
         ctx.exit(1)
     except Exception as e:
-        logger.error(str(e))
-        logger.error("Agent publish failed. Please consider running with --verbose flag for more information.")
+        logger.exception(str(e))
+        logger.exception("Agent publish failed. Please consider running with --verbose flag for more information.")
         ctx.exit(1)
 
 

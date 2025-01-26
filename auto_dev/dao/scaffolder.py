@@ -1,7 +1,7 @@
 """DAOScaffolder class is responsible for scaffolding DAO classes and test scripts."""
 
 import json
-from typing import Any, Optional
+from typing import Any
 from pathlib import Path
 from collections import defaultdict
 
@@ -231,7 +231,7 @@ class DAOScaffolder:
             raise
 
     def _generate_and_save_test_script(self, dao_classes: dict[str, str], test_dummy_data: dict[str, Any]) -> None:
-        model_names = [class_name[:-3] for class_name in dao_classes.keys()]
+        model_names = [class_name[:-3] for class_name in dao_classes]
         dao_file_names = [camel_to_snake(model_name) + "_dao" for model_name in model_names]
         test_script = self._generate_test_script(model_names, dao_file_names, test_dummy_data)
         self._save_test_script(test_script)
@@ -256,7 +256,7 @@ class DAOScaffolder:
 
     def _generate_and_save_init_file(self, dao_classes: dict[str, str]) -> None:
         try:
-            model_names = [class_name[:-3] for class_name in dao_classes.keys()]
+            model_names = [class_name[:-3] for class_name in dao_classes]
             file_names = [camel_to_snake(model) for model in model_names]
             model_file_pairs = list(zip(model_names, file_names, strict=False))
             init_template = self.env.get_template("__init__.jinja")
@@ -319,7 +319,7 @@ class DAOScaffolder:
                 if nested_schema_name:
                     schema_usage[nested_schema_name].add(f"nested_{usage_type}")
 
-    def _process_schema(self, schema: dict[str, Any]) -> Optional[str]:
+    def _process_schema(self, schema: dict[str, Any]) -> str | None:
         if "$ref" in schema:
             return schema["$ref"].split("/")[-1]
         return None
