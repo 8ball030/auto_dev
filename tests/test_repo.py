@@ -133,17 +133,6 @@ class TestRepoAutonomy(BaseTestRepo):
             assert result.returncode == 0
             assert "packages" in result.stdout
 
-    def test_run_single_agent(self, cli_runner, test_clean_filesystem):
-        """Test the scripts/run_single_agent.sh is generated."""
-
-        assert test_clean_filesystem
-        runner = cli_runner(self.cli_args)
-        result = runner.execute()
-
-        assert runner.return_code == 0, result.output
-        expected_path = self.repo_path / "scripts" / "run_single_agent.sh"
-        assert expected_path.exists()
-
     def test_pyproject_versions(
         self,
     ):

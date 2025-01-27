@@ -78,7 +78,7 @@ def multi_thread_lint(paths, verbose, num_processes):
     """Run the linting in parallel."""
     with Pool(num_processes) as pool:
         results = pool.map(partial(check_path, verbose=verbose), paths)
-    return dict(zip(paths, results))
+    return dict(zip(paths, results, strict=False))
 
 
 if __name__ == "__main__":

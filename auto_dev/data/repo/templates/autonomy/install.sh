@@ -61,7 +61,7 @@ get_download_url() {
 install_tool() {
     local tool=$1
     local url
-    local venv_dir=$(echo $(poetry run which python) | sed 's|\(.*\)/python|\1|')
+    local venv_dir=$(echo $(poetry run command -v python) | sed 's|\(.*\)/python|\1|')
     url=$(get_download_url "$tool") || return 1
 
     echo "Installing $tool"
@@ -131,12 +131,13 @@ function install_poetry_deps() {
     echo "Host poetry executable: $host_poetry_executable"
     echo "Setting up new poetry environment..."
 
-    poetry env use $(which python)
+    poetry env use $(command -v python)
     poetry_executable=$(echo -n $(poetry env info | grep Executable |head -n 1 | awk -F: '{ print $2 }') | xargs)
     echo "New poetry executable:   $poetry_executable"
 
     echo "Installing package dependencies via poetry..."
     echo "Using poetry executable: $poetry_executable"
+    export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
     poetry install > /dev/null || exit 1
     echo "Checking if aea is installed"
     poetry run aea --version
@@ -156,7 +157,10 @@ function set_env_file () {
 function setup_autonomy() {
     echo "Setting up autonomy"
     echo 'Initializing the author and remote for aea and syncing packages...'
-    author=$(cat ~/.aea/cli_config.yaml | yq -r '.author') || author="ci"
+
+    # Extract author from config file with fallback to ci
+    author=$(grep "^author:" ~/.aea/cli_config.yaml 2>/dev/null | sed 's/author:[[:space:]]*//') || author="ci"
+
     poetry run aea init --remote --author $author > /dev/null || exit 1
     echo 'Done initializing the author and remote for aea using the author: ' $author
     echo 'To change the author, run the command;

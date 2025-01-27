@@ -1,18 +1,16 @@
-"""
-Class to represent and parse contract events.
-"""
+"""Class to represent and parse contract events."""
 
 from dataclasses import dataclass
 
-from auto_dev.utils import camel_to_snake, snake_to_camel
-from auto_dev.contracts.utils import SOLIDITY_TO_PYTHON_TYPES, keyword_to_safe_name
+from auto_dev.utils import camel_to_snake
+from auto_dev.contracts.utils import SOLIDITY_TO_PYTHON_TYPES
 from auto_dev.contracts.variable import Variable
 from auto_dev.contracts.contract_templates import EVENT_TEMPLATE
 
 
 @dataclass
 class ContractEvent:
-    """Data class to represent a solidity event"""
+    """Data class to represent a solidity event."""
 
     anonymous: bool
     inputs: list
@@ -20,7 +18,7 @@ class ContractEvent:
     type: str
 
     def vars(self):
-        """return variable instances for the inputs."""
+        """Return variable instances for the inputs."""
         return [Variable(**i) for i in self.inputs]
 
     def inputs_list(self):

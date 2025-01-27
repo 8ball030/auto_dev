@@ -2,14 +2,13 @@
 
 import json
 import shutil
-from enum import Enum
 from pathlib import Path
 
 import pytest
 import responses
 
 from auto_dev.constants import DEFAULT_ENCODING, Network
-from auto_dev.exceptions import APIError, UnsupportedSolidityVersion
+from auto_dev.exceptions import APIError
 from auto_dev.commands.scaffold import BlockExplorer, ContractScaffolder
 
 
@@ -30,7 +29,6 @@ def block_explorer():
 def test_block_explorer(block_explorer):
     """Test the block explorer."""
     expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}"
-    print(f"Mocked URL: {expected_url}")
 
     responses.add(
         responses.GET,

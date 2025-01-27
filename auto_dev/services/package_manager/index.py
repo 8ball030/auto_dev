@@ -1,8 +1,6 @@
 """This module contains the service logic for publishing agents."""
 
 import shutil
-import subprocess
-from typing import Optional
 from pathlib import Path
 
 from aea.configurations.base import PublicId
@@ -27,15 +25,19 @@ class PackageManager:
         """Initialize the package manager.
 
         Args:
+        ----
             verbose: whether to show verbose output.
+
         """
         self.verbose = verbose
 
     def ensure_local_registry(self) -> None:
         """Ensure a local registry exists.
 
-        Raises:
+        Raises
+        ------
             OperationError: if the command fails.
+
         """
         if not Path("packages").exists():
             logger.info("Initializing local registry")
@@ -49,10 +51,13 @@ class PackageManager:
         """Internal function to handle agent publishing logic.
 
         Args:
+        ----
             force: If True, remove existing package before publishing.
 
         Raises:
+        ------
             OperationError: if the command fails.
+
         """
         # Load config to get agent details
         aea_config, *_ = load_autonolas_yaml(PackageType.AGENT)
@@ -65,9 +70,9 @@ class PackageManager:
 
         # Check if package exists and handle force flag
         # Package path should be relative to parent directory
-        parent_dir = Path("..") if Path(DEFAULT_AEA_CONFIG_FILE).exists() else Path(".")
+        parent_dir = Path("..") if Path(DEFAULT_AEA_CONFIG_FILE).exists() else Path()
         package_path = parent_dir / "packages" / author / "agents" / agent_name
-        logger.info(f"Package path: {package_path}")
+        logger.debug(f"Package path: {package_path}")
 
         if package_path.exists():
             if force:
@@ -106,19 +111,23 @@ class PackageManager:
     def publish_agent(
         self,
         force: bool = False,
-        new_public_id: Optional[PublicId] = None,
+        new_public_id: PublicId | None = None,
     ) -> None:
         """Publish an agent.
 
         Args:
+        ----
             force: If True, remove existing package before publishing.
 
         Raises:
+        ------
             OperationError: if the command fails.
+
         """
         # First verify we're in the right place
         if not Path(DEFAULT_AEA_CONFIG_FILE).exists():
-            raise OperationError("Not in an agent directory (aea-config.yaml not found)")
+            msg = "Not in an agent directory (aea-config.yaml not found)"
+            raise OperationError(msg)
 
         # Save current directory as we'll need to return here for publishing
         current_dir = Path.cwd()
@@ -131,4 +140,4 @@ class PackageManager:
         # Publish from agent directory (we're already there)
         self._publish_agent_internal(force, new_public_id=new_public_id)
 
-        logger.info("Agent published!")
+        logger.debug("Agent published!")

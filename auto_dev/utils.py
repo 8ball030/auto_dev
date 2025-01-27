@@ -10,7 +10,7 @@ import platform
 import tempfile
 import subprocess
 from glob import glob
-from typing import Any, Union, Optional
+from typing import Any
 from pathlib import Path
 from datetime import timezone, timedelta
 from functools import reduce
@@ -39,9 +39,7 @@ from auto_dev.exceptions import NotFound, OperationError
 
 
 def reset_logging():
-    """
-    Forcefully remove any existing logging configuration.
-    """
+    """Forcefully remove any existing logging configuration."""
     # Clear all handlers from the root logger
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
@@ -138,7 +136,7 @@ def has_package_code_changed(package_path: Path):
     return [f.replace("?? ", "") for f in changed_files]
 
 
-def get_paths(path: Optional[str] = None, changed_only: bool = False):
+def get_paths(path: str | None = None, changed_only: bool = False):
     """Get the paths."""
     if not path and not Path(AUTONOMY_PACKAGES_FILE).exists():
         msg = "No path was provided and no default packages file found"
@@ -233,7 +231,7 @@ def restore_directory():
 
 
 @contextmanager
-def folder_swapper(dir_a: Union[str, Path], dir_b: Union[str, Path]):
+def folder_swapper(dir_a: str | Path, dir_b: str | Path):
     """A custom context manager that swaps the contents of two folders, allows the execution of logic
     within the context, and ensures the original folder contents are restored on exit, whether due
     to success or failure.
@@ -289,19 +287,23 @@ def remove_suffix(text: str, suffix: str) -> str:
     return text[: -len(suffix)] if suffix and text.endswith(suffix) else text
 
 
-def load_autonolas_yaml(package_type: PackageType, directory: Optional[Union[str, Path]] = None) -> list:
+def load_autonolas_yaml(package_type: PackageType, directory: str | Path | None = None) -> list:
     """Load a component's yaml configuration file.
 
     Args:
+    ----
         package_type: Type of package (agent, skill, contract, protocol)
         directory: Optional directory path where the config file is located
 
     Returns:
+    -------
         List of yaml documents from the file
 
     Raises:
+    ------
         FileNotFoundError: If the config file doesn't exist
         ValueError: If invalid package type provided
+
     """
 
     config_file = _get_default_configuration_file_name_from_type(package_type)
@@ -310,8 +312,8 @@ def load_autonolas_yaml(package_type: PackageType, directory: Optional[Union[str
     if not config_path.exists():
         msg = f"Could not find {config_path}, are you in the correct directory?"
         raise FileNotFoundError(msg)
-    config_yaml = list(yaml.safe_load_all(config_path.read_text(encoding=DEFAULT_ENCODING)))
-    return config_yaml
+
+    return list(yaml.safe_load_all(config_path.read_text(encoding=DEFAULT_ENCODING)))
 
 
 def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[click.Context, Any, Any], Any]:
@@ -333,8 +335,7 @@ def currenttz():
     """Return the current timezone."""
     if time.daylight:
         return timezone(timedelta(seconds=-time.altzone), time.tzname[1])
-    else:
-        return timezone(timedelta(seconds=-time.timezone), time.tzname[0])
+    return timezone(timedelta(seconds=-time.timezone), time.tzname[0])
 
 
 def write_to_file(file_path: str, content: Any, file_type: FileType = FileType.TEXT, **kwargs) -> None:
@@ -465,7 +466,8 @@ def log_operating_system(self) -> None:
     os_name = platform.system()
     if os_name not in SupportedOS:
         self.logger.error(f"Operating System {os_name} is not supported.")
-        raise RuntimeError(f"Operating System {os_name} is not supported.")
+        msg = f"Operating System {os_name} is not supported."
+        raise RuntimeError(msg)
 
     self.logger.info(f"Operating System: {os_name}")
     self.map_os_to_env_vars(os_name)
@@ -473,12 +475,11 @@ def log_operating_system(self) -> None:
 
 def map_os_to_env_vars(os_name: str) -> None:
     """Map operating system to environment variables."""
-    env_vars = OS_ENV_MAP.get(os_name, {})
-    return env_vars
+    return OS_ENV_MAP.get(os_name, {})
 
 
 def update_author(public_id: PublicId) -> None:
-    """Update the author in the recently created agent"""
+    """Update the author in the recently created agent."""
 
     complete_agent_config = load_autonolas_yaml(PackageType.AGENT)
     agent_config, *_ = complete_agent_config
@@ -488,10 +489,6 @@ def update_author(public_id: PublicId) -> None:
             msg = f"Key {key} not found in agent config. Please check the agent config file."
             raise KeyError(msg)
         if agent_config[key] != getattr(public_id, key):
-            click.secho(
-                f"Updating `{key}` in aea-config.yaml from {agent_config[key]} to {getattr(public_id, key)}",
-                fg="yellow",
-            )
             agent_config[key] = getattr(public_id, key)
             complete_agent_config[0] = agent_config
             write_to_file(DEFAULT_AEA_CONFIG_FILE, complete_agent_config, FileType.YAML)
