@@ -6,7 +6,7 @@ from aea.configurations.base import PackageType
 
 from auto_dev.base import build_cli
 from auto_dev.utils import load_autonolas_yaml
-from auto_dev.services.runner.runner import DevAgentRunner
+from auto_dev.services.runner import DevAgentRunner, ProdAgentRunner
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -52,6 +52,30 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         force=force,
         logger=logger,
         fetch=fetch,
+    )
+    runner.run()
+    logger.info("Agent run complete. 😎")
+
+
+@run.command()
+@click.argument(
+    "service_public_id",
+    type=PublicId.from_str,
+    required=False,
+)
+@click.option("-v", "--verbose", is_flag=True, help="Verbose mode.", default=False)
+@click.pass_context
+def prod(ctx, service_public_id: PublicId, verbose: bool):
+    """Run an agent in production mode.
+
+    Example usage:
+        adev run prod eightballer/my_service
+    """
+    logger = ctx.obj["LOGGER"]
+    runner = ProdAgentRunner(
+        agent_name=service_public_id,
+        verbose=verbose,
+        logger=logger,
     )
     runner.run()
     logger.info("Agent run complete. 😎")
