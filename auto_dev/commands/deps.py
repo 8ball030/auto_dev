@@ -493,8 +493,9 @@ class VersionSetLoader:
     autonomy_dependencies: AutonomyDependencies
     poetry_dependencies: PoetryDependencies
 
-    def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE):
+    def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE, **kwargs):
         self.config_file = config_file
+        self.latest = kwargs.get("latest", True)
 
     def write_config(
         self,
@@ -552,16 +553,17 @@ def handle_output(issues, changes) -> None:
         sys.exit(1)
 
 
-def get_update_command(poetry_dependencies: Dependency) -> str:
+def get_update_command(poetry_dependencies: Dependency, strict: bool = False) -> str:
     """Get the update command."""
     issues = []
     cmd = "poetry add "
+    pre_fix = "==" if strict else "<="
     for dependency in track(poetry_dependencies):
         click.echo(f"   Verifying:   {dependency.name}")
         raw = toml.load("pyproject.toml")["tool"]["poetry"]["dependencies"]
 
         current_version = str(raw[dependency.name])
-        expected_version = f"=={dependency.get_latest_version()[1:]}"
+        expected_version = f"'{pre_fix}{dependency.get_latest_version()[1:]}'"
         if current_version.find(expected_version) == -1:
             issues.append(
                 f"Update the poetry version of {dependency.name} from `{current_version}` to `{expected_version}`\n"
@@ -584,10 +586,24 @@ def get_update_command(poetry_dependencies: Dependency) -> str:
     help="Auto approve the changes.",
     is_flag=True,
 )
+@click.option(
+    "--latest",
+    default=True,
+    help="Select the latest version releases.",
+    is_flag=True,
+)
+@click.option(
+    "--strict/--no-strict",
+    default=False,
+    help="Enforce strict versioning.",
+    is_flag=True,
+)
 @click.pass_context
-def verify(
+def bump(
     ctx: click.Context,
     auto_approve: bool = False,
+    latest: bool = True,
+    strict: bool = False,
 ) -> None:
     """Verify the packages.json file.
 
@@ -608,10 +624,9 @@ def verify(
     changes = []
     click.echo("Verifying autonomy dependencies... 📝")
 
-    version_set_loader = VersionSetLoader()
+    version_set_loader = VersionSetLoader(latest=latest)
     version_set_loader.load_config()
     if (Path("packages") / "packages.json").exists():
-        version_set_loader.load_config()
         for dependency in track(version_set_loader.autonomy_dependencies.upstream_dependency):
             click.echo(f"   Verifying:   {dependency.name}")
             remote_packages = dependency.get_all_autonomy_packages()
@@ -630,7 +645,7 @@ def verify(
                 changes.append(dependency.name)
 
     click.echo("Verifying poetry dependencies... 📝")
-    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies)
+    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict)
     issues.extend(poetry_issues)
 
     if issues:

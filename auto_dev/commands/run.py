@@ -1,5 +1,8 @@
 """Command to run an agent."""
 
+import sys
+from pathlib import Path
+
 import rich_click as click
 from aea.skills.base import PublicId
 from aea.configurations.base import PackageType
@@ -64,18 +67,39 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
     required=False,
 )
 @click.option("-v", "--verbose", is_flag=True, help="Verbose mode.", default=False)
+@click.option("--force/--no-force", is_flag=True, help="Force overwrite of existing service", default=False)
+@click.option("--fetch/--no-fetch", help="Fetch from registry or use local service package", default=True)
+@click.option("--keysfile", help="Path to the private keys file.", type=click.File(), default="keys.json")
+@click.option("--number_of_agents", "-n", help="Number of agents to run.", type=int, default=1)
 @click.pass_context
-def prod(ctx, service_public_id: PublicId, verbose: bool):
+def prod(
+    ctx,
+    service_public_id: PublicId,
+    verbose: bool,
+    force: bool,
+    fetch: bool,
+    keysfile: click.File,
+    number_of_agents: int,
+) -> None:
     """Run an agent in production mode.
 
     Example usage:
         adev run prod eightballer/my_service
     """
+
     logger = ctx.obj["LOGGER"]
+    if not Path(keysfile.name).exists():
+        logger.error(f"Keys file not found at {keysfile.name}")
+        sys.exit(1)
+
     runner = ProdAgentRunner(
-        agent_name=service_public_id,
+        service_public_id=service_public_id,
         verbose=verbose,
         logger=logger,
+        force=force,
+        fetch=fetch,
+        keysfile=Path(keysfile.name).absolute(),
+        number_of_agents=number_of_agents,
     )
     runner.run()
     logger.info("Agent run complete. 😎")
