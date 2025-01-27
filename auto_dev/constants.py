@@ -130,8 +130,8 @@ class SupportedOS(Enum):
 
 OS_ENV_MAP = {
     SupportedOS.LINUX.value: {
-        "NETWORK_MODE": "host",
-        "HOST_NAME": "localhost:26658",
+        "NETWORK_MODE": "bridge",  # instead of "host"
+        "HOST_NAME": "host.docker.internal:26658",  # instead of "localhost:26658"
     },
     SupportedOS.DARWIN.value: {
         "NETWORK_MODE": "bridge",
