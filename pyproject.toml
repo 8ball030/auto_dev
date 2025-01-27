@@ -112,3 +112,7 @@ doc = [
 [tool.poetry.scripts]
 adev = "auto_dev.cli:cli"
 gen-docs = "scripts.generate_command_docs:main"
+
+
+[tool.pytest.ini_options]
+addopts = "--cov=auto_dev --cov-report html"
