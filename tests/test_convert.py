@@ -3,12 +3,13 @@
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 from aea.configurations.base import PublicId
 from aea.configurations.constants import PACKAGES, SERVICES
 
 from auto_dev.constants import DEFAULT_AUTHOR, DEFAULT_PUBLIC_ID, DEFAULT_AGENT_NAME
 from auto_dev.exceptions import UserInputError
-from auto_dev.commands.convert import CONVERSION_COMPLETE_MSG, ConvertCliTool
+from auto_dev.commands.convert import CONVERSION_COMPLETE_MSG, ConvertCliTool, convert
 
 
 @pytest.mark.parametrize(
@@ -75,15 +76,13 @@ def test_convert_agent_to_service_fails(dummy_agent_tim, agent_public_id, servic
     ],
 )
 def test_agent_to_service(
-    dummy_agent_tim, test_packages_filesystem, cli_runner, agent_public_id, service_public_id, number_of_agents, force
+    dummy_agent_tim, test_packages_filesystem, agent_public_id, service_public_id, number_of_agents, force
 ):
     """Test the agent to service command."""
     assert dummy_agent_tim, "Dummy agent not created."
     assert test_packages_filesystem, "Test packages filesystem not created."
 
     cmd = [
-        "adev",
-        "convert",
         "agent-to-service",
         agent_public_id,
         service_public_id,
@@ -91,8 +90,8 @@ def test_agent_to_service(
     ]
     if force:
         cmd.append("--force")
-    runner = cli_runner(cmd)
-    assert runner.execute()
-    assert runner.return_code == 0, f"Command failed': {runner.output}"
-    assert CONVERSION_COMPLETE_MSG in runner.output
+    runner = CliRunner()
+    result = runner.invoke(convert, cmd)
+    assert result.exit_code == 0, f"Command failed': {result.output}"
+    assert CONVERSION_COMPLETE_MSG in result.output
     assert (Path(PACKAGES) / DEFAULT_AUTHOR / SERVICES / DEFAULT_AGENT_NAME).exists()
