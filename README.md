@@ -70,7 +70,7 @@ Running agents in production requires a service to manage the agent lifecycle. W
 ```bash
 adev convert agent-to-service author/agent_name author/service_name
 ```
-![asciicast](docs/assets/convert_agent_to_service.gif)
+![asciicast](docs/assets/create_agent_service.gif)
 
 
 ## Usage
