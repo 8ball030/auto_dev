@@ -16,7 +16,12 @@ TENDERMINT_RESET_RETRIES = 20
 cli = build_cli()
 
 
-@cli.command()
+@cli.group()
+def run() -> None:
+    """Command group for running agents either in development mode or in production mode."""
+
+
+@run.command()
 @click.argument(
     "agent_public_id",
     type=PublicId.from_str,
@@ -26,13 +31,14 @@ cli = build_cli()
 @click.option("--force", is_flag=True, help="Force overwrite of existing agent", default=False)
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
 @click.pass_context
-def run(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
+def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
     """Run an agent from the local packages registry or a local path.
 
     Example usage:
-        adev run eightballer/my_agent  # Fetch and run from registry
-        adev run eightballer/my_agent --no-fetch  # Run local agent package named my_agent
+        adev run dev eightballer/my_agent  # Fetch and run from registry
+        adev run dev eightballer/my_agent --no-fetch  # Run local agent package named my_agent
     """
+
     if not agent_public_id:
         # We set fetch to false if the agent is not provided, as we assume the user wants to run the agent locally.
         fetch = False
