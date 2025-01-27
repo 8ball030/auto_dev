@@ -36,53 +36,59 @@ cli = build_cli()
 )
 @click.pass_context
 def lint(ctx, path, changed_only) -> None:
-    r"""Run linting checks on code.
+    """Run linting checks on code.
 
-    Optional Parameters:\n
-        path (-p): Path to code to lint. (Default: None)\n
-        - If not provided, lints all packages\n
-        - Can be file or directory path\n
-        - Must exist in workspace\n
-        changed_only (-co): Only lint files that have changed. (Default: False)\n
-        - Uses git to detect changes\n
-        - Only lints files with uncommitted changes\n
-        - Ignores untracked files\n
+    Required Parameters:
+        None
+
+    Optional Parameters:
+        path (-p): Path to code to lint. (Default: None)
+            - If not provided, lints all packages
+            - Can be file or directory path
+            - Must exist in workspace
+        changed_only (-co): Only lint files that have changed. (Default: False)
+            - Uses git to detect changes
+            - Only lints files with uncommitted changes
+            - Ignores untracked files
 
     Usage:
-        Lint all packages:\n
-            adev lint\n
+        Lint all packages:
+            adev lint
 
-        Lint specific path:\n
-            adev lint -p ./my_package\n
+        Lint specific path:
+            adev lint -p ./my_package
 
-        Lint only changed files:\n
-            adev lint --changed-only\n
+        Lint only changed files:
+            adev lint --changed-only
 
-        Lint specific path and only changed files:\n
-            adev lint -p ./my_package --changed-only\n
+        Lint specific path and only changed files:
+            adev lint -p ./my_package --changed-only
 
-        Lint with verbose output:\n
-            adev lint -v\n
+        Lint with verbose output:
+            adev lint -v
 
     Notes
     -----
-        - Linting Tools:
+        Linting Tools:
             - ruff: Fast Python linter
             - pylint: Comprehensive code analysis
             - mypy: Static type checking
             - bandit: Security checks
-        - Features:
+
+        Features:
             - Parallel linting for performance
             - Configurable via pyproject.toml
             - Auto-fixes for common issues
             - Detailed error reporting
             - Custom rule configuration
-        - Integration:
+
+        Integration:
             - Works with pre-commit hooks
             - CI/CD pipeline support
             - Editor/IDE integration
             - Custom plugin support
-        - Configuration:
+
+        Configuration:
             - Severity levels customization
             - Rule enabling/disabling
             - File/directory exclusions

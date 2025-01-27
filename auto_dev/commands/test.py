@@ -1,4 +1,4 @@
-"""Test command cli module."""
+"""Command to run tests for packages."""
 
 import rich_click as click
 from rich.progress import track
@@ -31,42 +31,40 @@ cli = build_cli()
 @click.option("-c", "--coverage-report", help="Run the coverage report", is_flag=True, default=True)
 @click.pass_context
 def test(ctx, path, watch, coverage_report) -> None:
-    r"""Run tests for packages.
+    """Run tests for packages.
 
-    Required Parameters:\n
-        None\n
+    Required Parameters:
+        None
 
-    Optional Parameters:\n
-        path (-p): Path to directory to test. (Default: None)\n
-            - If not provided, tests all packages\n
-            - Must be a valid directory containing tests\n
-            - Can be package root or specific test directory\n
-        watch (-w): Watch files for changes and re-run tests. (Default: False)\n
-            - Monitors file changes in real-time\n
-            - Re-runs tests when files are modified\n
-            - Useful for test-driven development\n
-        coverage_report (-c): Generate test coverage report. (Default: True)\n
-            - Creates detailed coverage analysis\n
-            - Shows line-by-line coverage stats\n
-            - Generates HTML report for visualization\n
+    Optional Parameters:
+        path (-p): Path to directory to test. (Default: None)
+            - If not provided, tests all packages
+            - Must be a valid directory containing tests
+            - Can be package root or specific test directory
+        watch (-w): Watch files for changes and re-run tests. (Default: False)
+            - Monitors file changes in real-time
+            - Re-runs tests when files are modified
+            - Useful for test-driven development
+        coverage_report (-c): Generate test coverage report. (Default: True)
+            - Creates detailed coverage analysis
+            - Shows line-by-line coverage stats
+            - Generates HTML report for visualization
 
     Usage:
-        ```bash
-        # Test all packages
-        adev test
+        Test all packages:
+            adev test
 
-        # Test specific directory
-        adev test -p ./my_package
+        Test specific directory:
+            adev test -p ./my_package
 
-        # Test with file watching
-        adev test -w
+        Test with file watching:
+            adev test -w
 
-        # Test without coverage report
-        adev test --no-coverage-report
+        Test without coverage report:
+            adev test --no-coverage-report
 
-        # Test specific directory with watching
-        adev test -p ./my_package -w
-        ```
+        Test specific directory with watching:
+            adev test -p ./my_package -w
 
     Notes
     -----
@@ -74,11 +72,13 @@ def test(ctx, path, watch, coverage_report) -> None:
             - Uses pytest as test runner
             - Supports fixtures and markers
             - Handles async tests
+            - Configurable via pytest.ini
 
         Coverage:
             - Tracks line and branch coverage
             - Excludes test files from coverage
             - Sets minimum coverage thresholds
+            - Generates HTML reports
 
         Features:
             - Parallel test execution
@@ -86,6 +86,12 @@ def test(ctx, path, watch, coverage_report) -> None:
             - Integration with CI/CD
             - Detailed failure reporting
             - Test categorization with markers
+
+        Error Handling:
+            - Reports test failures
+            - Shows detailed error traces
+            - Exits with error on failure
+            - Preserves test state on error
 
     """
     verbose = ctx.obj["VERBOSE"]

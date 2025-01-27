@@ -417,19 +417,72 @@ def handler(ctx, spec_file, public_id, new_skill, auto_confirm) -> int:
 )
 @click.pass_context
 def behaviour(
-    ctx,
-    spec_file,
-    behaviour_type,
-    auto_confirm,
-    target_speech_acts,
+    ctx: click.Context,
+    spec_file: str,
+    behaviour_type: str,
+    auto_confirm: bool,
+    target_speech_acts: str | None,
 ) -> None:
-    """Generate an AEA handler from an OpenAPI 3 specification.
+    """Generate AEA behaviours from an OpenAPI 3 specification.
 
-    Example:
+    Required Parameters:
+        spec_file: Path to OpenAPI 3 specification file
+            - Must be a valid OpenAPI 3.0+ specification
+            - File must exist and be readable
+
+    Optional Parameters:
+        target_speech_acts (--target-speech-acts): Comma separated list of speech acts to scaffold. (Default: None)
+            - If provided, only generates behaviours for specified speech acts
+            - Must match speech acts defined in the spec
+        auto_confirm (--auto-confirm): Skip confirmation prompts. (Default: False)
+            - Automatically applies all changes without prompting
+            - Use with caution in production environments
+        behaviour_type (--behaviour-type): Type of behaviour to generate. (Default: metrics)
+            - metrics: Generates metrics collection behaviour
+            - simple_fsm: Generates simple finite state machine behaviour
+
+    Usage:
+        Generate metrics behaviour:
+            adev scaffold behaviour openapi.yaml --behaviour-type metrics
+
+        Generate FSM behaviour:
+            adev scaffold behaviour openapi.yaml --behaviour-type simple_fsm
+
+        Generate specific speech acts:
+            adev scaffold behaviour openapi.yaml --target-speech-acts "request,inform"
+
+        Skip confirmations:
+            adev scaffold behaviour openapi.yaml --auto-confirm
+
+    Notes
+    -----
+        Generation Process:
+            - Parses OpenAPI specification
+            - Creates behaviour class structure
+            - Implements required methods
+            - Adds necessary imports
+
+        Features:
+            - Multiple behaviour type support
+            - Speech act filtering
+            - Auto-confirmation option
+            - OpenAPI 3.0+ compatibility
+
+        Integration:
+            - Works with existing AEA projects
+            - Compatible with custom skills
+            - Supports behaviour composition
+            - Handles complex specifications
+
+        Error Handling:
+            - Validates OpenAPI specification
+            - Checks speech act existence
+            - Reports generation failures
+            - Preserves existing code
+
+    Returns
     -------
-    ```
-    adev scaffold behaviour openapi.yaml --behaviour-type metrics
-    ```
+        None
 
     """
     logger = ctx.obj["LOGGER"]
@@ -455,18 +508,73 @@ def behaviour(
     "--handler_type",
     type=click.Choice([HandlerTypes.simple]),
     required=True,
-    help="The type of behaviour to generate.",
+    help="The type of handler to generate.",
     default=HandlerTypes.simple,
 )
 @click.pass_context
-def handlers(ctx, spec_file, handler_type, auto_confirm, target_speech_acts) -> None:
-    """Generate an AEA handler from an OpenAPI 3 specification.
+def handlers(
+    ctx: click.Context,
+    spec_file: str,
+    handler_type: HandlerTypes,
+    auto_confirm: bool,
+    target_speech_acts: str | None,
+) -> None:
+    """Generate AEA handlers from an OpenAPI 3 specification.
 
-    Example:
+    Required Parameters:
+        spec_file: Path to OpenAPI 3 specification file
+            - Must be a valid OpenAPI 3.0+ specification
+            - File must exist and be readable
+
+    Optional Parameters:
+        target_speech_acts (--target-speech-acts): Comma separated list of speech acts to scaffold. (Default: None)
+            - If provided, only generates handlers for specified speech acts
+            - Must match speech acts defined in the spec
+        auto_confirm (--auto-confirm): Skip confirmation prompts. (Default: False)
+            - Automatically applies all changes without prompting
+            - Use with caution in production environments
+        handler_type (--handler_type): Type of handler to generate. (Default: simple)
+            - simple: Generates basic request/response handler
+
+    Usage:
+        Generate simple handler:
+            adev scaffold handlers openapi.yaml --handler_type simple
+
+        Generate specific speech acts:
+            adev scaffold handlers openapi.yaml --target-speech-acts "request,inform"
+
+        Skip confirmations:
+            adev scaffold handlers openapi.yaml --auto-confirm
+
+    Notes
+    -----
+        Generation Process:
+            - Parses OpenAPI specification
+            - Creates handler class structure
+            - Implements handle methods
+            - Adds necessary imports
+
+        Features:
+            - Multiple handler type support
+            - Speech act filtering
+            - Auto-confirmation option
+            - OpenAPI 3.0+ compatibility
+
+        Integration:
+            - Works with existing AEA projects
+            - Compatible with custom skills
+            - Supports handler composition
+            - Handles complex specifications
+
+        Error Handling:
+            - Validates OpenAPI specification
+            - Checks speech act existence
+            - Reports generation failures
+            - Preserves existing code
+
+    Returns
     -------
-    ```
-    adev scaffold behaviour openapi.yaml --behaviour-type metrics
-    ```
+        None
 
     """
     logger = ctx.obj["LOGGER"]
@@ -488,18 +596,73 @@ def handlers(ctx, spec_file, handler_type, auto_confirm, target_speech_acts) -> 
     "--dialogue-type",
     type=click.Choice([DialogueTypes.simple]),
     required=True,
-    help="The type of behaviour to generate.",
+    help="The type of dialogue to generate.",
     default=DialogueTypes.simple,
 )
 @click.pass_context
-def dialogues(ctx, spec_file, dialogue_type, auto_confirm, target_speech_acts) -> None:
-    """Generate an AEA handler from an OpenAPI 3 specification.
+def dialogues(
+    ctx: click.Context,
+    spec_file: str,
+    dialogue_type: DialogueTypes,
+    auto_confirm: bool,
+    target_speech_acts: str | None,
+) -> None:
+    """Generate AEA dialogues from an OpenAPI 3 specification.
 
-    Example:
+    Required Parameters:
+        spec_file: Path to OpenAPI 3 specification file
+            - Must be a valid OpenAPI 3.0+ specification
+            - File must exist and be readable
+
+    Optional Parameters:
+        target_speech_acts (--target-speech-acts): Comma separated list of speech acts to scaffold. (Default: None)
+            - If provided, only generates dialogues for specified speech acts
+            - Must match speech acts defined in the spec
+        auto_confirm (--auto-confirm): Skip confirmation prompts. (Default: False)
+            - Automatically applies all changes without prompting
+            - Use with caution in production environments
+        dialogue_type (--dialogue-type): Type of dialogue to generate. (Default: simple)
+            - simple: Generates basic request/response dialogue
+
+    Usage:
+        Generate simple dialogue:
+            adev scaffold dialogues openapi.yaml --dialogue-type simple
+
+        Generate specific speech acts:
+            adev scaffold dialogues openapi.yaml --target-speech-acts "request,inform"
+
+        Skip confirmations:
+            adev scaffold dialogues openapi.yaml --auto-confirm
+
+    Notes
+    -----
+        Generation Process:
+            - Parses OpenAPI specification
+            - Creates dialogue class structure
+            - Implements dialogue rules
+            - Adds necessary imports
+
+        Features:
+            - Multiple dialogue type support
+            - Speech act filtering
+            - Auto-confirmation option
+            - OpenAPI 3.0+ compatibility
+
+        Integration:
+            - Works with existing AEA projects
+            - Compatible with custom skills
+            - Supports dialogue composition
+            - Handles complex specifications
+
+        Error Handling:
+            - Validates OpenAPI specification
+            - Checks speech act existence
+            - Reports generation failures
+            - Preserves existing code
+
+    Returns
     -------
-    ```
-    adev scaffold behaviour openapi.yaml --behaviour-type metrics
-    ```
+        None
 
     """
     logger = ctx.obj["LOGGER"]

@@ -126,47 +126,27 @@ class ConvertCliTool(BasePackageScaffolder):
 )
 @click.option("--force", is_flag=True, help="Force the operation.", default=False)
 def agent_to_service(
-    agent_public_id: PublicId, service_public_id: PublicId, number_of_agents: int = 1, force: bool = False
+    agent_public_id: PublicId,
+    service_public_id: PublicId,
+    number_of_agents: int = 1,
+    force: bool = False,
 ) -> None:
-    r"""Convert an autonomous agent into a deployable service.
+    """Convert an autonomous agent into a deployable service.
 
-    Required Parameters:\n
-        agent_public_id: Public ID of the source agent (author/name format)\n
-        service_public_id: Public ID for the target service (author/name format)\n
+    :param PublicId agent_public_id: Public ID of the source agent
+    :param PublicId service_public_id: Public ID for the target service
+    :param int number_of_agents: Number of agents to include in the service
+    :param bool force: Force overwrite if service exists
+    :rtype: None
+    :return: None
 
-    Optional Parameters:\n
-        number_of_agents (-n): Number of agent instances in the service. (Default: 1)\n
-        force (-f): Overwrite existing service if it exists. (Default: False)\n
+    The agent must exist in the agent registry. The service must not exist unless force=True.
+    The function will validate these prerequisites before proceeding.
+    Exceptions are handled by the underlying ConvertCliTool class.
 
-    Usage:\n
-        Basic conversion:\n
-            adev convert agent-to-service author/my_agent author/my_service\n
+    Example usage::
 
-        With multiple agent instances:
-            adev convert agent-to-service author/my_agent author/my_service --number_of_agents 3
-
-        Force overwrite existing:
-            adev convert agent-to-service author/my_agent author/my_service --force
-
-    Notes
-    -----
-        - Prerequisites:
-            - Agent must exist in packages directory
-            - Agent and service public IDs must be valid
-        - Package Structure:
-            - Creates service in packages/<author>/services/<name>
-            - Follows Open Autonomy service structure
-        - Configuration:
-            - Copies agent configuration and dependencies
-            - Sets up service-specific overrides
-            - Configures number of agent instances
-            - Includes network and deployment settings
-        - Validation:
-            - Checks agent existence and structure
-            - Validates service creation path
-            - Verifies configuration compatibility
-        - Use --force to overwrite an existing service
-
+        agent_to_service(PublicId.from_str("author/my_agent"), PublicId.from_str("author/my_service"))
     """
     logger.info(f"Converting agent {agent_public_id} to service {service_public_id}.")
     converter = ConvertCliTool(agent_public_id, service_public_id)
