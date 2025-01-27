@@ -2827,13 +2827,13 @@ pytest = ">=7.0.0,<7.3.0"
 
 [[package]]
 name = "open-aea-ledger-cosmos"
-version = "1.60.0"
+version = "1.61.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of Cosmos."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_cosmos-1.60.0-py3-none-any.whl", hash = "sha256:53a1c8a04a12a9e18a03a7ecc1988efef6e3712cf6408ae4c46c18d8d66fba31"},
-    {file = "open_aea_ledger_cosmos-1.60.0.tar.gz", hash = "sha256:df48bf695de632b768baf968e6de66e27d7350af2edfac715a5635389d891b75"},
+    {file = "open_aea_ledger_cosmos-1.61.0-py3-none-any.whl", hash = "sha256:c7568509bfdc290081693e03dcbdbdec6682ed005fd022219f22ac1303852510"},
+    {file = "open_aea_ledger_cosmos-1.61.0.tar.gz", hash = "sha256:dd9d0a63f07371e7a81ee2b76ba68110a8f6ad442829e0fd8119fc37b10a6ad8"},
 ]
 
 [package.dependencies]
@@ -2845,13 +2845,13 @@ pycryptodome = ">=3.10.1,<4.0.0"
 
 [[package]]
 name = "open-aea-ledger-ethereum"
-version = "1.60.0"
+version = "1.61.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of Ethereum."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_ethereum-1.60.0-py3-none-any.whl", hash = "sha256:0026ae8faa987f651234d3d125998a445b414a65847a121fd033f49b99de0bf0"},
-    {file = "open_aea_ledger_ethereum-1.60.0.tar.gz", hash = "sha256:932219edff66500f29f17ab47d487f2995e4770456031cfbacfc0eea94571c6c"},
+    {file = "open_aea_ledger_ethereum-1.61.0-py3-none-any.whl", hash = "sha256:aae960b982d3868b9ee6b182247deb76c071f08ca412ff644d7ef3bc92d1660d"},
+    {file = "open_aea_ledger_ethereum-1.61.0.tar.gz", hash = "sha256:cfe8de152244de11b69a2c82cec02c9b0b06ce1dd55fa6ae863f6abcd1ac8d66"},
 ]
 
 [package.dependencies]
@@ -2862,13 +2862,13 @@ web3 = ">=6.0.0,<7"
 
 [[package]]
 name = "open-aea-ledger-solana"
-version = "1.60.0"
+version = "1.61.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of solana."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_solana-1.60.0-py3-none-any.whl", hash = "sha256:60cc967879e6044bd9c6b33e0dc4ee0199c46c32f4ee2d8de36d39920896be9a"},
-    {file = "open_aea_ledger_solana-1.60.0.tar.gz", hash = "sha256:d47688bbba4a4ff06ec0d6f4e3b7d56b21dc03270933e5b1c3a50340a97fac6f"},
+    {file = "open_aea_ledger_solana-1.61.0-py3-none-any.whl", hash = "sha256:07067ae5da33c8dbc5819f99a4125b425d25f8192f14395317a09f95d9e2a8fe"},
+    {file = "open_aea_ledger_solana-1.61.0.tar.gz", hash = "sha256:2f11f471326921c8fa49ad783fe472cb2dae55d3ab78e8fceeb1a36a89486782"},
 ]
 
 [package.dependencies]
@@ -5035,4 +5035,4 @@ doc = ["mkdocstrings"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "3f287072c5b7e0720da6175fbc5cbf79928f2d8c2e8fadc88a8f51611fe1b909"
+content-hash = "c37364641159a3f69c6dbe31fd5d3cbaa6e831274935d26ce26ec7043c2df6e7"
