@@ -6,7 +6,6 @@ import time
 import shutil
 import platform
 import subprocess
-from contextlib import closing
 from copy import deepcopy
 from typing import Any
 from pathlib import Path
@@ -15,7 +14,6 @@ from dataclasses import dataclass
 
 import docker
 import requests
-import socket
 import rich_click as click
 from docker.errors import NotFound
 from aea.skills.base import PublicId
@@ -30,10 +28,11 @@ from auto_dev.cli_executor import CommandExecutor
 
 
 TENDERMINT_RESET_TIMEOUT = 10
+TENDERMINT_RESET_ENDPOINT = "http://localhost:8080/hard_reset"
 TENDERMINT_RESET_RETRIES = 20
-TENDERMINT_CHECK_RETRIES = 3
 
 cli = build_cli()
+
 
 @dataclass
 class AgentRunner:
@@ -44,13 +43,6 @@ class AgentRunner:
     force: bool
     logger: Any
     fetch: bool = False
-    tendermint_port: int = None
-
-    def get_unused_tcp_port(self) -> int:
-        """Get an unused TCP port."""
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-            s.bind(("127.0.0.1", 0))
-            return s.getsockname()[1]
 
     def run(self) -> None:
         """Run the agent."""
@@ -112,10 +104,9 @@ class AgentRunner:
         self.execute_command(f"docker compose -f {DOCKERCOMPOSE_TEMPLATE_FOLDER}/tendermint.yaml down")
         self.logger.info("Tendermint stopped. 🛑")
 
-    def check_tendermint(self, attempts: int = 0) -> None:
+    def check_tendermint(self, retries: int = 0) -> None:
         """Check if Tendermint is running."""
         self.logger.info("Checking Tendermint status...")
-        self.tendermint_port = self.tendermint_port or str(self.get_unused_tcp_port())
         docker_engine = docker.from_env()
         os_name = platform.system()
         container_name = "tm_0"
@@ -127,23 +118,23 @@ class AgentRunner:
             if res.status == "exited":
                 res.remove()
                 time.sleep(0.2)
-                self.check_tendermint(attempts + 1)
+                self.check_tendermint(retries + 1)
             if res.status == "running":
                 self.attempt_hard_reset()
         except (subprocess.CalledProcessError, RuntimeError, NotFound) as e:
             self.logger.info(f"Tendermint container not found or error: {e}")
-            if attempts > TENDERMINT_CHECK_RETRIES:
+            if retries > 3:
                 self.logger.exception(f"Tendermint is not running. Please install and run Tendermint using Docker. {e}")
                 sys.exit(1)
             self.logger.info("Starting Tendermint... 🚀")
             self.start_tendermint(tm_overrides)
             time.sleep(2)
-            return self.check_tendermint(attempts + 1)
+            return self.check_tendermint(retries + 1)
         if res.status != "running":
-            self.logger.error(f"Tendermint is not healthy (port {self.tendermint_port}). Please check the logs.")
+            self.logger.error("Tendermint is not healthy. Please check the logs.")
             sys.exit(1)
 
-        self.logger.info(f"Tendermint is running and healthy ✅ (port {self.tendermint_port})")
+        self.logger.info("Tendermint is running and healthy ✅")
         return None
 
     def attempt_hard_reset(self, attempts: int = 0) -> None:
@@ -152,10 +143,9 @@ class AgentRunner:
             self.logger.error(f"Failed to reset Tendermint after {TENDERMINT_RESET_RETRIES} attempts.")
             sys.exit(1)
 
-        self.logger.info(f"Tendermint is running, executing hard reset on port {self.tendermint_port}...")
+        self.logger.info("Tendermint is running, executing hard reset...")
         try:
-            reset_endpoint = f"http://127.0.0.1:{self.tendermint_port}/hard_reset"
-            response = requests.get(reset_endpoint, timeout=TENDERMINT_RESET_TIMEOUT)
+            response = requests.get(TENDERMINT_RESET_ENDPOINT, timeout=TENDERMINT_RESET_TIMEOUT)
             if response.status_code == 200:
                 self.logger.info("Tendermint hard reset successful.")
                 return
@@ -247,10 +237,6 @@ class AgentRunner:
     def start_tendermint(self, env_vars=None) -> None:
         """Start Tendermint."""
         self.logger.info("Starting Tendermint with docker-compose...")
-
-        env_vars = env_vars or {}
-        env_vars["TENDERMINT_PORT"] = self.tendermint_port
-
         try:
             result = self.execute_command(
                 f"docker compose -f {DOCKERCOMPOSE_TEMPLATE_FOLDER}/tendermint.yaml up -d --force-recreate",
@@ -259,7 +245,7 @@ class AgentRunner:
             if not result:
                 msg = "Docker compose command failed to start Tendermint"
                 raise RuntimeError(msg)
-            self.logger.info(f"Tendermint started successfully on port {self.tendermint_port}")
+            self.logger.info("Tendermint started successfully")
         except FileNotFoundError:
             self.logger.exception("Docker compose file not found. Please ensure Tendermint configuration exists.")
             sys.exit(1)
@@ -317,6 +303,7 @@ class AgentRunner:
         """Get the version of the agent."""
         agent_config = load_autonolas_yaml(PackageType.AGENT, self.agent_dir)[0]
         return agent_config["version"]
+
 
 @cli.command()
 @click.argument(
