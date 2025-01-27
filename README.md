@@ -72,7 +72,6 @@ adev convert agent-to-service author/agent_name author/service_name
 ```
 ![asciicast](docs/assets/create_agent_service.gif)
 
-
 ## Usage
 
 There are a number of useful command tools available.
