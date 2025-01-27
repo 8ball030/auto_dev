@@ -25,6 +25,7 @@ from auto_dev.utils import change_dir, map_os_to_env_vars, load_autonolas_yaml
 from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
+from aea.cli.utils.context import Context
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -33,6 +34,18 @@ TENDERMINT_RESET_RETRIES = 20
 
 cli = build_cli()
 
+
+import sys
+import pdb
+import traceback
+
+
+def custom_excepthook(type, value, tb):
+    traceback.print_exception(type, value, tb)
+    pdb.post_mortem(tb)
+
+
+sys.excepthook = custom_excepthook
 
 @dataclass
 class AgentRunner:
@@ -274,16 +287,28 @@ class AgentRunner:
         - args: background (bool): Run the agent in the background.
         """
         self.logger.info("Starting agent execution...")
-        try:
-            result = self.execute_command("aea -s run", verbose=True)
-            if result:
-                self.logger.info("Agent execution completed successfully. 😎")
-            else:
-                self.logger.error("Agent execution failed.")
-                sys.exit(1)
-        except RuntimeError as error:
-            self.logger.exception(f"Agent ended with error: {error}")
-        self.logger.info("Agent execution complete. 😎")
+
+        from aea.cli.run import run_aea
+
+        def get_context_cli():
+            ctx = Context(
+                cwd=Path.cwd(),
+                registry_path="packages",
+                verbosity=1,)
+            
+            ctx.config['skip_consistency_check'] = True
+            return ctx
+
+
+        ctx = get_context_cli()
+        run_aea(ctx, 
+                connection_ids=None,
+                env_file="../.env",
+                is_install_deps=False,
+                apply_environment_variables=True,
+                password=None,
+                )
+
 
     def execute_command(self, command: str, verbose=None, env_vars=None) -> None:
         """Execute a shell command."""
