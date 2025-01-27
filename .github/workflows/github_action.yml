@@ -1,105 +1,17 @@
-name: CI/CD Pipeline
-
+name: Deploy MkDocs
 on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 permissions:
   contents: write
   pages: write
   id-token: write
-  issues: write
-  pull-requests: write
-  discussions: write
-  actions: write
-  deployments: write
-  packages: write
-  repository-projects: write
-  security-events: write
-  statuses: write
 
 jobs:
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-      discussions: write
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get current version
-        id: current_version
-        run: |
-          echo "VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
-
-      - name: Generate Changelog
-        id: changelog
-        uses: TriPSs/conventional-changelog-action@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          version-file: './pyproject.toml'
-          version-path: 'tool.poetry.version'
-          fallback-version: ${{ steps.current_version.outputs.VERSION }}
-          git-message: 'chore(release): {version}'
-          preset: 'angular'
-          tag-prefix: 'v'
-          release-count: 0
-          skip-version-file: false
-          skip-commit: false
-          create-summary: true
-          output-file: "CHANGELOG.md"
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
-
-      - name: Install dependencies
-        run: poetry install
-
-      - name: Build wheels and source tarball
-        run: poetry build
-
-      - name: Create GitHub release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        if: ${{ steps.changelog.outputs.skipped == 'false' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.changelog.outputs.version }}
-          body: ${{ steps.changelog.outputs.clean_changelog }}
-          files: |
-            dist/*.whl
-            dist/*.tar.gz
-            CHANGELOG.md
-          draft: false
-          prerelease: false
-          
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-
-  build-and-deploy-docs:
-    if: github.ref == 'refs/heads/main'
+  build:
     environment: github-pages
     runs-on: ubuntu-latest
     steps:
@@ -112,28 +24,30 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
-
       - name: Install dependencies
-        run: poetry install
-
-      - name: Test documentation generation
-        run: poetry run pytest tests/test_doc_generation.py -v
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs-material
+          pip install mkdocstrings[python]
+          pip install mkdocs-include-markdown-plugin
+          pip install mkdocs-mermaid2-plugin
+          pip install -e .
 
       - name: Build site
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: poetry run mkdocs build
+        run: mkdocs build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
