@@ -6,7 +6,7 @@ from aea.configurations.base import PackageType
 
 from auto_dev.base import build_cli
 from auto_dev.utils import load_autonolas_yaml
-from auto_dev.services.runner.runner import AgentRunner
+from auto_dev.services.runner.runner import DevAgentRunner
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -46,7 +46,7 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         agent_public_id = PublicId.from_json(agent_config)
     logger = ctx.obj["LOGGER"]
 
-    runner = AgentRunner(
+    runner = DevAgentRunner(
         agent_name=agent_public_id,
         verbose=verbose,
         force=force,
