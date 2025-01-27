@@ -21,6 +21,7 @@ JINJA_SUFFIX = ".jinja"
 logger = get_logger()
 
 cli = build_cli(plugins=False)
+CONVERSION_COMPLETE_MSG = "Conversion complete. Service is ready! 🚀"
 
 
 @cli.group()
@@ -42,6 +43,7 @@ class ConvertCliTool(BasePackageScaffolder):
             PublicId.from_str(service_public_id) if isinstance(service_public_id, str) else service_public_id
         )
         self.agent_runner = AgentRunner(self.agent_public_id, verbose=True, force=True, logger=logger)
+        self.validate()
         self._post_init()
 
     @property
@@ -58,15 +60,21 @@ class ConvertCliTool(BasePackageScaffolder):
             msg = "Service public id is required."
             raise UserInputError(msg)
         if not self.agent_runner.agent_dir.exists():
-            return UserInputError(f"Agent directory {self.agent_runner.agent_dir} does not exist.")
-        return None
+            msg = f"Agent directory {self.agent_runner.agent_dir} does not exist."
+            raise UserInputError(msg)
+
+        agent_config, *_ = load_autonolas_yaml(package_type=PackageType.AGENT, directory=self.agent_runner.agent_dir)
+        if self.agent_public_id.author != agent_config["author"]:
+            msg = (
+                f"Author {self.agent_public_id.author} does not match the author in the agent: {agent_config['author']}"
+            )
+            raise UserInputError(msg)
 
     def generate(self, force: bool = False, number_of_agents: int = 1):
         """Convert from agent to service."""
         self.check_if_service_exists(
             force,
         )
-        self.validate()
         agent_config, *overrides = load_autonolas_yaml(
             package_type=PackageType.AGENT, directory=self.agent_runner.agent_dir
         )
@@ -131,4 +139,4 @@ def agent_to_service(
     logger.info(f"Converting agent {agent_public_id} to service {service_public_id}.")
     converter = ConvertCliTool(agent_public_id, service_public_id)
     converter.generate(number_of_agents=number_of_agents, force=force)
-    logger.info("Conversion complete. Service is ready! 🚀")
+    logger.info(CONVERSION_COMPLETE_MSG)
