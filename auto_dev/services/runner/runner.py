@@ -23,6 +23,7 @@ from auto_dev.utils import change_dir, map_os_to_env_vars, load_autonolas_yaml
 from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.services.runner.base import AgentRunner
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -31,7 +32,7 @@ TENDERMINT_RESET_RETRIES = 20
 
 
 @dataclass
-class AgentRunner:
+class DevAgentRunner(AgentRunner):
     """Class to manage running an agent."""
 
     agent_name: PublicId
@@ -45,17 +46,17 @@ class AgentRunner:
         agent_path = "." if not self.fetch else self.agent_name.name
         if self.fetch:
             self.fetch_agent()
-        if not self.check_agent_exists(locally=True, in_packages=False):
+        if not self.check_exists(locally=True, in_packages=False):
             self.logger.error(f"Local agent package {self.agent_name.name} does not exist.")
             sys.exit(1)
         self.logger.info(f"Changing to directory: {agent_path}")
         with change_dir(agent_path):
             self.check_tendermint()
-            self.setup_agent()
+            self.setup()
             self.execute_agent()
         self.stop_tendermint()
 
-    def check_agent_exists(self, locally=False, in_packages=True) -> bool:
+    def check_exists(self, locally=False, in_packages=True) -> bool:
         """Check if the agent exists."""
 
         if locally and in_packages:
@@ -156,7 +157,7 @@ class AgentRunner:
         """Fetch the agent from registry if needed."""
         self.logger.info(f"Fetching agent {self.agent_name} from the local package registry...")
 
-        if self.check_agent_exists(locally=True, in_packages=False):
+        if self.check_exists(locally=True, in_packages=False):
             if not self.force:
                 self.logger.error(f"Agent `{self.agent_name}` already exists. Use --force to overwrite.")
                 sys.exit(1)
@@ -168,7 +169,7 @@ class AgentRunner:
             self.logger.error(f"Failed to fetch agent {self.agent_name}.")
             sys.exit(1)
 
-    def setup_agent(self) -> None:
+    def setup(self) -> None:
         """Setup the agent."""
         if not self.fetch:
             self.logger.info(f"Agent author: {self.agent_name.author}")
