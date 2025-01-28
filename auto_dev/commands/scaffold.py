@@ -332,9 +332,8 @@ def behaviour(
         msg = f"Specified spec '{spec_file}' does not exist."
         raise click.ClickException(msg)
 
-    spec_content = Path(spec_file).read_text(encoding=DEFAULT_ENCODING)
     scaffolder = BehaviourScaffolder(
-        spec_content,
+        spec_file,
         behaviour_type=BehaviourTypes[behaviour_type],
         logger=logger,
         verbose=verbose,
