@@ -8,21 +8,26 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
+import re
 from pathlib import Path
 
 import yaml
 import rich_click as click
 from web3 import Web3
 from jinja2 import Environment, FileSystemLoader
-from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE, PROTOCOL_LANGUAGE_PYTHON, SUPPORTED_PROTOCOL_LANGUAGES
+from aea.configurations.constants import (
+    DEFAULT_AEA_CONFIG_FILE,
+    PROTOCOL_LANGUAGE_PYTHON,
+    DEFAULT_SKILL_CONFIG_FILE,
+    SUPPORTED_PROTOCOL_LANGUAGES,
+)
 from aea.configurations.data_types import PublicId
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
-from auto_dev.utils import load_aea_ctx, remove_suffix, camel_to_snake, read_from_file
+from auto_dev.utils import change_dir, load_aea_ctx, remove_suffix, write_to_file, camel_to_snake, read_from_file
 from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER, Network
 from auto_dev.cli_executor import CommandExecutor
-from auto_dev.handlers.base import HandlerTypes, HandlerScaffolder
 from auto_dev.dao.scaffolder import DAOScaffolder
 from auto_dev.contracts.contract import DEFAULT_NULL_ADDRESS
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
@@ -295,69 +300,112 @@ def handler(ctx, spec_file, public_id, new_skill, auto_confirm) -> int:
     help="The type of behaviour to generate.",
     default=BehaviourTypes.metrics,
 )
+@click.argument("skill_public_id", type=PublicId.from_str, required=False)
 @click.pass_context
 def behaviour(
     ctx,
-    spec_file,
-    behaviour_type,
-    auto_confirm,
-    target_speech_acts,
+    spec_file: str,
+    behaviour_type: str,
+    target_speech_acts: str | None,
+    auto_confirm: bool,
+    skill_public_id: PublicId | None,
 ) -> None:
-    """Generate an AEA handler from an OpenAPI 3 specification.
+    """Scaffold a behaviour from a specification.
 
-    Example:
-    -------
-    ```
-    adev scaffold behaviour openapi.yaml --behaviour-type metrics
-    ```
+    Required arguments:
+        spec_file: Path to specification file (OpenAPI for metrics, FSM for simple_fsm)
+        behaviour_type: Type of behaviour to scaffold (metrics or simple_fsm)
 
+    Optional arguments:
+        target_speech_acts: Comma separated list of speech acts to scaffold
+        auto_confirm: Auto confirm all actions
+        skill_public_id: Optional public ID of the skill. If not provided, assumes current directory is a skill.
     """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
 
+    if not Path(DEFAULT_AEA_CONFIG_FILE).exists():
+        msg = f"No {DEFAULT_AEA_CONFIG_FILE} found in current directory, please run `adev create` to create an Agent."
+        raise ValueError(msg)
+
+    if not Path(spec_file).exists():
+        msg = f"Specified spec '{spec_file}' does not exist."
+        raise click.ClickException(msg)
+
+    spec_content = Path(spec_file).read_text(encoding=DEFAULT_ENCODING)
     scaffolder = BehaviourScaffolder(
-        spec_file,
+        spec_content,
         behaviour_type=BehaviourTypes[behaviour_type],
         logger=logger,
         verbose=verbose,
         auto_confirm=auto_confirm,
     )
-    scaffolder.scaffold(
-        target_speech_acts=target_speech_acts,
-    )
+    scaffolder.scaffold(target_speech_acts=target_speech_acts)
+
+    generated_behavior = scaffolder.generated_behavior
+    if not generated_behavior:
+        msg = "No behavior generated from specification"
+        raise ValueError(msg)
+
+    if skill_public_id:
+        with change_dir(f"skills/{skill_public_id.name}"):
+            if not Path(DEFAULT_SKILL_CONFIG_FILE).exists():
+                msg = "Current directory is not a skill directory. Please provide a skill public ID."
+                raise click.ClickException(msg)
+            skill_yaml_path = Path(DEFAULT_SKILL_CONFIG_FILE)
+            behaviour_class_name = extract_class_name(generated_behavior)
+            skill_yaml = update_skill(skill_yaml_path, behaviour_class_name, generated_behavior)
+            click.echo(f"Successfully scaffolded behaviour in {skill_yaml_path / 'behaviours.py'}")
+            click.echo(f"Updated {skill_yaml}")
+            return
+
+    if not Path(DEFAULT_SKILL_CONFIG_FILE).exists():
+        msg = "Current directory is not a skill directory. Please provide a skill public ID."
+        raise click.ClickException(msg)
+
+    skill_path = Path()  # Current directory is the skill directory
+    behaviour_class_name = extract_class_name(generated_behavior)
+    skill_yaml = update_skill(skill_path, behaviour_class_name, generated_behavior)
+
+    click.echo(f"Successfully scaffolded behaviour in {skill_path / 'behaviours.py'}")
+    click.echo(f"Updated {skill_yaml}")
 
 
-@scaffold.command()
-@click.argument("spec_file", type=click.Path(exists=True), required=True)
-@click.option("-tsa", "--target-speech-acts", default=None, help="Comma separated list of speech acts to scaffold.")
-@click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm all actions")
-@click.option(
-    "--handler_type",
-    type=click.Choice([HandlerTypes.simple]),
-    required=True,
-    help="The type of behaviour to generate.",
-    default=HandlerTypes.simple,
-)
-@click.pass_context
-def handlers(ctx, spec_file, handler_type, auto_confirm, target_speech_acts) -> None:
-    """Generate an AEA handler from an OpenAPI 3 specification.
+def update_skill(skill_path: Path, behaviour_class_name: str, generated_behavior: str) -> Path:
+    """Update a skill with new behavior and configuration.
 
-    Example:
+    Args:
+    ----
+        skill_path: Path to the skill directory
+        behaviour_class_name: Name of the behavior class
+        generated_behavior: Generated behavior code
+
+    Returns:
     -------
-    ```
-    adev scaffold behaviour openapi.yaml --behaviour-type metrics
-    ```
+        Path to the updated skill.yaml file
 
     """
-    logger = ctx.obj["LOGGER"]
-    verbose = ctx.obj["VERBOSE"]
+    # Write behavior code
+    behavior_file = skill_path / "behaviours.py"
+    write_to_file(behavior_file, generated_behavior, FileType.PYTHON)
 
-    scaffolder = HandlerScaffolder(
-        spec_file, handler_type=handler_type, logger=logger, verbose=verbose, auto_confirm=auto_confirm
-    )
-    scaffolder.scaffold(
-        target_speech_acts=target_speech_acts,
-    )
+    # Update skill configuration
+    skill_yaml = skill_path / "skill.yaml"
+    config = load_aea_ctx(skill_yaml)
+    config["behaviours"] = {f"{skill_path.name}_handler": {"args": {}, "class_name": behaviour_class_name}}
+    write_to_file(skill_yaml, config, FileType.YAML)
+
+    return skill_yaml
+
+
+def extract_class_name(code: str) -> str:
+    """Extract the behavior class name from generated code."""
+
+    match = re.search(r"class\s+(\w+)\(", code)
+    if not match:
+        msg = "Could not find behavior class name in generated code"
+        raise click.ClickException(msg)
+    return match.group(1)
 
 
 @scaffold.command()
