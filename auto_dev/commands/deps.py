@@ -37,6 +37,8 @@ from enum import Enum
 from pathlib import Path
 from dataclasses import dataclass
 
+import pip
+import pkg_resources
 import toml
 import yaml
 import requests
@@ -231,6 +233,10 @@ class GitDependency(Dependency):
         if self.location == DependencyLocation.LOCAL:
             return self.version
         return self._get_latest_remote_version()
+    
+    def get_installed_version(self) -> str:
+        """Use pip to get the installed version."""
+        return pkg_resources.get_distribution(self.name).version
 
     def _get_latest_remote_version(self) -> str:
         """Get the latest remote version."""
@@ -578,6 +584,19 @@ def get_update_command(poetry_dependencies: Dependency, strict: bool = False) ->
                     cmd += f"{plugin}@{expected_version} "
     return cmd, issues
 
+def update_pyproject_with_current_versions(version_set_loader: VersionSetLoader) -> None:
+    """
+    We collect the actual versions of everything installed
+    by iteracting over the version set loader
+    we then write this to the adev config file.
+    """
+    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
+
+        current_version = dependency.get_installed_version()
+        dependency.version = current_version
+    click.echo("Updating the adev config file with the current versions.")
+    version_set_loader.write_config()
+
 
 @deps.command()
 @click.option(
@@ -655,6 +674,9 @@ def bump(
             click.confirm("Do you want to update the poetry dependencies now?", abort=True)
         os.system(cmd)  # noqa
         changes.append("poetry dependencies")
+
+
+    update_pyproject_with_current_versions(version_set_loader)
 
     handle_output(issues, changes)
 
