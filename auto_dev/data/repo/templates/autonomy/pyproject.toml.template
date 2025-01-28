@@ -17,7 +17,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<=3.13"
 cython = "<3.0.0"
 open-aea-ledger-solana = "==1.60.0"
 open-aea-ledger-cosmos = "==1.60.0"
