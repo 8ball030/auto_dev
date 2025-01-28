@@ -111,4 +111,5 @@ adev = "auto_dev.cli:cli"
 
 
 [tool.pytest.ini_options]
-addopts = "--cov=auto_dev --cov-report html -i"
+addopts = "--cov=auto_dev --cov-report html"
+filterwarnings = ["ignore:.*CoverageWarning.*:Warning"]
