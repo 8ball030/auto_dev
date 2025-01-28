@@ -1,7 +1,9 @@
 """Command to run an agent."""
 
+import asyncio
 import os
 import sys
+import threading
 import time
 import shutil
 import platform
@@ -26,6 +28,7 @@ from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
 from aea.cli.utils.context import Context
+from aea.cli.run import run_aea
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -40,11 +43,27 @@ import pdb
 import traceback
 
 
-def custom_excepthook(type, value, tb):
-    traceback.print_exception(type, value, tb)
-    pdb.post_mortem(tb)
+def custom_excepthook(*args, **kwargs):
+    traceback.print_exception(*args, **kwargs)
+    pdb.post_mortem(args[-1])
+
+def custom_thread_excepthook(args):
+    print("Uncaught exception in thread:")
+    traceback.print_exception(*args)
+    pdb.post_mortem(args[2])
+
+def custom_asyncio_excepthook(loop, context):
+    print("Uncaught exception in asyncio task:")
+    if 'exception' in context:
+        exc = context['exception']
+        traceback.print_exception(type(exc), exc, exc.__traceback__)
+        pdb.post_mortem(exc.__traceback__)
+    else:
+        print(f"No exception object in context: {context}")
 
 
+asyncio.get_event_loop().set_exception_handler(custom_asyncio_excepthook)
+threading.excepthook = custom_thread_excepthook
 sys.excepthook = custom_excepthook
 
 @dataclass
@@ -288,7 +307,6 @@ class AgentRunner:
         """
         self.logger.info("Starting agent execution...")
 
-        from aea.cli.run import run_aea
 
         def get_context_cli():
             ctx = Context(
