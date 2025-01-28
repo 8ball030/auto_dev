@@ -18,7 +18,15 @@ class HandlerTypes(Enum):
 
 
 class HandlerScaffolder(BehaviourScaffolder):
-    """Handler Scaffolder."""
+    """Handler Scaffolder for protocol-based handlers.
+    
+    Args:
+        protocol_specification_path: Path to the protocol specification file.
+        handler_type: Type of handler to scaffold.
+        logger: Logger instance.
+        verbose: Whether to enable verbose logging.
+        auto_confirm: Whether to automatically confirm prompts.
+    """
 
     component_class: str = "handlers"
     type: HandlerTypes = HandlerTypes.simple
@@ -26,7 +34,6 @@ class HandlerScaffolder(BehaviourScaffolder):
     def __init__(
         self, protocol_specification_path: str, handler_type, logger, verbose: bool = True, auto_confirm: bool = False
     ):
-        """Initialize ProtocolScaffolder."""
         self.logger = logger or get_logger()
         self.verbose = verbose
         self.behaviour_type = handler_type

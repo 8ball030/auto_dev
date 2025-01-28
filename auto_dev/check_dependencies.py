@@ -52,7 +52,16 @@ class PathArgument(click.Path):
 
 
 class Pipfile:
-    """Class to represent Pipfile config."""
+    """Class to represent Pipfile config.
+
+    Args:
+    ----
+        sources: List of source URLs.
+        packages: OrderedDict of package dependencies.
+        dev_packages: OrderedDict of development package dependencies.
+        file: Path to the Pipfile.
+
+    """
 
     ignore = [
         "open-aea-flashbots",
@@ -187,7 +196,15 @@ class Pipfile:
 
 
 class PyProjectToml:
-    """Class to represent pyproject.toml file."""
+    """Class to represent pyproject.toml file.
+
+    Args:
+    ----
+        dependencies: OrderedDict of package dependencies.
+        config: Dictionary containing the pyproject.toml configuration.
+        file: Path to the pyproject.toml file.
+
+    """
 
     ignore = [
         "python",

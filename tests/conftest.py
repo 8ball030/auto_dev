@@ -15,7 +15,19 @@ from auto_dev.constants import (
     AUTONOMY_PACKAGES_FILE,
 )
 from auto_dev.cli_executor import CommandExecutor
+from scripts.generate_command_docs import generate_docs
 from auto_dev.services.package_manager.index import PackageManager
+
+
+@pytest.fixture
+def generated_docs(test_filesystem):
+    """Fixture to ensure documentation is generated before tests."""
+    # Generate the documentation
+    (Path(test_filesystem) / "docs").mkdir(parents=True, exist_ok=True)
+    generate_docs()
+
+    # Return the docs directory path
+    return Path("docs/commands")
 
 
 OPENAPI_TEST_CASES = [
