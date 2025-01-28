@@ -104,7 +104,17 @@ PYTHON_KEYWORDS = [
 
 
 class BehaviourScaffolder(ProtocolScaffolder):
-    """ProtocolScaffolder."""
+    """Protocol scaffolder.
+
+    Args:
+    ----
+        protocol_specification_path: Path to the protocol specification.
+        behaviour_type: Type of behaviour to scaffold.
+        logger: Logger instance.
+        verbose: Whether to enable verbose logging.
+        auto_confirm: Whether to automatically confirm prompts
+
+    """
 
     component_class: str = "behaviours"
     type: str = None
