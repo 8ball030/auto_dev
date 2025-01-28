@@ -13,7 +13,7 @@ from auto_dev.utils import get_logger, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.exceptions import UserInputError
 from auto_dev.scaffolder import BasePackageScaffolder
-from auto_dev.commands.run import AgentRunner
+from auto_dev.services.runner.runner import DevAgentRunner
 
 
 JINJA_SUFFIX = ".jinja"
@@ -42,7 +42,7 @@ class ConvertCliTool(BasePackageScaffolder):
         self.service_public_id = (
             PublicId.from_str(service_public_id) if isinstance(service_public_id, str) else service_public_id
         )
-        self.agent_runner = AgentRunner(self.agent_public_id, verbose=True, force=True, logger=logger)
+        self.agent_runner = DevAgentRunner(self.agent_public_id, verbose=True, force=True, logger=logger)
         self.validate()
         self._post_init()
 
