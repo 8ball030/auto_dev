@@ -42,12 +42,16 @@ def convert() -> None:
 
 
 class ConvertCliTool(BasePackageScaffolder):
-    """Config for the agent servce convert cli."""
+    """Config for the agent service convert cli.
+    
+    Args:
+        agent_public_id: Public ID of the source agent.
+        service_public_id: Public ID for the target service.
+    """
 
     package_type = SERVICES
 
     def __init__(self, agent_public_id: PublicId, service_public_id: PublicId):
-        """Init the config."""
         self.agent_public_id = (
             PublicId.from_str(agent_public_id) if isinstance(agent_public_id, str) else agent_public_id
         )

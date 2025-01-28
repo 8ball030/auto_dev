@@ -169,7 +169,10 @@ AEA_CONFIG = "aea-config.yaml"
 
 
 class BaseScaffolder:
-    """BaseScaffolder."""
+    """Base class for scaffolding functionality.
+    
+    Initializes a scaffolder with logging and loads the AEA configuration.
+    """
 
     def load(self) -> None:
         """Load."""
@@ -180,7 +183,6 @@ class BaseScaffolder:
         self.aea_config = list(yaml.safe_load_all(content))
 
     def __init__(self) -> None:
-        """Init scaffolder."""
         self.logger = get_logger()
         self.load()
 

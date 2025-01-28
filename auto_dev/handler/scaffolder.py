@@ -36,15 +36,18 @@ class ScaffolderConfig(BaseModel):
 
 
 class HandlerScaffolder:
-    """Handler Scaffolder."""
+    """Handler Scaffolder for generating and managing API handlers.
+    
+    Args:
+        config: Configuration object containing scaffolding settings.
+        logger: Logger instance for output and debugging.
+    """
 
     def __init__(
         self,
         config: ScaffolderConfig,
         logger,
     ):
-        """Initialize HandlerScaffolder."""
-
         self.config = config
         self.logger = logger or get_logger()
         self.handler_code = ""
@@ -611,10 +614,12 @@ class HandlerScaffolder:
 
 
 class HandlerScaffoldBuilder:
-    """Builder for HandlerScaffolder."""
+    """Builder class for creating HandlerScaffolder instances.
+    
+    Provides a fluent interface for configuring and creating HandlerScaffolder objects.
+    """
 
     def __init__(self):
-        """Initialize HandlerScaffoldBuilder."""
         self.config: ScaffolderConfig | None = None
         self.logger = None
 
