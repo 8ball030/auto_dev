@@ -48,21 +48,9 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
             - If True: Fetches agent from local registry
             - If False: Uses agent from current directory or packages
 
-    Usage:
-        Basic agent run:
-            adev run author/agent_name
-
-        Run with verbose output:
-            adev run author/agent_name -v
-
-        Run with force overwrite:
-            adev run author/agent_name --force
-
-        Run from current directory:
-            adev run
-
-        Run without fetching:
-            adev run author/agent_name --no-fetch
+    Example usage:
+    adev run dev eightballer/my_agent  # Fetch and run from registry
+    adev run dev eightballer/my_agent --no-fetch
 
     Notes
     -----
@@ -88,7 +76,6 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
             - Checks Tendermint health
             - Manages Docker containers
             - Handles network timeouts
-
     """
 
     if not agent_public_id:
