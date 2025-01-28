@@ -54,19 +54,19 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
 
     Examples:\n
         Create with default template:\n
-            $ adev create new_author/new_agent\n
+            adev create new_author/new_agent\n
 
         Create from specific template:\n
-            $ adev create -t eightballer/frontend_agent new_author/new_agent\n
+            adev create -t eightballer/frontend_agent new_author/new_agent\n
 
         Create with force overwrite:\n
-            $ adev create -f new_author/new_agent\n
+            adev create -f new_author/new_agent\n
 
         Create without publishing:\n
-            $ adev create --no-publish new_author/new_agent\n
+            adev create --no-publish new_author/new_agent\n
 
         Create without cleanup:\n
-            $ adev create --no-clean-up new_author/new_agent\n
+            adev create --no-clean-up new_author/new_agent\n
     """
     agent_name = public_id.name
     verbose = ctx.obj["VERBOSE"]
