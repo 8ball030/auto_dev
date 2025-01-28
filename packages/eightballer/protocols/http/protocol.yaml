@@ -1,0 +1,21 @@
+name: http
+author: eightballer
+version: 0.1.0
+protocol_specification_id: eightballer/http:0.1.0
+type: protocol
+description: A protocol for HTTP requests and responses.
+license: Apache-2.0
+aea_version: '>=1.0.0, <2.0.0'
+fingerprint:
+  README.md: bafybeiducsq22rztouctqnz3bfcztm7dzqgek4vz43gutgbjorz4rjnm64
+  __init__.py: bafybeigcaswgalwdknsuhh32zefhp4hdjqavfhpo3rah4dt3xl4z5npr4i
+  dialogues.py: bafybeiame4lt7iccf27tgeuczercdx5cwxvioexkjwnwz5twxmlvvrpoby
+  http.proto: bafybeih4dbyct3d3g4umebk2egoz47oetggob7mqxcawg27hknplpkg4we
+  http_pb2.py: bafybeihcy56t6kmfw3whe57tccujbdy6sbpne6kvwe4jhh3hvcir6pxszy
+  message.py: bafybeib3s3tzczof6swuljqd73vnwgo5auledt5wccxa5olhfabdeskcsu
+  nttp.proto: bafybeib2j7ebigykufwkksd2juzevikidxznt5i2v3biashxa4jbubvv54
+  serialization.py: bafybeictisejl34h44dxkepndzbv4v4wjfk2rpifr5utf24b7w6khunoym
+  tests/test_http.py: bafybeigjgepo5n467eqx3ae5dzcg4skti54eteqy3sb6oywfk74dd243h4
+fingerprint_ignore_patterns: []
+dependencies:
+  protobuf: {}

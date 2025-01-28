@@ -1,0 +1,29 @@
+name: prometheus
+author: eightballer
+version: 0.1.1
+type: connection
+description: Connection for exposing agent metrics to prometheus server
+license: Apache-2.0
+aea_version: '>=1.0.0, <2.0.0'
+fingerprint:
+  README.md: bafybeihu3wxkioxutegrw3b27m7dv2d7pwqgak7cfpamygpr2jfygl6dsy
+  __init__.py: bafybeidzhc6nzo66npv2dgnkagwt7qihbjpuzwwni6epov3igybwwn5wou
+  connection.py: bafybeibqczdn5limhmcyxikupyk4z7lki3avbrwbuyr7jq5i3uobe6isha
+  tests/test_prometheus.py: bafybeihcwsko3kuldjn4fvsl2aqnbtu3wichq4jraypmszhyjxgtznsdkq
+fingerprint_ignore_patterns: []
+connections: []
+protocols:
+- eightballer/prometheus:1.0.0:bafybeicjwq2wgka7g5dnn5dnuzstfzt5fbbgknvd5lwk7uzwtz3h6yg5du
+class_name: PrometheusConnection
+config:
+  host: 0.0.0.0
+  port: 26658
+excluded_protocols: []
+restricted_to_protocols:
+- eightballer/prometheus:1.0.0:bafybeicy5dmzvynjvezbaxqwofwqsjbxpmm53jiz4wrqsov6wun4m4s3gi
+dependencies:
+  aioprometheus:
+    version: <21.0.0,>=20.0.0
+  psutil:
+    version: <6.0.0,>=5.9.5
+is_abstract: false
