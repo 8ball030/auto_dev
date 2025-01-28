@@ -14,10 +14,14 @@ logger = get_logger()
 
 
 class CommandExecutor:
-    """A simple command executor."""
+    """A simple command executor.
+    
+    Args:
+        command: The command to execute, either as a string or list of strings.
+        cwd: The working directory to execute the command in. Defaults to current directory.
+    """
 
     def __init__(self, command: str | list[str], cwd: str | None = None):
-        """Initialize the command executor."""
         self.command = command
         self.cwd = str(cwd) if cwd else "."
         self.stdout = []

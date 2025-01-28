@@ -265,9 +265,12 @@ class GitDependency(Dependency):
 def deps(
     ctx: click.Context,  # noqa
 ) -> None:
-    """Commands for managing dependencies.
-    - update: Update both the packages.json from the parent repo and the packages in the child repo.
-    - generate_gitignore: Generate the gitignore file from the packages.json file.
+    r"""Commands for managing dependencies.
+
+    Available Commands:\n
+        update: Update packages.json from parent repo and packages in child repo\n
+        generate_gitignore: Generate .gitignore entries from packages.json\n
+        verify: Verify dependencies against version set and update if needed\n
     """
 
 
@@ -314,9 +317,26 @@ def update(
     auto_confirm: bool = False,
     manual: bool = False,
 ) -> None:
-    """We update aea packages.json dependencies from a parent repo.
-    Example usage:
-        adev deps update -p /path/to/parent/repo -c /path/to/child/repo.
+    """Update dependencies from parent repo to child repo.
+
+    Required Parameters:
+        parent_repo: Path to the parent repository containing source packages.json.
+        child_repo: Path to the child repository to update.
+
+    Optional Parameters:
+        location: Location of dependencies (local or remote). Default: local
+        auto_confirm: Skip confirmation prompts. Default: False
+        manual: Enable manual mode for updates. Default: False
+
+    Usage:
+        Update with defaults:
+            adev deps update -p /path/to/parent -c /path/to/child
+
+        Auto-confirm updates:
+            adev deps update -p /path/to/parent -c /path/to/child --auto-confirm
+
+        Manual mode:
+            adev deps update -p /path/to/parent -c /path/to/child --manual
     """
     logger = ctx.obj["LOGGER"]
     logger.info("Updating the dependencies... 📝")
@@ -342,9 +362,18 @@ def update(
 def generate_gitignore(
     ctx: click.Context,
 ) -> None:
-    """We generate the gitignore file from the packages.json file
-    Example usage:
-        adev deps generate_gitignore.
+    r"""Generate .gitignore entries from packages.json.
+
+    Usage:
+        Generate gitignore entries:\n
+            adev deps generate-gitignore\n
+
+    Notes
+    -----
+        - Only adds new entries, doesn't remove existing ones\n
+        - Focuses on third-party packages from packages.json\n
+        - Appends entries to existing .gitignore file\n
+
     """
     package_dict = get_package_json(repo=Path())
     third_party_packages = package_dict.get("third_party", {})
@@ -493,8 +522,9 @@ class VersionSetLoader:
     autonomy_dependencies: AutonomyDependencies
     poetry_dependencies: PoetryDependencies
 
-    def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE):
+    def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE, **kwargs):
         self.config_file = config_file
+        self.latest = kwargs.get("latest", True)
 
     def write_config(
         self,
@@ -552,16 +582,17 @@ def handle_output(issues, changes) -> None:
         sys.exit(1)
 
 
-def get_update_command(poetry_dependencies: Dependency) -> str:
+def get_update_command(poetry_dependencies: Dependency, strict: bool = False) -> str:
     """Get the update command."""
     issues = []
     cmd = "poetry add "
+    pre_fix = "==" if strict else "<="
     for dependency in track(poetry_dependencies):
         click.echo(f"   Verifying:   {dependency.name}")
         raw = toml.load("pyproject.toml")["tool"]["poetry"]["dependencies"]
 
         current_version = str(raw[dependency.name])
-        expected_version = f"=={dependency.get_latest_version()[1:]}"
+        expected_version = f"'{pre_fix}{dependency.get_latest_version()[1:]}'"
         if current_version.find(expected_version) == -1:
             issues.append(
                 f"Update the poetry version of {dependency.name} from `{current_version}` to `{expected_version}`\n"
@@ -584,17 +615,72 @@ def get_update_command(poetry_dependencies: Dependency) -> str:
     help="Auto approve the changes.",
     is_flag=True,
 )
+@click.option(
+    "--latest",
+    default=True,
+    help="Select the latest version releases.",
+    is_flag=True,
+)
+@click.option(
+    "--strict/--no-strict",
+    default=False,
+    help="Enforce strict versioning.",
+    is_flag=True,
+)
 @click.pass_context
-def verify(
+def bump(
     ctx: click.Context,
     auto_approve: bool = False,
+    latest: bool = True,
+    strict: bool = False,
 ) -> None:
-    """Verify the packages.json file.
+    r"""Verify and optionally update package dependencies.
 
-    Requires GITHUB_TOKEN env variable to be set.
+    Optional Parameters:\n
+        auto_approve: Skip confirmation prompts for updates. Default: False\n
+            - Automatically applies all updates\n
+            - No interactive prompts\n
+            - Use with caution in production\n
 
-    Example usage:
-        adev deps verify
+    Usage:
+        Verify with prompts:\n
+            adev deps verify\n
+
+        Auto-approve updates:\n
+            adev deps verify --auto-approve\n
+
+    Notes
+    -----
+        - Authentication:\n
+            - Requires GITHUB_TOKEN environment variable\n
+            - Token needs repo and packages read access\n
+            - Can be generated at github.com/settings/tokens\n
+
+        - Verification Process:
+            - Checks both autonomy and poetry dependencies\n
+            - Verifies against specified version sets\n
+            - Compares local vs remote package hashes\n
+            - Validates dependency compatibility\n
+
+        - Update Process:
+            - Updates packages.json for autonomy packages\n
+            - Updates pyproject.toml for poetry dependencies\n
+            - Handles dependency resolution\n
+            - Maintains version consistency\n
+
+        - Features:\n
+            - Parallel version checking\n
+            - Detailed diff viewing\n
+            - Selective update approval\n
+            - Dependency tree analysis\n
+            - Version conflict detection\n
+
+        - Best Practices:\n
+            - Run before deployments\n
+            - Include in CI/CD pipelines\n
+            - Regular scheduled verification\n
+            - Version pinning enforcement\n
+
     """
 
     if not os.getenv("GITHUB_TOKEN"):
@@ -608,10 +694,9 @@ def verify(
     changes = []
     click.echo("Verifying autonomy dependencies... 📝")
 
-    version_set_loader = VersionSetLoader()
+    version_set_loader = VersionSetLoader(latest=latest)
     version_set_loader.load_config()
     if (Path("packages") / "packages.json").exists():
-        version_set_loader.load_config()
         for dependency in track(version_set_loader.autonomy_dependencies.upstream_dependency):
             click.echo(f"   Verifying:   {dependency.name}")
             remote_packages = dependency.get_all_autonomy_packages()
@@ -630,7 +715,7 @@ def verify(
                 changes.append(dependency.name)
 
     click.echo("Verifying poetry dependencies... 📝")
-    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies)
+    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict)
     issues.extend(poetry_issues)
 
     if issues:

@@ -1,4 +1,29 @@
-"""Implement fsm tooling."""
+r"""Commands for FSM (Finite State Machine) operations.
+
+Available Commands:\n
+    from_file: Convert between FSM specification formats\n
+
+Required Parameters:
+    fsm_spec: Path to the FSM specification file\n
+    fsm_name: Name of the FSM to process\n
+
+Optional Parameters:
+    in_type: Input format type (fsm_spec or mermaid). Default: fsm_spec\n
+    output: Output format type (fsm_spec or mermaid). Default: mermaid\n
+
+Usage:
+    Convert FSM spec to mermaid:\n
+        adev fsm from-file fsm_specification.yaml testAbciApp\n
+
+    Convert FSM spec to FSM spec (validation):\n
+        adev fsm from-file fsm_specification.yaml testAbciApp --output fsm_spec\n
+
+    Convert from mermaid to FSM spec:\n
+        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid --output fsm_spec\n
+
+    Convert mermaid to mermaid (validation):\n
+        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid\n
+"""
 
 from enum import Enum
 
@@ -45,11 +70,28 @@ INPUT_TO_FUNC = {FsmType.MERMAID.value: FsmSpec.from_mermaid_path, FsmType.FSM_S
     "--output", type=click.Choice([f.value for f in FsmType], case_sensitive=False), default=FsmType.MERMAID.value
 )
 def from_file(fsm_spec: str, fsm_name: str, in_type: str, output: str) -> None:
-    """We parse an fsm file, in order to covnert between mermaid and fsm_spec.
+    r"""Convert between FSM specification formats.
 
-    Example Usage:
-    `adev fsm from-file auto_dev/data/fsm/samples/fsm_specification.yaml testAbciApp`
-    `adev fsm from-file auto_dev/data/fsm/samples/fsm_specification.yaml testAbciApp --output fsm_spec`
+    Required Parameters:\n
+        fsm_spec: Path to the FSM specification file\n\n
+        fsm_name: Name of the FSM to process\n\n
+
+    Optional Parameters:\n
+        in_type: Input format type (fsm_spec or mermaid). (Default: fsm_spec)\n
+        output: Output format type (fsm_spec or mermaid). (Default: mermaid)\n
+
+    Usage:
+        Convert FSM spec to mermaid:\n
+            adev fsm from-file fsm_specification.yaml testAbciApp\n
+
+        Convert FSM spec to FSM spec (validation):\n
+            adev fsm from-file fsm_specification.yaml testAbciApp --output fsm_spec\n
+
+        Convert from mermaid to FSM spec:\n
+            adev fsm from-file diagram.mmd testAbciApp --in-type mermaid --output fsm_spec\n
+
+        Convert mermaid to mermaid (validation):\n
+            adev fsm from-file diagram.mmd testAbciApp --in-type mermaid\n
     """
 
     fsm = INPUT_TO_FUNC[in_type](fsm_spec, label=fsm_name)

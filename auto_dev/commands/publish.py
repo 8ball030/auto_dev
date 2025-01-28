@@ -1,13 +1,12 @@
 """This module contains the logic for the publish command."""
 
-
 import rich_click as click
 from aea.configurations.base import PublicId
 
 from auto_dev.base import build_cli
 from auto_dev.constants import AGENT_PUBLISHED_SUCCESS_MSG
 from auto_dev.exceptions import OperationError
-from auto_dev.commands.run import AgentRunner
+from auto_dev.commands.run import DevAgentRunner
 from auto_dev.services.package_manager.index import PackageManager
 
 
@@ -28,25 +27,33 @@ cli = build_cli()
 )
 @click.pass_context
 def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
-    """Publish an agent to the local registry.
+    r"""Publish an agent to the local registry.
 
-    Args:
-    ----
-        public_id: The public_id of the agent in the open-autonmy format i.e. `author/agent`.
-                   If not provided, assumes you're inside the agent directory. This will be the
-                   name of the package published.
-        force: If True, will overwrite existing package.
+    Required Parameters:\n
+        public_id: The public ID of the agent (author/name format).\n
 
-    Example usage:
-        From agent directory: `adev publish author/new_agent --force/--no-force`
-        With force: `adev publish --force`
+    Optional Parameters:\n
+        force (--force/--no-force): Force overwrite if package exists. (Default: False)\n
 
+    Usage:
+        Basic publish:
+            adev publish author/new_agent
+
+        Publish with force overwrite:
+            adev publish author/new_agent --force
+
+        Publish without force:
+            adev publish author/new_agent --no-force
+
+        Publish from agent directory:
+            cd my_agent
+            adev publish author/new_agent
     """
     verbose = ctx.obj["VERBOSE"]
     logger = ctx.obj["LOGGER"]
 
     try:
-        agent_runner = AgentRunner(
+        agent_runner = DevAgentRunner(
             agent_name=public_id,
             logger=logger,
             verbose=verbose,
@@ -54,9 +61,7 @@ def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
         )
         if not agent_runner.is_in_agent_dir():
             msg = "Not in an agent directory (aea-config.yaml not found) Please enter the agent directory to publish"
-            raise OperationError(
-                msg
-            )
+            raise OperationError(msg)
         package_manager = PackageManager(verbose=verbose)
         package_manager.publish_agent(force=force, new_public_id=public_id)
         click.secho(AGENT_PUBLISHED_SUCCESS_MSG, fg="green")

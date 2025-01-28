@@ -20,7 +20,17 @@ class BasePackageScaffolder:
     def generate(self) -> None:
         """Scaffold the package.
 
-        :return: None
+        This is an abstract method that must be implemented by subclasses to generate
+        their specific package structure and files.
+
+        Returns
+        -------
+            None: This method doesn't return anything
+
+        Raises
+        ------
+            NotImplementedError: This is an abstract method that must be implemented by subclasses
+
         """
         raise NotImplementedError
 

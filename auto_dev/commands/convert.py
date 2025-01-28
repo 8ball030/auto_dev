@@ -13,7 +13,7 @@ from auto_dev.utils import get_logger, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.exceptions import UserInputError
 from auto_dev.scaffolder import BasePackageScaffolder
-from auto_dev.commands.run import AgentRunner
+from auto_dev.services.runner.runner import DevAgentRunner
 
 
 JINJA_SUFFIX = ".jinja"
@@ -26,23 +26,39 @@ CONVERSION_COMPLETE_MSG = "Conversion complete. Service is ready! 🚀"
 
 @cli.group()
 def convert() -> None:
-    """Commands to convert between an agent and a service or vice versa."""
+    """Commands for converting between component types.
+
+    Available Commands:
+        agent_to_service: Convert an autonomous agent into a deployable service
+
+    Notes
+    -----
+        - Handles package type conversion while preserving functionality
+        - Manages dependencies and package structure automatically
+        - Validates components before conversion
+        - Supports Open Autonomy service standards
+
+    """
 
 
 class ConvertCliTool(BasePackageScaffolder):
-    """Config for the agent servce convert cli."""
+    """Config for the agent service convert cli.
+    
+    Args:
+        agent_public_id: Public ID of the source agent.
+        service_public_id: Public ID for the target service.
+    """
 
     package_type = SERVICES
 
     def __init__(self, agent_public_id: PublicId, service_public_id: PublicId):
-        """Init the config."""
         self.agent_public_id = (
             PublicId.from_str(agent_public_id) if isinstance(agent_public_id, str) else agent_public_id
         )
         self.service_public_id = (
             PublicId.from_str(service_public_id) if isinstance(service_public_id, str) else service_public_id
         )
-        self.agent_runner = AgentRunner(self.agent_public_id, verbose=True, force=True, logger=logger)
+        self.agent_runner = DevAgentRunner(self.agent_public_id, verbose=True, force=True, logger=logger)
         self.validate()
         self._post_init()
 
@@ -122,19 +138,27 @@ class ConvertCliTool(BasePackageScaffolder):
 )
 @click.option("--force", is_flag=True, help="Force the operation.", default=False)
 def agent_to_service(
-    agent_public_id: PublicId, service_public_id: PublicId, number_of_agents: int = 1, force: bool = False
+    agent_public_id: PublicId,
+    service_public_id: PublicId,
+    number_of_agents: int = 1,
+    force: bool = False,
 ) -> None:
-    """Convert an agent to a service.
+    """Convert an autonomous agent into a deployable service.
 
-    Args:
-    ----
-        AGENT_PUBLIC_ID: The public id of the agent.
-        SERVICE_PUBLIC_ID: The public id of the service to be converted to.
+    :param PublicId agent_public_id: Public ID of the source agent
+    :param PublicId service_public_id: Public ID for the target service
+    :param int number_of_agents: Number of agents to include in the service
+    :param bool force: Force overwrite if service exists
+    :rtype: None
+    :return: None
 
-    Example:
-    -------
-        adev convert AGENT_PUBLIC_ID SERVICE_PUBLIC_ID
+    The agent must exist in the agent registry. The service must not exist unless force=True.
+    The function will validate these prerequisites before proceeding.
+    Exceptions are handled by the underlying ConvertCliTool class.
 
+    Example usage::
+
+        agent_to_service(PublicId.from_str("author/my_agent"), PublicId.from_str("author/my_service"))
     """
     logger.info(f"Converting agent {agent_public_id} to service {service_public_id}.")
     converter = ConvertCliTool(agent_public_id, service_public_id)
