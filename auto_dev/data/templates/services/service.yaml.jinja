@@ -12,8 +12,7 @@ agent: {{ agent_public_id}}
 number_of_agents: {{ number_of_agents }}
 deployment:
   agent:
-    ports:
-      0: {}
+    ports: {}
     volumes: {}
 {% if overrides %}---
 {{overrides }}
