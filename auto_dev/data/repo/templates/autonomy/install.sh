@@ -61,7 +61,7 @@ get_download_url() {
 install_tool() {
     local tool=$1
     local url
-    local venv_dir=$(echo $(poetry run which python) | sed 's|\(.*\)/python|\1|')
+    local venv_dir=$(echo $(poetry run command -v python) | sed 's|\(.*\)/python|\1|')
     url=$(get_download_url "$tool") || return 1
 
     echo "Installing $tool"
@@ -95,13 +95,13 @@ install_tool() {
     esac
 
     if [ "$tool" = "protoc" ]; then
-        if ! which protoc &> /dev/null; then
+        if ! command -v protoc &> /dev/null; then
             mv bin/protoc $venv_dir/protoc
         else
             echo "protoc is already installed, skipping..."
         fi
     elif [ "$tool" = "protolint" ]; then
-        if ! which protolint &> /dev/null; then
+        if ! command -v protolint &> /dev/null; then
             mv protolint $venv_dir/protolint
         else
             echo "protolint is already installed, skipping..."
@@ -131,7 +131,7 @@ function install_poetry_deps() {
     echo "Host poetry executable: $host_poetry_executable"
     echo "Setting up new poetry environment..."
 
-    poetry env use $(which python)
+    poetry env use $(command -v python)
     poetry_executable=$(echo -n $(poetry env info | grep Executable |head -n 1 | awk -F: '{ print $2 }') | xargs)
     echo "New poetry executable:   $poetry_executable"
 
