@@ -127,7 +127,7 @@ def prod(
         verbose (-v): Enable verbose logging. Shows detailed output during execution. (Default: False)
         force (--force/--no-force): Force overwrite if service exists locally. (Default: False)
         fetch (--fetch/--no-fetch): Whether to fetch service from registry or use local package. (Default: True)
-        keysfile: Path to the private keys file. (Default: keys.json)
+        keysfile (--keysfile): Path to the private keys file. (Default: keys.json)
         number_of_agents (-n): Number of agents to run. (Default: 1)
 
     Example usage:
