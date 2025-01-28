@@ -5034,5 +5034,5 @@ doc = ["mkdocstrings"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.9,<=3.12"
-content-hash = "09b08f940ec3f944931699d5f28ca789d76bc1e7883f91cb90309e6fa37ccb44"
+python-versions = ">=3.9,<=3.13"
+content-hash = "4da2d98042efd635d33ee4602c13b4b3af13e50a6da334d01d13825d7a8864e2"
