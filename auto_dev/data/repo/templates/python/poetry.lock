@@ -236,13 +236,13 @@ files = [
 
 [[package]]
 name = "attrs"
-version = "24.3.0"
+version = "25.1.0"
 description = "Classes Without Boilerplate"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "attrs-24.3.0-py3-none-any.whl", hash = "sha256:ac96cd038792094f438ad1f6ff80837353805ac950cd2aa0e0625ef19850c308"},
-    {file = "attrs-24.3.0.tar.gz", hash = "sha256:8f5c07333d543103541ba7be0e2ce16eeee8130cb0b3f9238ab904ce1e85baff"},
+    {file = "attrs-25.1.0-py3-none-any.whl", hash = "sha256:c75a69e28a550a7e93789579c22aa26b0f5b83b75dc4e08fe092980051e1090a"},
+    {file = "attrs-25.1.0.tar.gz", hash = "sha256:1c97078a80c814273a76b2a298a932eb681c87415c11dee0a6921de7f1b02c3e"},
 ]
 
 [package.extras]
@@ -255,13 +255,13 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.89"
+version = "0.2.90"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
 python-versions = "<3.12,>=3.9"
 files = [
-    {file = "autonomy_dev-0.2.89-py3-none-any.whl", hash = "sha256:e17979ece3335a914957c91f59af25863059e9f43965827ef34a25a4e8b2ff17"},
-    {file = "autonomy_dev-0.2.89.tar.gz", hash = "sha256:e61a334552502c5b546739114df07a48d9b23f95388ce1fb1c9d8362e5ece3b0"},
+    {file = "autonomy_dev-0.2.90-py3-none-any.whl", hash = "sha256:7b31cc657728c3392002b94d33186abfb19c8cd9a032060bbfe1cfee331608f1"},
+    {file = "autonomy_dev-0.2.90.tar.gz", hash = "sha256:f8525b94d88da6338672f818eb5534e643c467305bdec9ca9ad6c3d9947eadb3"},
 ]
 
 [package.dependencies]
@@ -298,7 +298,7 @@ web3 = ">=6.0.0,<7.0.0"
 [package.extras]
 all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.60.0)", "open-aea-ledger-cosmos (==1.60.0)", "open-aea-ledger-ethereum (==1.60.0)", "open-aea-ledger-solana (==1.60.0)", "open-autonomy (==0.18.4)", "pydantic (>=2.8.2,<3.0.0)", "ruff (>=0.5.7,<0.6.0)", "tbump (>=6.11.0,<7.0.0)"]
 dev = ["tbump (>=6.11.0,<7.0.0)", "toml (==0.10.2)"]
-doc = ["mkdocstrings[python] (>=0.25.2,<0.26.0)"]
+doc = ["mkdocstrings[python] (>=0.25.2,<0.28.0)"]
 
 [[package]]
 name = "backoff"
@@ -1664,13 +1664,13 @@ websockets = ["websockets (>=10,<12)"]
 
 [[package]]
 name = "graphql-core"
-version = "3.2.5"
+version = "3.2.6"
 description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 optional = false
 python-versions = "<4,>=3.6"
 files = [
-    {file = "graphql_core-3.2.5-py3-none-any.whl", hash = "sha256:2f150d5096448aa4f8ab26268567bbfeef823769893b39c1a2e1409590939c8a"},
-    {file = "graphql_core-3.2.5.tar.gz", hash = "sha256:e671b90ed653c808715645e3998b7ab67d382d55467b7e2978549111bbabf8d5"},
+    {file = "graphql_core-3.2.6-py3-none-any.whl", hash = "sha256:78b016718c161a6fb20a7d97bbf107f331cd1afe53e45566c59f776ed7f0b45f"},
+    {file = "graphql_core-3.2.6.tar.gz", hash = "sha256:c08eec22f9e40f0bd61d805907e3b3b1b9a320bc606e23dc145eebca07c8fbab"},
 ]
 
 [package.dependencies]
@@ -4638,4 +4638,4 @@ doc = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "7822e8697898fb89c04c47b1ea44020985b7f18f2df67c48a9dadd9d1e377574"
+content-hash = "3c681eac9d309c5a1ca2993b42997a379d8948ac1afa7dd0fa112804bfb0b75f"
