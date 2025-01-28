@@ -15,6 +15,7 @@ from auto_dev.utils import FileType, get_logger, write_to_file, read_from_file, 
 from auto_dev.exceptions import ConfigUpdateError
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.services.dependencies.index import DependencyBuilder
+from auto_dev.services.runner.prod_runner import with_spinner
 from auto_dev.services.package_manager.index import PackageManager
 
 
@@ -178,49 +179,55 @@ class ComponentEjector:
 
         """
         # Find all Python files in the component directory
-        for py_file in component_dir.rglob("*.py"):
-            try:
-                self.logger.info(f"Processing file: {py_file}")
-                content = read_from_file(py_file, file_type=FileType.PYTHON)
 
-                # Update imports using the old name to use the new name
-                old_import_path = f"packages.{self.config.public_id.author}.{self.config.component_type}s.{old_name}"
-                new_import_path = f"packages.{self.config.fork_id.author}.{self.config.component_type}s.{new_name}"
+        with with_spinner():
+            for py_file in component_dir.rglob("*.py"):
+                relative = py_file.relative_to(component_dir)
+                try:
+                    self.logger.debug(f"Processing file: {relative}")
+                    content = read_from_file(py_file, file_type=FileType.PYTHON)
 
-                self.logger.info(f"Looking to replace: {old_import_path} with {new_import_path}")
+                    # Update imports using the old name to use the new name
+                    old_import_path = (
+                        f"packages.{self.config.public_id.author}.{self.config.component_type}s.{old_name}"
+                    )
+                    new_import_path = f"packages.{self.config.fork_id.author}.{self.config.component_type}s.{new_name}"
 
-                # Also handle relative imports
-                old_relative_path = f"{old_name}."
-                new_relative_path = f"{new_name}."
+                    self.logger.debug(f"Looking to replace: {old_import_path} with {new_import_path}")
 
-                if old_import_path in content or old_relative_path in content:
-                    # Update both absolute and relative imports
-                    updated_content = content.replace(old_import_path, new_import_path)
-                    updated_content = updated_content.replace(old_relative_path, new_relative_path)
+                    # Also handle relative imports
+                    old_relative_path = f"{old_name}."
+                    new_relative_path = f"{new_name}."
 
-                    self.logger.info(f"Found matches in {py_file}, updating imports")
-                    self.logger.debug(f"Original content:\n{content}")
-                    self.logger.debug(f"Updated content:\n{updated_content}")
+                    if old_import_path in content or old_relative_path in content:
+                        # Update both absolute and relative imports
+                        updated_content = content.replace(old_import_path, new_import_path)
+                        updated_content = updated_content.replace(old_relative_path, new_relative_path)
 
-                    write_to_file(py_file, updated_content, file_type=FileType.PYTHON)
-                else:
-                    self.logger.info(f"No matching imports found in {py_file}")
-            except (OSError, ValueError) as e:
-                self.logger.warning(f"Failed to update imports in {py_file}: {e}")
+                        self.logger.debug(f"Found matches in {relative}, updating imports")
+                        self.logger.debug(f"Original content:\n{content}")
+                        self.logger.debug(f"Updated content:\n{updated_content}")
+
+                        write_to_file(py_file, updated_content, file_type=FileType.PYTHON)
+                    else:
+                        self.logger.debug(f"No matching imports found in {relative}")
+                except (OSError, ValueError) as e:
+                    self.logger.warning(f"Failed to update imports in {py_file}: {e}")
 
         # Also check for any .yaml files that might reference the old name
-        for yaml_file in component_dir.rglob("*.yaml"):
-            try:
-                content = read_from_file(yaml_file)
-                old_ref = f"{self.config.public_id.author}/{old_name}"
-                new_ref = f"{self.config.fork_id.author}/{new_name}"
+        with with_spinner():
+            for yaml_file in component_dir.rglob("*.yaml"):
+                try:
+                    content = read_from_file(yaml_file)
+                    old_ref = f"{self.config.public_id.author}/{old_name}"
+                    new_ref = f"{self.config.fork_id.author}/{new_name}"
 
-                if old_ref in content:
-                    updated_content = content.replace(old_ref, new_ref)
-                    write_to_file(yaml_file, updated_content, file_type=FileType.YAML)
-                    self.logger.info(f"Updated references in YAML file: {yaml_file}")
-            except (OSError, ValueError) as e:
-                self.logger.warning(f"Failed to update references in {yaml_file}: {e}")
+                    if old_ref in content:
+                        updated_content = content.replace(old_ref, new_ref)
+                        write_to_file(yaml_file, updated_content, file_type=FileType.YAML)
+                        self.logger.info(f"Updated references in YAML file: {yaml_file}")
+                except (OSError, ValueError) as e:
+                    self.logger.warning(f"Failed to update references in {yaml_file}: {e}")
 
     def _update_dependency_reference(self, dep_str: str, old_id: PublicId, new_id: PublicId) -> str:
         """Update a single dependency reference.
@@ -659,20 +666,6 @@ class ComponentEjector:
                 ejected_components.append(self.config.public_id)
             else:
                 return []
-
-            # Clean up packages before publishing
-            self.cleanup_directories()
-
-            # Update agent config
-            self._update_and_cleanup()
-
-            try:
-                self.package_manager.publish_agent(force=True)
-                self.logger.info("Agent published successfully with all components.")
-            except (OSError, ValueError) as e:
-                msg = f"Failed to publish agent: {e}"
-                raise ValueError(msg) from e
-
             return ejected_components
 
         except (OSError, shutil.Error) as e:
@@ -855,22 +848,6 @@ class ComponentEjector:
         agent_config_path = Path.cwd() / DEFAULT_AEA_CONFIG_FILE
         self.update_config(agent_config_path, self.config.fork_id.author, self.config.fork_id.name, "agent")
         self.cleanup_directories()
-
-    def cleanup_directories(self) -> None:
-        """Clean up package directories."""
-        workspace_root = self.package_manager._get_workspace_root()
-        packages_dir = workspace_root / "packages"
-
-        # Clean up all component directories for this author
-        component_types = ["agents", "protocols", "contracts", "connections", "skills"]
-        for component_type in component_types:
-            author_dir = packages_dir / self.config.fork_id.author / component_type
-            if author_dir.exists():
-                self.logger.info(f"Cleaning up directory: {author_dir}")
-                shutil.rmtree(author_dir)
-
-        # Ensure packages directory exists
-        packages_dir.mkdir(parents=True, exist_ok=True)
 
 
 def eject_component(config: EjectConfig) -> list[PublicId]:
