@@ -52,14 +52,7 @@ class PathArgument(click.Path):
 
 
 class Pipfile:
-    """Class to represent Pipfile config.
-    
-    Args:
-        sources: List of source URLs.
-        packages: OrderedDict of package dependencies.
-        dev_packages: OrderedDict of development package dependencies.
-        file: Path to the Pipfile.
-    """
+    """Class to represent Pipfile config."""
 
     ignore = [
         "open-aea-flashbots",
