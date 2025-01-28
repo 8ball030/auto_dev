@@ -69,10 +69,9 @@ ruff = "^0.5.7"
 pydantic = "^2.8.2"
 isort = "^5.13.2"
 openapi-spec-validator = "0.2.8"
-pydoclint = "0.2.1"
-docstring-parser = "0.13"
 
 mkdocstrings = {extras = ["python"], version = ">=0.25.2,<0.28.0"}
+pydoclint = {extras = ["all"], version = "^0.6.0"}
 
 [tool.poetry.dev-dependencies]
 responses = "^0.23.1"
