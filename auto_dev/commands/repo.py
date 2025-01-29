@@ -351,22 +351,23 @@ def update_deps(ctx, lock: bool) -> None:
     r"""Update and lock repository dependencies.
 
     Optional Parameters:
-        lock: Lock dependencies after updating. Default: False\n
+
+        lock (--lock): Lock dependencies after updating. Default: False
 
     Usage:
-        Update dependencies:\n
-            adev repo update-deps\n
+        Update dependencies:
+            adev repo update-deps
 
-        Update and lock dependencies:\n
-            adev repo update-deps --lock\n
+        Update and lock dependencies:
+            adev repo update-deps --lock
 
     Notes
     -----
-        - Updates dependencies in packages.json\n
-        - Optionally locks dependency versions\n
-        - Checks for changes in dependency files\n
-        - Prompts to commit changes if detected\n
-        - Exits with error if uncommitted changes exist\n
+        - Updates dependencies in packages.json
+        - Optionally locks dependency versions
+        - Checks for changes in dependency files
+        - Prompts to commit changes if detected
+        - Exits with error if uncommitted changes exist
 
     """
     logger = ctx.obj["LOGGER"]

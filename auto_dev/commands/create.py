@@ -43,30 +43,37 @@ available_agents = get_available_agents()
 def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean_up: bool) -> None:
     r"""Create a new agent from a template.
 
-    Required Parameters:\n
-        public_id: The public ID of the agent (author/name format).\n
-        template (-t): The template to use for agent creation.\n
+    Required Parameters:
 
-    Optional Parameters:\n
-        force (-f): Force overwrite if agent exists locally. (Default: False)\n
-        fetch (--fetch/--no-fetch): Whether to fetch agent from registry or use local package. (Default: True)\n
-        clean_up (-c): Whether to clean up temporary files after creation. (Default: True)\n
+        public_id: The public ID of the agent (author/name format).
 
-    Examples:\n
-        Create with default template:\n
-            adev create new_author/new_agent\n
+        template (-t): The template to use for agent creation.
 
-        Create from specific template:\n
-            adev create -t eightballer/frontend_agent new_author/new_agent\n
+    Optional Parameters:
 
-        Create with force overwrite:\n
-            adev create -f new_author/new_agent\n
+        force (-f): Force overwrite if agent exists locally. (Default: False)
 
-        Create without publishing:\n
-            adev create --no-publish new_author/new_agent\n
+        fetch (--fetch/--no-fetch): Whether to fetch agent from registry or use local package. (Default: True)
 
-        Create without cleanup:\n
-            adev create --no-clean-up new_author/new_agent\n
+        clean_up (-c): Whether to clean up temporary files after creation. (Default: True)
+
+    Examples
+    --------
+        Create with default template:
+            adev create new_author/new_agent
+
+        Create from specific template:
+            adev create -t eightballer/frontend_agent new_author/new_agent
+
+        Create with force overwrite:
+            adev create -f new_author/new_agent
+
+        Create without publishing:
+            adev create --no-publish new_author/new_agent
+
+        Create without cleanup:
+            adev create --no-clean-up new_author/new_agent
+
     """
     agent_name = public_id.name
     verbose = ctx.obj["VERBOSE"]

@@ -326,7 +326,9 @@ def connection(  # pylint: disable=R0914
     """Scaffold a new connection component.
 
     Required Parameters:
+
         name: Name of the connection to create.
+
         protocol: Public ID of the protocol to use (author/name format).
 
     Usage:

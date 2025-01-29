@@ -1,13 +1,5 @@
 # augment
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [connection](#connection)
-  - [customs](#customs)
-  - [logging](#logging)
-
-
 ## Description
 ::: auto_dev.commands.augment.augment
     options:

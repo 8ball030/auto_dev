@@ -1,12 +1,5 @@
 # metadata
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [generate](#generate)
-  - [validate](#validate)
-
-
 ## Description
 ::: auto_dev.commands.metadata.metadata
     options:

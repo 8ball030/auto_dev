@@ -38,19 +38,25 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
     """Run an agent from the local packages registry or a local path.
 
     Required Parameters:
+
         agent_public_id: The public ID of the agent (author/name format).
             If not provided, uses the current directory's agent.
 
     Optional Parameters:
+
         verbose (-v): Enable verbose logging. Shows detailed output during execution. (Default: False)
+
         force (--force): Force overwrite if agent exists locally. (Default: False)
+
         fetch (--fetch/--no-fetch): Whether to fetch agent from registry or use local package. (Default: True)
             - If True: Fetches agent from local registry
             - If False: Uses agent from current directory or packages
 
     Example usage:
-    adev run dev eightballer/my_agent  # Fetch and run from registry
-    adev run dev eightballer/my_agent --no-fetch
+
+        adev run dev eightballer/my_agent  # Fetch and run from registry
+
+        adev run dev eightballer/my_agent --no-fetch
 
     Notes
     -----
@@ -121,16 +127,23 @@ def prod(
     """Run an agent in production mode.
 
     Required Parameters:
+
         service_public_id: The public ID of the service (author/name format).
 
     Optional Parameters:
+
         verbose (-v): Enable verbose logging. Shows detailed output during execution. (Default: False)
+
         force (--force/--no-force): Force overwrite if service exists locally. (Default: False)
+
         fetch (--fetch/--no-fetch): Whether to fetch service from registry or use local package. (Default: True)
+
         keysfile (--keysfile): Path to the private keys file. (Default: keys.json)
+
         number_of_agents (-n): Number of agents to run. (Default: 1)
 
     Example usage:
+
         adev run prod eightballer/my_service
     """
 

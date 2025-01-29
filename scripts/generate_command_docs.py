@@ -44,10 +44,6 @@ class DocTemplates:
 
     COMMAND = """# {command_name}
 
-## Table of Contents
-- [Description](#description)
-{toc_subcommands}
-
 ## Description
 ::: auto_dev.commands.{command_name}.{command_name}
     options:

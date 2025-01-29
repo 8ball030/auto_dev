@@ -170,7 +170,7 @@ AEA_CONFIG = "aea-config.yaml"
 
 class BaseScaffolder:
     """Base class for scaffolding functionality.
-    
+
     Initializes a scaffolder with logging and loads the AEA configuration.
     """
 
@@ -231,9 +231,9 @@ class LoggingScaffolder(BaseScaffolder):
 def augment() -> None:
     r"""Commands for augmenting project components.
 
-    Available Commands:\n
-        logging: Add logging handlers to AEA configuration\n
-        customs: Augment customs components with OpenAPI3 handlers\n
+    Available Commands:
+        logging: Add logging handlers to AEA configuration
+        customs: Augment customs components with OpenAPI3 handlers
     """
 
 
@@ -242,15 +242,15 @@ def augment() -> None:
 def logging(handlers) -> None:
     r"""Augment AEA logging configuration with additional handlers.
 
-    Required Parameters:\n
-        handlers: One or more handlers to add (console, http, logfile)\n
+    Required Parameters:
+        handlers: One or more handlers to add (console, http, logfile)
 
-    Usage:\n
-        Add console handler:\n
-            adev augment logging console\n
+    Usage:
+        Add console handler:
+            adev augment logging console
 
-        Add multiple handlers:\n
-            adev augment logging console http logfile\n
+        Add multiple handlers:
+            adev augment logging console http logfile
 
     Notes
     -----

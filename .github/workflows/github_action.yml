@@ -33,6 +33,9 @@ jobs:
           pip install mkdocs-mermaid2-plugin
           pip install -e .
 
+      - name: Generate Command Documentation
+        run: python scripts/generate_command_docs.py
+
       - name: Build site
         run: mkdocs build
 

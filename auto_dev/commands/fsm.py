@@ -1,28 +1,33 @@
 r"""Commands for FSM (Finite State Machine) operations.
 
-Available Commands:\n
-    from_file: Convert between FSM specification formats\n
+Available Commands:
+
+    from_file: Convert between FSM specification formats
 
 Required Parameters:
-    fsm_spec: Path to the FSM specification file\n
-    fsm_name: Name of the FSM to process\n
+
+    fsm_spec: Path to the FSM specification file
+
+    fsm_name: Name of the FSM to process
 
 Optional Parameters:
-    in_type: Input format type (fsm_spec or mermaid). Default: fsm_spec\n
-    output: Output format type (fsm_spec or mermaid). Default: mermaid\n
+
+    in_type: Input format type (fsm_spec or mermaid). Default: fsm_spec
+
+    output: Output format type (fsm_spec or mermaid). Default: mermaid
 
 Usage:
-    Convert FSM spec to mermaid:\n
-        adev fsm from-file fsm_specification.yaml testAbciApp\n
+    Convert FSM spec to mermaid:
+        adev fsm from-file fsm_specification.yaml testAbciApp
 
-    Convert FSM spec to FSM spec (validation):\n
-        adev fsm from-file fsm_specification.yaml testAbciApp --output fsm_spec\n
+    Convert FSM spec to FSM spec (validation):
+        adev fsm from-file fsm_specification.yaml testAbciApp --output fsm_spec
 
-    Convert from mermaid to FSM spec:\n
-        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid --output fsm_spec\n
+    Convert from mermaid to FSM spec:
+        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid --output fsm_spec
 
-    Convert mermaid to mermaid (validation):\n
-        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid\n
+    Convert mermaid to mermaid (validation):
+        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid
 """
 
 from enum import Enum

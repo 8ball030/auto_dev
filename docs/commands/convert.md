@@ -1,11 +1,5 @@
 # convert
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [agent-to-service](#agent-to-service)
-
-
 ## Description
 ::: auto_dev.commands.convert.convert
     options:

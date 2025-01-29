@@ -51,14 +51,19 @@ cli = build_cli()
 def improve(ctx, path, type_of_repo, author, name, yes) -> None:
     r"""Verify and improve repository structure and files.
 
-    Required Parameters:\n
-        type_of_repo (-t): Type of repository to verify (autonomy, python)\n
-        author (--author): Author of the repository\n
-        name (--name): Name of the repository\n
+    Required Parameters:
 
-    Optional Parameters:\n
-        path (-p): Path to repository to verify. (Default: current directory)\n
-        yes (-y): Auto-confirm all prompts. (Default: False)\n
+        type_of_repo (-t): Type of repository to verify (autonomy, python)
+
+        author (--author): Author of the repository
+
+        name (--name): Name of the repository
+
+    Optional Parameters:
+
+        path (-p): Path to repository to verify. (Default: current directory)
+
+        yes (-y): Auto-confirm all prompts. (Default: False)
 
     Usage:
         Verify current directory:

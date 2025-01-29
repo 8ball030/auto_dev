@@ -1,9 +1,5 @@
 # publish
 
-## Table of Contents
-- [Description](#description)
-
-
 ## Description
 ::: auto_dev.commands.publish.publish
     options:

@@ -636,11 +636,12 @@ def bump(
 ) -> None:
     r"""Verify and optionally update package dependencies.
 
-    Optional Parameters:\n
-        auto_approve: Skip confirmation prompts for updates. Default: False\n
-            - Automatically applies all updates\n
-            - No interactive prompts\n
-            - Use with caution in production\n
+    Optional Parameters:
+
+        auto_approve: Skip confirmation prompts for updates. Default: False
+            - Automatically applies all updates
+            - No interactive prompts
+            - Use with caution in production
 
     Usage:
         Verify with prompts:\n

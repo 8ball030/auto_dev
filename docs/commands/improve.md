@@ -1,9 +1,5 @@
 # improve
 
-## Table of Contents
-- [Description](#description)
-
-
 ## Description
 ::: auto_dev.commands.improve.improve
     options:
