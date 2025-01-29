@@ -62,6 +62,7 @@ In the root directory, run the following command to install the project's depend
 
 ```bash
 poetry install
+pre-commit install
 ```
 
 <div align="right">
