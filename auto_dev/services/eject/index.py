@@ -112,7 +112,7 @@ class ComponentEjector:
             self.update_python_files(package_id, new_package_id, ejected_components)
             self.update_yaml_files(package_id, new_package_id, ejected_components)
 
-        agent_config, *overides = load_autonolas_yaml(PackageType.AGENT)
+        agent_config, *overrides = load_autonolas_yaml(PackageType.AGENT)
         agent_config["author"] = self.config.fork_id.author
 
         for package_id, new_package_id in ejected_components.items():
@@ -120,34 +120,34 @@ class ComponentEjector:
 
         # We now need to do a
         new_overrides = []
-        for overide in overides:
+        for override in overrides:
             override_package_id = PackageId(
-                public_id=PublicId.from_str(overide.get("public_id")), package_type=PackageType(overide.get("type"))
+                public_id=PublicId.from_str(override.get("public_id")), package_type=PackageType(override.get("type"))
             )
             for package_id, new_package_id in ejected_components.items():
                 if all(
                     [
                         override_package_id.package_type == package_id.package_type,
-                        overide.get("public_id").startswith(str(package_id.public_id)),
+                        override.get("public_id").startswith(str(package_id.public_id)),
                     ]
                 ):
-                    overide["public_id"] = str(new_package_id.public_id)
+                    override["public_id"] = str(new_package_id.public_id)
                     break
 
             # connection specific logic
             if (
                 override_package_id.package_type == PackageType.CONNECTION
-                and overide.get("config")
-                and overide.get("config").get("target_skill_id")
+                and override.get("config")
+                and override.get("config").get("target_skill_id")
             ):
-                target_skill_id = PublicId.from_str(overide.get("config").get("target_skill_id"))
+                target_skill_id = PublicId.from_str(override.get("config").get("target_skill_id"))
                 filtered_ejected_components = {
                     k.public_id: v for k, v in ejected_components.items() if k.package_type == PackageType.SKILL
                 }
                 if target_skill_id in filtered_ejected_components:
-                    overide["config"]["target_skill_id"] = str(target_skill_id)
+                    override["config"]["target_skill_id"] = str(target_skill_id)
 
-            new_overrides.append(overide)
+            new_overrides.append(override)
 
         write_to_file(Path.cwd() / DEFAULT_AEA_CONFIG_FILE, [agent_config, *new_overrides], file_type=FileType.YAML)
 
