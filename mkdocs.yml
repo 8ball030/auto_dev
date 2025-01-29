@@ -4,9 +4,6 @@ repo_url: https://github.com/8ball030/auto_dev
 repo_name: 8ball030/auto_dev
 #strict: true
 
-hooks:
-  - scripts/generate_command_docs.py
-
 # Optimized navigation structure
 nav:
   - Home: home.md

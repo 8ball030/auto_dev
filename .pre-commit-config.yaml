@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: generate-command-docs
+        name: Generate Command Docs
+        entry: poetry run python scripts/generate_command_docs.py
+        language: system
+        pass_filenames: false
+        always_run: true 
