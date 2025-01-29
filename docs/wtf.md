@@ -2,7 +2,7 @@
 
 ## Overview
 
-Autonolas is a decentralized protocol designed to automate complex workflows and operations on blockchain networks. It enables the creation and management of autonomous agents that can interact with smart contracts, resulting in enhanced efficiency and scalability for decentralized applications. This documentation provides insights into the architectures of Open AEA and Open Autonomy, as well as the role of registry contracts within this framework.
+Autonolas is a decentralized protocol designed to automate complex workflows and operations on blockchain networks. It enables the creation and management of autonomous agents that can interact with smart contracts, resulting in enhanced efficiency and scalability for decentralized applications. This page provides insights into the architectures of Open AEA and Open Autonomy, which auto_dev relies on, as well as the role of registry contracts within this framework.
 
 ## Open AEA Architecture
 
