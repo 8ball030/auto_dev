@@ -265,9 +265,12 @@ class GitDependency(Dependency):
 def deps(
     ctx: click.Context,  # noqa
 ) -> None:
-    """Commands for managing dependencies.
-    - update: Update both the packages.json from the parent repo and the packages in the child repo.
-    - generate_gitignore: Generate the gitignore file from the packages.json file.
+    r"""Commands for managing dependencies.
+
+    Available Commands:\n
+        update: Update packages.json from parent repo and packages in child repo\n
+        generate_gitignore: Generate .gitignore entries from packages.json\n
+        verify: Verify dependencies against version set and update if needed\n
     """
 
 
@@ -314,9 +317,26 @@ def update(
     auto_confirm: bool = False,
     manual: bool = False,
 ) -> None:
-    """We update aea packages.json dependencies from a parent repo.
-    Example usage:
-        adev deps update -p /path/to/parent/repo -c /path/to/child/repo.
+    """Update dependencies from parent repo to child repo.
+
+    Required Parameters:
+        parent_repo: Path to the parent repository containing source packages.json.
+        child_repo: Path to the child repository to update.
+
+    Optional Parameters:
+        location: Location of dependencies (local or remote). Default: local
+        auto_confirm: Skip confirmation prompts. Default: False
+        manual: Enable manual mode for updates. Default: False
+
+    Usage:
+        Update with defaults:
+            adev deps update -p /path/to/parent -c /path/to/child
+
+        Auto-confirm updates:
+            adev deps update -p /path/to/parent -c /path/to/child --auto-confirm
+
+        Manual mode:
+            adev deps update -p /path/to/parent -c /path/to/child --manual
     """
     logger = ctx.obj["LOGGER"]
     logger.info("Updating the dependencies... 📝")
@@ -342,9 +362,18 @@ def update(
 def generate_gitignore(
     ctx: click.Context,
 ) -> None:
-    """We generate the gitignore file from the packages.json file
-    Example usage:
-        adev deps generate_gitignore.
+    r"""Generate .gitignore entries from packages.json.
+
+    Usage:
+        Generate gitignore entries:\n
+            adev deps generate-gitignore\n
+
+    Notes
+    -----
+        - Only adds new entries, doesn't remove existing ones\n
+        - Focuses on third-party packages from packages.json\n
+        - Appends entries to existing .gitignore file\n
+
     """
     package_dict = get_package_json(repo=Path())
     third_party_packages = package_dict.get("third_party", {})
@@ -605,12 +634,53 @@ def bump(
     latest: bool = True,
     strict: bool = False,
 ) -> None:
-    """Verify the packages.json file.
+    r"""Verify and optionally update package dependencies.
 
-    Requires GITHUB_TOKEN env variable to be set.
+    Optional Parameters:\n
+        auto_approve: Skip confirmation prompts for updates. Default: False\n
+            - Automatically applies all updates\n
+            - No interactive prompts\n
+            - Use with caution in production\n
 
-    Example usage:
-        adev deps verify
+    Usage:
+        Verify with prompts:\n
+            adev deps verify\n
+
+        Auto-approve updates:\n
+            adev deps verify --auto-approve\n
+
+    Notes
+    -----
+        - Authentication:\n
+            - Requires GITHUB_TOKEN environment variable\n
+            - Token needs repo and packages read access\n
+            - Can be generated at github.com/settings/tokens\n
+
+        - Verification Process:
+            - Checks both autonomy and poetry dependencies\n
+            - Verifies against specified version sets\n
+            - Compares local vs remote package hashes\n
+            - Validates dependency compatibility\n
+
+        - Update Process:
+            - Updates packages.json for autonomy packages\n
+            - Updates pyproject.toml for poetry dependencies\n
+            - Handles dependency resolution\n
+            - Maintains version consistency\n
+
+        - Features:\n
+            - Parallel version checking\n
+            - Detailed diff viewing\n
+            - Selective update approval\n
+            - Dependency tree analysis\n
+            - Version conflict detection\n
+
+        - Best Practices:\n
+            - Run before deployments\n
+            - Include in CI/CD pipelines\n
+            - Regular scheduled verification\n
+            - Version pinning enforcement\n
+
     """
 
     if not os.getenv("GITHUB_TOKEN"):

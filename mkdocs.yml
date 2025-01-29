@@ -3,6 +3,11 @@ site_url: https://8ball030.github.io/auto_dev
 repo_url: https://github.com/8ball030/auto_dev
 repo_name: 8ball030/auto_dev
 #strict: true
+
+hooks:
+  - scripts/generate_command_docs.py
+
+# Optimized navigation structure
 nav:
   - Home: index.md
   - Installation: installation.md
@@ -10,30 +15,31 @@ nav:
     - Overview: usage.md
     - FSM: fsm.md
     - OpenAPI: openapi.md
-  - API Reference:
-    - Overview: api/index.md
-    - auto_dev: api/auto_dev.md
-    - Commands: api/commands.md
-    - Connections: api/connections.md
-    - Contracts: api/contracts.md
-    - FSM: api/fsm.md
-    - Handler: api/handler.md
-    - Protocols: api/protocols.md
-    - Utils: api/utils.md
-    - Constants: api/constants.md
+    - DAO: dao.md
+  - Commands:
+    - run: commands/run.md
+    - create: commands/create.md
+    - lint: commands/lint.md
+    - publish: commands/publish.md
+    - test: commands/test.md
+    - improve: commands/improve.md
+    - release: commands/release.md
+    - metadata: commands/metadata.md
+    - fmt: commands/fmt.md
+    - scaffold: commands/scaffold.md
+    - deps: commands/deps.md
+    - convert: commands/convert.md
+    - repo: commands/repo.md
+    - fsm: commands/fsm.md
+    - augment: commands/augment.md
   - Contributing: contributing.md
   - Changelog: changelog.md
+
 theme:
   name: material
   language: en
   #logo: assets/logo.png
   palette:
-    # Automatic mode
-    - media: "(prefers-color-scheme)"
-      toggle:
-        icon: material/brightness-auto
-        name: Switch to light mode
-    # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       accent: blue
@@ -41,68 +47,67 @@ theme:
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
-    # Dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       accent: blue
       primary: blue_grey
       toggle:
         icon: material/weather-sunny
-        name: Switch to system preference
+        name: Switch to light mode
   font:
     code: Roboto Mono
     text: Source Sans Pro
   features:
-    - navigation.indexes
     - navigation.instant
-    - navigation.tabs.sticky
     - navigation.expand
+    - navigation.sections
+    - navigation.top
+    - toc.follow
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
     - content.code.copy
+    - content.tabs.link
+
 markdown_extensions:
-  - pymdownx.emoji
-  - pymdownx.critic
-  - pymdownx.caret
-  - pymdownx.mark
-  - pymdownx.tilde
-  - pymdownx.tabbed
-  - attr_list
-  - pymdownx.arithmatex:
-      generic: true
   - pymdownx.highlight:
-      linenums: false
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.superfences
   - pymdownx.inlinehilite
-  - pymdownx.details
   - admonition
   - toc:
-      baselevel: 3
       permalink: true
-      slugify: !!python/name:pymdownx.slugs.uslugify
-  - meta
-  - pymdownx.superfences:
-        # make exceptions to highlighting of code:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
+      toc_depth: 3
+      baselevel: 1
+  - attr_list
+  - pymdownx.snippets:
+      base_path: .
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true 
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+
 plugins:
+  - search
   - include-markdown
-  - search:
-      lang: en
-  - autorefs
   - mkdocstrings:
       default_handler: python
       handlers:
         python:
-          paths: [auto_dev]
-          options:
+          selection:
+            docstring_style: sphinx
+          rendering:
             show_root_heading: true
             show_source: false
-            show_submodules: true
-            docstring_style: sphinx
+            show_signature_annotations: true
+            members_order: source
+            docstring_section_style: list
+          paths: [auto_dev]
+
 extra_css:
   - stylesheets/extra.css
 extra:

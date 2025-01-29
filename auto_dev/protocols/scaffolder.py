@@ -119,10 +119,14 @@ def get_raise_statement(stmt) -> ast.stmt:
 
 
 class EnumModifier:
-    """EnumModifier."""
+    """Class for modifying and augmenting enum definitions in protocol files.
+    
+    Args:
+        protocol_path: Path to the protocol directory.
+        logger: Logger instance for output and debugging.
+    """
 
     def __init__(self, protocol_path: Path, logger):
-        """Initialize EnumModifier."""
         self.protocol_path = protocol_path
         self.protocol = read_protocol(protocol_path / "README.md")
         self.logger = logger
@@ -323,14 +327,21 @@ def parse_protobuf_type(protobuf_type, required_type_imports=None):
 
 
 class ProtocolScaffolder:
-    """ProtocolScaffolder."""
+    """Class for scaffolding protocol components.
+    
+    Args:
+        protocol_specification_path: Path to the protocol specification file.
+        language: Target language for the protocol.
+        logger: Logger instance for output and debugging.
+        verbose: Whether to enable verbose logging.
+    """
 
     def __init__(self, protocol_specification_path: str, language, logger, verbose: bool = True):
-        """Initialize ProtocolScaffolder."""
         self.logger = logger or get_logger()
         self.verbose = verbose
-        self.language = language
         self.protocol_specification_path = protocol_specification_path
+        self.language = language
+        self.env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
         self.logger.info(f"Read protocol specification: {protocol_specification_path}")
 
     def generate(self) -> None:

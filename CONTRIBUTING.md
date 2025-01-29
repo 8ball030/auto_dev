@@ -137,26 +137,3 @@ When you submit a pull request, GitHub Actions will automatically lint, build, a
 ## That's it!
 
 If you still have questions, please create a [new issue](https://github.com/8ball030/auto_dev/issues).
-
-
-## Project Contributors
-
-Thank you to all our contributors!
-
-<div style='display: flex; flex-wrap: wrap; gap: 10px;'>
-<a href="https://github.com/8ball030" title="8ball030 - 718 contributions" target="_blank">
-  <img src="https://avatars.githubusercontent.com/u/35799987?v=4" width="50" height="50" style="border-radius: 50%;">
-</a><a href="https://github.com/xiuxiuxar" title="xiuxiuxar - 183 contributions" target="_blank">
-  <img src="https://avatars.githubusercontent.com/u/174127740?v=4" width="50" height="50" style="border-radius: 50%;">
-</a><a href="https://github.com/Karrenbelt" title="Karrenbelt - 160 contributions" target="_blank">
-  <img src="https://avatars.githubusercontent.com/u/16686216?v=4" width="50" height="50" style="border-radius: 50%;">
-</a><a href="https://github.com/kevoconnell" title="kevoconnell - 72 contributions" target="_blank">
-  <img src="https://avatars.githubusercontent.com/u/17347501?v=4" width="50" height="50" style="border-radius: 50%;">
-</a><a href="https://github.com/apps/dependabot" title="dependabot[bot] - 22 contributions" target="_blank">
-  <img src="https://avatars.githubusercontent.com/in/29110?v=4" width="50" height="50" style="border-radius: 50%;">
-</a><a href="https://github.com/wakamex" title="wakamex - 20 contributions" target="_blank">
-  <img src="https://avatars.githubusercontent.com/u/16990562?v=4" width="50" height="50" style="border-radius: 50%;">
-</a><a href="https://github.com/apps/github-actions" title="github-actions[bot] - 12 contributions" target="_blank">
-  <img src="https://avatars.githubusercontent.com/in/15368?v=4" width="50" height="50" style="border-radius: 50%;">
-</a>
-</div>

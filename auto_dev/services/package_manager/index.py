@@ -16,19 +16,16 @@ logger = get_logger()
 
 
 class PackageManager:
-    """Service for managing packages."""
+    """Service for managing packages.
+    
+    Args:
+        verbose: Whether to show verbose output during package operations.
+    """
 
     def __init__(
         self,
         verbose: bool = False,
     ):
-        """Initialize the package manager.
-
-        Args:
-        ----
-            verbose: whether to show verbose output.
-
-        """
         self.verbose = verbose
 
     def ensure_local_registry(self) -> None:

@@ -1,4 +1,74 @@
-# Usage
+# Usage Overview
+
+Auto Dev provides a comprehensive set of tools for automating development tasks. This guide will help you understand how to use the main features effectively.
+
+## Basic Usage
+
+The basic command structure is:
+
+```bash
+adev <command> [options] [arguments]
+```
+
+For example:
+```bash
+# Create a new project
+adev create my-project
+
+# Run development tasks
+adev run
+
+# Format code
+adev fmt
+```
+
+## Common Workflows
+
+### 1. Starting a New Project
+
+```bash
+# Create a new project
+adev repo scaffold my-project
+
+# Change to project directory
+cd my-project
+
+# Initialize git repository
+ adev create -t eightballer/frontend_agent new_author/new_agent --no-clean-up
+
+
+
+# Set up development environment
+adev scaffold
+```
+
+### 2. Development Workflow
+
+```bash
+# Format code
+adev fmt
+
+# Run linting
+adev lint
+
+# Run tests
+adev test
+```
+
+## Advanced Features
+
+For more advanced features, check out:
+- [FSM](fsm.md) for Finite State Machine functionality
+- [OpenAPI](openapi.md) for API development tools
+
+## Getting Help
+
+You can get help for any command using the `--help` flag:
+
+```bash
+adev --help
+adev <command> --help
+```
 
 ## Installation
 

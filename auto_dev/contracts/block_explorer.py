@@ -14,14 +14,17 @@ logger = get_logger()
 
 @dataclass
 class BlockExplorer:
-    """Class to interact with the blockchain explorer."""
+    """Class to interact with the blockchain explorer.
+    
+    Args:
+        url: The URL of the block explorer API.
+        network: The blockchain network to interact with. Must be an instance of Network enum.
+    """
 
     url: str
     network: Network = Network.ETHEREUM
 
-    # Note: this is used to pass tests
     def __init__(self, url: str, network: Network) -> None:
-        """Initialize the block explorer."""
         self.url = url
         if not isinstance(network, Network):
             msg = "network must be an instance of Network enum"

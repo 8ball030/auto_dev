@@ -19,7 +19,15 @@ DEFAULT_NULL_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 
 class Contract:
-    """Class to scaffold a contract."""
+    """Class to scaffold a contract.
+    
+    Args:
+        author: The author of the contract.
+        name: The name of the contract.
+        abi: The contract's ABI (Application Binary Interface).
+        address: The contract's address on the blockchain. Defaults to null address.
+        web3: Optional Web3 instance for blockchain interaction.
+    """
 
     author: str
     name: str
@@ -64,7 +72,6 @@ class Contract:
     def __init__(
         self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Web3 | None = None
     ):
-        """Initialise the contract."""
         self.author = author
         self.name = name
         self.abi = abi
