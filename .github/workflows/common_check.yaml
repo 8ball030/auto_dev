@@ -61,6 +61,10 @@ jobs:
           poetry run adev -n 0 lint -p auto_dev || poetry run adev -n 0 -v lint -p auto_dev
           poetry run adev -n 0 lint -p tests || poetry run adev -n 0 -v lint -p tests
 
+      - name: Docs
+        run: |
+          poetry run mkdocs build --strict
+
       - name: Tests
         run: |
           git config --global user.name "CI"
