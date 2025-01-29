@@ -9,8 +9,7 @@ hooks:
 
 # Optimized navigation structure
 nav:
-  - Home: index.md
-  - WTF: wtf.md
+  - Home: home.md
   - Installation: installation.md
   - Usage: 
     - Overview: usage.md

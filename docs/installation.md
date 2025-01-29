@@ -1,12 +1,16 @@
 # Installation
 
-## Stable release
+To install auto_dev, you must be running the following:
 
-To install auto_dev, run this command in your
+1.) Python >= 3.10
+2.) Poetry < 2.0
+3.) Docker Desktop
+
+run this command in your
 terminal:
 
 ```console
-$ pip install auto_dev
+pip install "autonomy-dev[all]"
 ```
 
 This is the preferred method to install auto_dev, as it will always install the most recent stable release.
