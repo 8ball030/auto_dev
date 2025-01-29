@@ -33,6 +33,7 @@ def discover_commands() -> list[str]:
         # Skip __init__.py and any other special files
         if file_path.stem.startswith("_"):
             continue
+        logger.info(f"Discovered command: {file_path.stem}")
         commands.append(file_path.stem)
 
     return sorted(commands)

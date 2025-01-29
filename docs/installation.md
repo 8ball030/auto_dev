@@ -1,12 +1,10 @@
 To install auto_dev, you must have the following installed on your computer:
 
-1.) Python >= 3.10
+1.) Python >= 3.10, we recommend using [Pyenv](https://github.com/pyenv/pyenv)
 
-2.) Poetry < 2.0
+2.) Poetry < 2.0, we recommend installing with the following command.
 
-a.) You can install Poetry with the following command
-
-  ```
+```
   curl -sSL https://install.python-poetry.org | python - --version 1.8.3
 ```
 
