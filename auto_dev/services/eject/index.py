@@ -164,7 +164,8 @@ class ComponentEjector:
                     k.public_id: v for k, v in ejected_components.items() if k.package_type == PackageType.SKILL
                 }
                 if target_skill_id in filtered_ejected_components:
-                    override["config"]["target_skill_id"] = str(target_skill_id)
+                    package_id = filtered_ejected_components[target_skill_id]
+                    override["config"]["target_skill_id"] = str(package_id.public_id)
 
             new_overrides.append(override)
 
