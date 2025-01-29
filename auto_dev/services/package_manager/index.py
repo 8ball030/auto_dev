@@ -3,7 +3,7 @@
 import shutil
 from pathlib import Path
 
-from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type
+from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 from aea.configurations.data_types import PackageType
 
@@ -17,9 +17,11 @@ logger = get_logger()
 
 class PackageManager:
     """Service for managing packages.
-    
+
     Args:
+    ----
         verbose: Whether to show verbose output during package operations.
+
     """
 
     def __init__(
