@@ -3,17 +3,36 @@
 
 import shutil
 from copy import deepcopy
+from typing import cast
 from pathlib import Path
 from dataclasses import field, dataclass
 
 from rich.table import Table
 from rich.console import Console
+from aea.cli.eject import (
+    IPFSHashOnly,
+    ItemRemoveHelper,
+    is_item_present,
+    reachable_nodes,
+    fingerprint_item,
+    get_package_path,
+    update_references,
+    update_item_config,
+    copy_package_directory,
+    find_topological_order,
+    replace_all_import_statements,
+    update_item_public_id_in_init,
+    get_latest_component_id_from_prefix,
+)
+from aea.cli.utils.context import Context
 from aea.configurations.base import (
     PublicId,
     PackageId,
+    ComponentId,
     PackageType,
+    ComponentType,
 )
-from aea.configurations.constants import ITEM_TYPE_TO_PLURAL, DEFAULT_AEA_CONFIG_FILE
+from aea.configurations.constants import DEFAULT_VERSION, ITEM_TYPE_TO_PLURAL, DEFAULT_AEA_CONFIG_FILE
 
 from auto_dev.utils import FileType, get_logger, write_to_file, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
@@ -58,7 +77,7 @@ class ComponentEjector:
             OSError: If file operations fail
 
         """
-        agent_runner = DevAgentRunner(
+        self.agent_runner = DevAgentRunner(
             agent_name=self.config.public_id,
             verbose=True,
             force=False,
@@ -66,7 +85,7 @@ class ComponentEjector:
             fetch=False,
         )
 
-        if not agent_runner.is_in_agent_dir():
+        if not self.agent_runner.is_in_agent_dir():
             self.logger.error("You must run the command from within an agent directory!.")
             msg = "You must run the command from within an agent directory!."
             raise UserInputError(msg)
@@ -253,17 +272,85 @@ class ComponentEjector:
         success = self.executor.execute(verbose=False, shell=shell)
         return success, self.executor.return_code or 0
 
-    def _run_eject_command(self, component_id: PublicId, component_type: str) -> bool:
+    def _run_eject_command(self, component_id: PublicId, component_type: str) -> bool:  # noqa: PLR0914
         """Run the aea eject command."""
-        if component_type == "custom":
-            # For customs, just copy from vendor to customs directory
-            vendor_path = Path.cwd() / "vendor" / component_id.author / "customs" / component_id.name
-            customs_path = Path.cwd() / "customs" / component_id.name
-            if vendor_path.exists() and not customs_path.exists():
-                customs_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(vendor_path, customs_path)
-            return True
-        success, _ = self.run_command(
-            f"yes | aea -s eject {component_type} {component_id.author}/{component_id.name}", shell=True
+        ctx = Context(
+            cwd=Path.cwd(),
+            verbosity="info",
+            registry_path=Path.cwd() / "vendor",
         )
-        return success
+        agent_loader = ctx.agent_loader
+        with open(DEFAULT_AEA_CONFIG_FILE, encoding="utf-8") as f:
+            config = agent_loader.load(f)
+        ctx.agent_config = config
+
+        item_type = component_type
+        public_id = component_id
+        item_type_plural = item_type + "s"
+
+        cwd = Path.cwd()
+        if not is_item_present(
+            cwd,
+            config,
+            item_type,
+            public_id,
+            is_vendor=True,
+            with_version=True,
+        ):  # pragma: no cover
+            msg = f"{item_type.title()} {public_id} not found in agent's vendor items."
+            raise UserInputError(msg)
+
+        src = get_package_path(cwd, item_type, public_id)
+        dst = get_package_path(cwd, item_type, public_id, is_vendor=False)
+
+        if is_item_present(cwd, config, item_type, public_id, is_vendor=False):  # pragma: no cover
+            msg = f"{item_type.title()} {public_id} is already a non-vendor package."
+            raise UserInputError(msg)
+
+        component_prefix = ComponentType(item_type), public_id.author, public_id.name
+        component_id = get_latest_component_id_from_prefix(config, component_prefix)
+        public_id = cast(ComponentId, component_id).public_id
+
+        package_id = PackageId(PackageType(item_type), public_id)
+
+        self.logger.info(f"Ejecting item {package_id.package_type.value} {package_id.public_id!s}")
+
+        # first, eject all the vendor packages that depend on this
+        item_remover = ItemRemoveHelper(ctx, ignore_non_vendor=True)
+        reverse_dependencies = item_remover.get_agent_dependencies_with_reverse_dependencies()
+        reverse_reachable_dependencies = reachable_nodes(reverse_dependencies, {package_id.without_hash()})
+        eject_order = list(reversed(find_topological_order(reverse_reachable_dependencies)))
+        eject_order.remove(package_id)
+        if len(eject_order) > 0:
+            self.logger.info(f"The following vendor packages will be ejected: {eject_order}")
+
+        for dependency_package_id in eject_order:
+            self._run_eject_command(
+                dependency_package_id.public_id,
+                dependency_package_id.package_type.value,
+            )
+
+        ctx.clean_paths.append(dst)
+        copy_package_directory(Path(src), dst)
+
+        new_public_id = PublicId(public_id.author, public_id.name, DEFAULT_VERSION)
+
+        item_config_update = {
+            "author": new_public_id.author,
+            "version": new_public_id.version,
+        }
+
+        update_item_config(item_type, Path(dst), None, **item_config_update)
+        update_item_public_id_in_init(item_type, Path(dst), new_public_id)
+        shutil.rmtree(src)
+
+        replace_all_import_statements(Path(ctx.cwd), ComponentType(item_type), public_id, new_public_id)
+        fingerprint_item(ctx, item_type, new_public_id)
+        package_hash = IPFSHashOnly.hash_directory(dst)
+        public_id_with_hash = PublicId(new_public_id.author, new_public_id.name, new_public_id.version, package_hash)
+
+        # update references in all the other packages
+        component_type = ComponentType(item_type_plural[:-1])
+        old_component_id = ComponentId(component_type, public_id)
+        new_component_id = ComponentId(component_type, public_id_with_hash)
+        update_references(ctx, {old_component_id: new_component_id})
