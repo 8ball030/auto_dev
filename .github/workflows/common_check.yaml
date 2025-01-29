@@ -63,6 +63,7 @@ jobs:
 
       - name: Docs
         run: |
+          poetry run python scripts/generate_command_docs.py
           poetry run mkdocs build --strict
 
       - name: Tests
