@@ -1,16 +1,25 @@
-# Installation
-
-To install auto_dev, you must be running the following:
+To install auto_dev, you must have the following installed on your computer:
 
 1.) Python >= 3.10
-2.) Poetry < 2.0
-3.) Docker Desktop
 
-run this command in your
-terminal:
+2.) Poetry < 2.0
+
+a.) You can install Poetry with the following command
+
+  ```
+  curl -sSL https://install.python-poetry.org | python - --version 1.8.3
+```
+
+replace 1.8.3 with the version you want to install.
+
+3.) [Docker Desktop](https://www.docker.com/products/docker-desktop)
+
+## Installation
+
+Next, please run the following in your terminal:
 
 ```console
-pip install "autonomy-dev[all]"
+poetry shell && pip install "autonomy-dev[all]"
 ```
 
 This is the preferred method to install auto_dev, as it will always install the most recent stable release.
