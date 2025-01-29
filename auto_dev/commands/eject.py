@@ -1,11 +1,9 @@
 """Command to eject components and their dependencies."""
 
 import rich_click as click
-from rich.progress import track
 from aea.configurations.base import PublicId
 
 from auto_dev.base import build_cli
-from auto_dev.constants import DEFAULT_AUTHOR
 from auto_dev.services.eject.index import EjectConfig, ComponentEjector
 
 
@@ -61,10 +59,12 @@ def eject(ctx, component_type: str, public_id: str, fork_id: str, skip_dependenc
 
 
     Args:
+    ----
         component_type: Type of the component (skill, contract, connection, protocol)
         public_id: Public ID of the component to eject (author/name)
         fork_id: New public ID for the ejected component (author/name)
         skip_dependencies: Skip ejecting dependencies (they must already be ejected)
+
     """
     logger = ctx.obj["LOGGER"]
 
@@ -94,11 +94,10 @@ def eject(ctx, component_type: str, public_id: str, fork_id: str, skip_dependenc
 
         # Report results
         logger.info(f"Successfully ejected {len(ejected_components)} components:")
-        for component in ejected_components:
-            logger.info(f"  - {component}")
+        ejector.show_display(ejected_components)
 
     except Exception as e:
-        logger.error(f"Failed to eject component: {e}")
+        logger.exception(f"Failed to eject component: {e}")
         raise click.ClickException(str(e)) from e
 
 
