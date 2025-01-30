@@ -3,6 +3,7 @@
 Uses an open aea agent task manager in order to manage the workflows.
 """
 
+import sys
 import time
 import logging
 from copy import deepcopy
@@ -149,10 +150,24 @@ class WorkflowManager:
                         workflow.is_success = True
                     else:
                         workflow.is_failed = True
+                        workflow.is_done = True
                     workflow.is_running = False
                     workflow.is_done = True
                 if workflow.is_done:
-                    self.workflows.remove(workflow)
+                    self.remove_workflow(workflow.id)
+            break
+
+    def remove_workflow(self, workflow_id: str):
+        """Remove a workflow by its id."""
+        index = None
+        for workflow in self.workflows:
+            if workflow.id == workflow_id:
+                index = self.workflows.index(workflow)
+                break
+        if index is not None:
+            self.workflows.pop(index)
+            return True
+        return False
 
     def to_yaml(self):
         """Convert the workflow manager to yaml."""
@@ -171,12 +186,12 @@ class WorkflowManager:
         write_to_file("workflow_data.yaml", workflows, FileType.YAML)
 
     @staticmethod
-    def from_yaml():
+    def from_yaml(file_path: str):
         """Load the workflow manager from yaml."""
-        raw_data = WorkflowManager.load_yaml("workflows.yaml")
+        raw_data = WorkflowManager.load_yaml(file_path)
+        raw_data["tasks"] = [Task(**task) for task in raw_data["tasks"]]
         wf = WorkflowManager()
-        for workflow in raw_data:
-            wf.add_workflow(Workflow(**workflow))
+        wf.add_workflow(Workflow(**raw_data))
         return wf
 
     @staticmethod
@@ -214,7 +229,7 @@ class WorkflowManager:
                 if status == "Failed":
                     self.logger.error(f"Task {task.id} failed.")
                     if exit_on_failure:
-                        return False
+                        sys.exit(1)
 
         return True
 
