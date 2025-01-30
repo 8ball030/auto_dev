@@ -46,3 +46,9 @@ tasks:
     description: Push changes to git
     command: git push origin ${task.0.client.stdout}
 
+  - id: '8'
+    name: success
+    description: Workflow completed successfully
+    command: echo "Workflow completed successfully"
+    pause_after: 5
+
