@@ -49,7 +49,7 @@ tasks:
   - id: '9'
     name: create_pull_request
     description: Create a pull request on github in the main branch
-    command: gh pr create --base main --head ${task.0.client.stdout} --title 'auto_dev:lint-and-format-code' --body 'This PR was created by auto_dev to lint and format the codebase'
+    command: gh pr create --base main --head ${task.0.client.stdout} -title auto_dev:lint-and-format-code --body 'This PR was created by auto_dev to lint and format the codebase'
     pause_after: 5
 
   - id: '10'
