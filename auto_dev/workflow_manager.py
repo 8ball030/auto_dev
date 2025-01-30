@@ -4,15 +4,25 @@ Uses an open aea agent task manager in order to manage the workflows.
 
 import time
 from copy import deepcopy
-from dataclasses import field, dataclass
+from dataclasses import asdict, field, dataclass
 from collections.abc import Callable
 from multiprocessing.pool import ApplyResult
 
 from rich.table import Table
 from rich.console import Console
 from aea.skills.base import TaskManager
+import yaml
+
+from rich.table import Table
+from rich.console import Console
+from rich.progress import Progress
+from rich.panel import Panel
+from rich.text import Text
+
 
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.enums import FileType
+from auto_dev.utils import write_to_file
 
 
 @dataclass
@@ -81,68 +91,6 @@ class WorkflowManager:
             self.update_table(self.table, task, "Queued", display_process=False)
         self.display_table()
 
-    def run_workflow(
-        self, workflow_id: str, wait: bool = True, exit_on_failure: bool = True, display_process: bool = True
-    ):
-        """Run a workflow by its ID and update a table for visual status.
-        If display_process is True, show the workflow's progress in real-time.
-        """
-        workflow = self.get_workflow(workflow_id)
-        if not workflow:
-            return False
-        workflow.is_running = True
-
-        # Display the workflow table header if display_process is True
-        if display_process:
-            self.display_table()
-
-        for task in workflow.tasks:
-            # Submit task and update table with 'Queued' status
-            self.submit_task(task)
-            self.update_table(self.table, task, "In-Progress", display_process)
-
-            if wait:
-                task_result = self.get_task(task.process_id)
-                task_result.wait()
-
-                # Simulate task completion message
-                # Update task status to 'Completed'
-                if task_result.successful() and task.is_done and not task.is_failed:
-                    self.update_table(self.table, task, "Completed", display_process)
-                    continue
-                self.update_table(self.table, task, "Failed", display_process)
-                if exit_on_failure:
-                    return False
-        return True
-
-    def create_table(self, workflow_name: str) -> Table:
-        """Creates a table for displaying the workflow status."""
-        table = Table(title=f"Workflow: {workflow_name}")
-        table.add_column("Task ID", justify="center", style="bold")
-        table.add_column("Description", justify="center", style="bold")
-        table.add_column("Status", justify="center", style="bold")
-        return table
-        # Display the updated table if display_process is True
-
-    def update_table(self, table: Table, task: Task, status: str, display_process: bool):
-        """Update the table with the task status."""
-
-        try:
-            index_of_task = table.columns[0]._cells.index(str(task.id))  # noqa
-        except ValueError:
-            table.add_row(str(task.id), task.description, status)
-            return self.update_table(table, task, status, display_process)
-
-        table.columns[2]._cells[index_of_task] = status  # noqa
-        if display_process:
-            self.display_table()
-            return None
-        return None
-
-    def display_table(self):
-        """Display the table."""
-        self.console.print(self.table)
-
     def get_workflow(self, workflow_id: str) -> Workflow:
         """Get a workflow by its id."""
         for workflow in self.workflows:
@@ -176,6 +124,109 @@ class WorkflowManager:
 
             time.sleep(5)
 
+    def to_yaml(self):
+        """Convert the workflow manager to yaml."""
+
+        workflows = []
+
+        for workflow in self.workflows:
+            for task in workflow.tasks:
+                tasks = []
+                for task in workflow.tasks:
+                    tasks.append(asdict(task))
+            workflows.append({"id": workflow.id, "name": workflow.name, "description": workflow.description, "tasks": tasks})
+        
+        write_to_file("workflow_data.yaml", workflows, FileType.YAML)
+
+    @staticmethod
+    def from_yaml(cls):
+        """Load the workflow manager from yaml."""
+        raw_data = cls.load_yaml("workflows.yaml")
+        return cls(**raw_data)
+    
+    def load_yaml(self, file_path: str):
+        """Load a yaml file."""
+        with open(file_path, "r") as file:
+            return yaml.safe_load(file)
+
+    def run_workflow(
+        self, workflow_id: str, wait: bool = True, exit_on_failure: bool = True, display_process: bool = True
+    ):
+        """Run a workflow by its ID and update a table for visual status.
+        If display_process is True, show the workflow's progress in real-time.
+        """
+        workflow = self.get_workflow(workflow_id)
+        if not workflow:
+            return False
+        workflow.is_running = True
+
+        # Display the workflow table header if display_process is True
+        if display_process:
+            self.table = self.create_table(self.workflow.name)
+            self.display_table()
+
+        for task in workflow.tasks:
+            # Submit task and update table with 'Queued' status
+            self.submit_task(task)
+            self.update_table(self.table, task, "In-Progress", display_process)
+
+            if wait:
+                task_result = self.get_task(task.process_id)
+                task_result.wait()
+
+                # Simulate task completion message
+                # Update task status to 'Completed'
+                if task_result.successful() and task.is_done and not task.is_failed:
+                    self.update_table(self.table, task, "Completed", display_process)
+                    continue
+                self.update_table(self.table, task, "Failed", display_process)
+                if exit_on_failure:
+                    return False
+        return True
+
+    def create_table(self, workflow_name: str) -> Table:
+        """Creates a table for displaying the workflow status."""
+        table = Table(title=f"Workflow: {workflow_name}", box="ROUND", show_header=True, header_style="bold magenta")
+        table.add_column("Task ID", justify="center", style="bold", width=10)
+        table.add_column("Description", justify="left", style="bold green")
+        table.add_column("Status", justify="center", style="bold")
+        return table
+
+    def update_table(self, table: Table, task: Task, status: str, display_process: bool):
+        """Update the table with the task status."""
+        # Find the row index based on task ID
+        try:
+            index_of_task = table.columns[0]._cells.index(str(task.id))  # noqa
+        except ValueError:
+            table.add_row(str(task.id), task.description, status)
+            return self.update_table(table, task, status, display_process)
+
+        # Apply color based on task status
+        if status == "Queued":
+            status_color = "yellow"
+        elif status == "In-Progress":
+            status_color = "blue"
+        elif status == "Completed":
+            status_color = "green"
+        elif status == "Failed":
+            status_color = "red"
+        
+        # Update the status in the table with the appropriate color
+        table.columns[2]._cells[index_of_task] = f"[{status_color}]{status}[/{status_color}]"
+
+        # Display the updated table if display_process is True
+        if display_process:
+            self.console.clear()
+            self.display_table()
+
+    def display_table(self):
+        """Display the table with visual enhancements."""
+        if self.table:
+            self.console.print(Panel(self.table, title="Workflow Status", border_style="bold blue", padding=(1, 2)))
+
+    def display_table(self):
+        """Display the table."""
+        self.console.print(self.table)
 
 def main():
     """Run the main function."""
@@ -200,20 +251,20 @@ def main():
             id="1",
             name="create_agent",
             description="Make a new agent",
-            command="adev create author/agent --no-clean-up --force",
+            command="adev create author/agent -t eightballer/base --no-clean-up --force",
         ),
         Task(
             id="2",
             name="create_skill",
             description="Fork an existing skill",
-            command="adev eject skill author/skill new_author/new_skill",
+            command="adev eject skill eightballer/metrics new_author/new_skill",
             working_dir="agent",
         ),
         Task(
             id="3",
             name="update_ejected_components",
-            description="Publish the ejected components to the registry",
-            command="aea publish --push-missing --local",
+            description="Publish forked code to local registry",
+            command="aea -s publish --push-missing --local",
             working_dir="agent",
         ),
     ]
@@ -222,6 +273,7 @@ def main():
         create_wf.add_task(task)
     workflow_manager.add_workflow(create_wf)
     workflow_manager.run_workflow("1")
+    workflow_manager.to_yaml()
 
 
 if __name__ == "__main__":
