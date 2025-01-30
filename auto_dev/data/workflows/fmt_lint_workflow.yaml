@@ -49,13 +49,5 @@ tasks:
   - id: '9'
     name: create_pull_request
     description: Create a pull request on github in the main branch
-    command: gh pr create --base main --head ${task.0.client.stdout} --title auto_dev:lint-and-format-code --fill || echo "PR already exists"
+    command: gh pr create --base main --head ${task.0.client.stdout} --title auto_dev:lint-and-format-code --fill
     pause_after: 5
-
-  - id: '10'
-    name: success
-    description: Workflow completed successfully
-    command: echo "Workflow completed successfully"
-    pause_after: 5
-  
-
