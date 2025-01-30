@@ -38,7 +38,7 @@ tasks:
   - id: '6'
     name: commit_changes
     description: Commit changes to git
-    command: git commit -m auto_dev:lint-and-format-code'
+    command: git commit -m auto_dev:lint-and-format-code
 
 
   - id: '7'
