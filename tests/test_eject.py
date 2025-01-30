@@ -38,10 +38,19 @@ def test_eject_metrics_skill_workflow(cli_runner, test_filesystem):
             "eightballer/metrics",
             f"{DEFAULT_AUTHOR}/metrics",
         ]
-        runner.execute(eject_cmd)
-        assert f'Agent "{DEFAULT_AGENT_NAME}" successfully saved in packages folder.' in runner.output
-        assert f"Agent packages/{DEFAULT_AUTHOR}/agents/{DEFAULT_AGENT_NAME} created successfully." in runner.output
-        assert runner.return_code == 0
+        result = cli_runner(eject_cmd)
+        result.execute()
+        assert "Successfully ejected 1 components" in result.output
+        assert f"(skill, {DEFAULT_AUTHOR}/metrics:0.1.0)" in result.output
+        assert result.return_code == 0
+
+        # Verify the skill was ejected to the correct location
+        ejected_skill_path = Path("skills/metrics")
+        assert ejected_skill_path.exists(), "Ejected skill directory not found"
+
+        # Verify the original vendor skill was removed
+        vendor_skill_path = Path("vendor/eightballer/skills/metrics")
+        assert not vendor_skill_path.exists(), "Vendor skill directory still exists"
 
 
 def test_eject_metrics_skill_skip_deps(cli_runner, test_filesystem):
@@ -67,6 +76,9 @@ def test_eject_metrics_skill_skip_deps(cli_runner, test_filesystem):
     assert agent_dir.exists(), f"Agent directory {agent_dir} was not created"
     # cd into the agent directory
     with change_dir(agent_dir):
+        # Store initial vendor components for comparison
+        initial_vendor_components = list(Path("vendor").rglob("*.yaml"))
+
         # 3. Eject the metrics skill with skip-dependencies
         eject_cmd = [
             "adev",
@@ -77,7 +89,18 @@ def test_eject_metrics_skill_skip_deps(cli_runner, test_filesystem):
             f"{DEFAULT_AUTHOR}/metrics",
             "--skip-dependencies",
         ]
-        runner.execute(eject_cmd)
-        assert f'Agent "{DEFAULT_AGENT_NAME}" successfully saved in packages folder.' in runner.output
-        assert f"Agent packages/{DEFAULT_AUTHOR}/agents/{DEFAULT_AGENT_NAME} created successfully." in runner.output
-        assert runner.return_code == 0
+        result = cli_runner(eject_cmd)
+        result.execute()
+        assert "Successfully ejected 1 components" in result.output
+        assert f"(skill, {DEFAULT_AUTHOR}/metrics:0.1.0)" in result.output
+        assert result.return_code == 0
+
+        # Verify only the skill was ejected
+        ejected_skill_path = Path("skills/metrics")
+        assert ejected_skill_path.exists(), "Ejected skill directory not found"
+
+        # Verify dependencies were not ejected (should have same number of vendor components minus one)
+        final_vendor_components = list(Path("vendor").rglob("*.yaml"))
+        assert (
+            len(final_vendor_components) == len(initial_vendor_components) - 1
+        ), "Dependencies were incorrectly ejected"

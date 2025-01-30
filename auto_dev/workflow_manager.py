@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """A class to manage workflows constructed.
 Uses an open aea agent task manager in order to manage the workflows.
 """

@@ -27,7 +27,7 @@ jobs:
       matrix:
         python-version:
         - "3.11"
-#       - "3.9"
+        - "3.12"
         - "3.10"
         poetry-version: ["1.3.2"]
         os:
@@ -71,6 +71,11 @@ jobs:
           git config --global user.name "CI"
           git config --global user.email "ci@station.codes"
           poetry run adev -v test -p tests || poetry run adev -v test -p tests
+          
+      - name: Docs
+        run: |
+          poetry run python scripts/generate_command_docs.py
+          poetry run mkdocs build --strict
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
