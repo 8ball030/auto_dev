@@ -33,4 +33,5 @@ tasks:
     name: push_changes
     description: Push changes to git
     command: git push origin $(git rev-parse --abbrev-ref HEAD)
+    shell: True
 

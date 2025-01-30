@@ -55,6 +55,7 @@ class Task:
     working_dir: str = "."
     logger = None
     pause_after: int = 0
+    shell: bool = False
 
     is_done: bool = False
     is_failed: bool = False
@@ -64,7 +65,7 @@ class Task:
         self.client = CommandExecutor(self.command.split(" "), cwd=self.working_dir, logger=self.logger)
         print(f"Executing command: `{self.command}`")
         print()
-        self.is_failed = not self.client.execute(stream=self.stream)
+        self.is_failed = not self.client.execute(stream=self.stream, shell=self.shell)
         self.is_done = True
         return self
 
