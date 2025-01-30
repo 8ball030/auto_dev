@@ -181,8 +181,8 @@ class WorkflowManager:
         if matches and len(matches) > 0:
             for match in matches:
                 task_id = str(match.split(".")[1])
-                task = self.get_task_from_workflow(workflow_id, task_id)
-                command = task.command.replace(match, "\n".join(task.client.stdout))
+                referenced_task = self.get_task_from_workflow(workflow_id, task_id)
+                command = task.command.replace(match, "\n".join(referenced_task.client.stdout))
         return command
 
     def get_task(self, task_id: str) -> ApplyResult:

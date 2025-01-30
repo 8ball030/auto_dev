@@ -40,7 +40,6 @@ tasks:
     description: Commit changes to git
     command: git commit -m auto_dev:lint-and-format-code
 
-
   - id: '7'
     name: push_changes
     description: Push changes to git
