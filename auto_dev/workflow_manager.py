@@ -3,6 +3,7 @@
 Uses an open aea agent task manager in order to manage the workflows.
 """
 
+import re
 import sys
 import time
 import logging
@@ -21,6 +22,7 @@ from aea.skills.base import TaskManager
 
 from auto_dev.enums import FileType
 from auto_dev.utils import write_to_file
+from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
 
 
@@ -128,8 +130,42 @@ class WorkflowManager:
                 return workflow
         return None
 
+    def check_if_conditions_met(self, task: Task, workflow_id: str):
+        """Check if the conditions for a task are met."""
+        conditions = []
+        if task.conditions:
+            for condition in task.conditions:
+                var_regex = r"\${task.\d+\.client\.stdout}"
+                matches = re.findall(var_regex, condition)
+                if matches and len(matches) > 0:
+                    for match in matches:
+                        conditions.append(self.evaluate_condition(condition, match, workflow_id))
+        return all(conditions)
+
+    def evaluate_condition(self, condition: str, match: str, workflow_id: str):
+        """Evaluate a condition for a task."""
+        referenced_task_id = str(match.split(".")[1])
+        referenced_task = self.get_task_from_workflow(workflow_id, referenced_task_id)
+        condition = condition.replace(match, "\n".join(referenced_task.client.stdout))
+        try:
+            result = eval(condition)
+        except Exception as e:
+            msg = f"Condition {condition} is invalid: {e}"
+            raise UserInputError(msg) from e
+        return result
+
     def submit_task(self, task: Task):
-        """Submit a task to the task manager."""
+        """Submit a task to the task manager.
+        - id: '6'
+          name: get_branch
+          description: get the current branch
+          command: git branch --show-current.
+
+        - id: '7'
+          name: push_changes
+          description: Push changes to git
+          command: git push origin ${task.6.client.stdout}
+        """
 
         self.logger.clear()
         task.logger = self.logger
@@ -140,10 +176,17 @@ class WorkflowManager:
         """Get a task by its id."""
         return self.task_manager.get_task_result(task_id)
 
+    def get_task_from_workflow(self, workflow_id: str, task_id: str) -> Task:
+        """Get a task from a workflow by its id."""
+        workflow = self.get_workflow(workflow_id)
+        for task in workflow.tasks:
+            if task.id == task_id:
+                return task
+        return None
+
     def run(self):
         """Run the workflow manager."""
         while True:
-            time.sleep(2)
             for workflow in deepcopy(self.workflows):
                 if not workflow.is_running:
                     result = self.run_workflow(workflow.id, exit_on_failure=True)
@@ -215,6 +258,10 @@ class WorkflowManager:
         # Display the workflow table header if display_process is True
         for task in workflow.tasks:
             # Submit task and update table with 'Queued' status
+            if not self.check_if_conditions_met(task, workflow_id):
+                task.is_done = True
+                self.update_table(self.table, task, "Skipped", display_process)
+                continue
             self.update_table(self.table, task, "In-Progress", display_process)
             self.submit_task(task)
 
@@ -263,6 +310,8 @@ class WorkflowManager:
             status_color = "green"
         elif status == "Failed":
             status_color = "red"
+        elif status == "Skipped":
+            status_color = "magenta"
 
         # Update the status in the table with the appropriate color
         table.columns[2]._cells[index_of_task] = f"[{status_color}]{status}[/{status_color}]"  # noqa
