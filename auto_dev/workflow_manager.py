@@ -26,6 +26,9 @@ from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
 
 
+VAR_REGEX = r"\${task.\d+\.client\.stdout}"
+
+
 def get_logger(name: str = "workflow_manager", log_level: str = "INFO"):
     """Stream handler for logging."""
     log = logging.getLogger(name)
@@ -135,8 +138,7 @@ class WorkflowManager:
         conditions = []
         if task.conditions:
             for condition in task.conditions:
-                var_regex = r"\${task.\d+\.client\.stdout}"
-                matches = re.findall(var_regex, condition)
+                matches = re.findall(VAR_REGEX, condition)
                 if matches and len(matches) > 0:
                     for match in matches:
                         conditions.append(self.evaluate_condition(condition, match, workflow_id))
@@ -154,7 +156,7 @@ class WorkflowManager:
             raise UserInputError(msg) from e
         return result
 
-    def submit_task(self, task: Task):
+    def submit_task(self, task: Task, workflow_id: str) -> str:
         """Submit a task to the task manager.
         - id: '6'
           name: get_branch
@@ -169,8 +171,20 @@ class WorkflowManager:
 
         self.logger.clear()
         task.logger = self.logger
+        task.command = self.check_if_command_has_vars(task, workflow_id)
         task.process_id = self.task_manager.enqueue_task(task.work)
         return task.process_id
+
+    def check_if_command_has_vars(self, task: Task, workflow_id: str) -> str:
+        """Check if a command has variables."""
+        matches = re.findall(VAR_REGEX, task.command)
+        command = task.command
+        if matches and len(matches) > 0:
+            for match in matches:
+                task_id = str(match.split(".")[1])
+                task = self.get_task_from_workflow(workflow_id, task_id)
+                command = task.command.replace(match, "\n".join(task.client.stdout))
+        return command
 
     def get_task(self, task_id: str) -> ApplyResult:
         """Get a task by its id."""
@@ -262,8 +276,9 @@ class WorkflowManager:
                 task.is_done = True
                 self.update_table(self.table, task, "Skipped", display_process)
                 continue
+
             self.update_table(self.table, task, "In-Progress", display_process)
-            self.submit_task(task)
+            self.submit_task(task, workflow_id)
 
             if wait:
                 task_result = self.get_task(task.process_id)
