@@ -5,53 +5,27 @@ tasks:
   - id: '1'
     name: lint_code
     description: Lint the codebase
-    conditions: []
-    wait: false
-    timeout: 0
-    args: []
-    stream: false
     command: poetry run adev -v -n 0 lint -p . -co
-    working_dir: .
-    pause_after: 0
-    is_done: false
-    is_failed: false
 
   - id: '2'
     name: format_code
     description: Format the codebase
-    conditions: []
-    wait: true
-    timeout: 0
-    args: []
-    stream: false
     command: poetry run adev -n 0 fmt -p . -co
-    working_dir: .
-    pause_after: 0
-    is_done: false
-    is_failed: false
   
   - id: '3'
     name: Generate docs
     description: Generate documentation
-    conditions: []
-    wait: true
-    timeout: 0
-    args: []
-    stream: false
     command: poetry run python scripts/generate_command_docs.py
-    working_dir: .
-    pause_after: 0
-    is_done: false
-    is_failed: false
+    stream: False
   
   - id: '4'
     name: add_changes
     description: Add changes to git 
-    conditions: []
-    wait: true
-    timeout: 0
-    args: []
-    stream: false
     command: git add auto_dev docs scripts tests
+
+  - id: '5'
+    name: commit_changes
+    description: Commit changes to git
+    command: git commit -m auto_dev:lint-and-format-code'
 
 

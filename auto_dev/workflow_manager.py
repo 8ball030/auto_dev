@@ -47,10 +47,10 @@ class Task:
     name: str = None
     description: str = None
     conditions: list[Callable] = field(default_factory=list)
-    wait: bool = False
+    wait: bool = True
     timeout: int = 0
     args: list = field(default_factory=list)
-    stream: bool = False
+    stream: bool = True
     command: str = None
     working_dir: str = "."
     logger = None
@@ -64,7 +64,7 @@ class Task:
         self.client = CommandExecutor(self.command.split(" "), cwd=self.working_dir, logger=self.logger)
         print(f"Executing command: `{self.command}`")
         print()
-        self.is_failed = not self.client.execute(stream=True)
+        self.is_failed = not self.client.execute(stream=self.stream)
         self.is_done = True
         return self
 
@@ -228,6 +228,7 @@ class WorkflowManager:
                 self.update_table(self.table, task, status, display_process)
                 if status == "Failed":
                     self.logger.error(f"Task {task.id} failed.")
+                    self.logger.error(f"Task {task.client.output}")
                     if exit_on_failure:
                         sys.exit(1)
 
