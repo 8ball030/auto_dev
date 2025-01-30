@@ -19,6 +19,7 @@ nav:
   - Commands:
     - run: commands/run.md
     - create: commands/create.md
+    - eject: commands/eject.md
     - lint: commands/lint.md
     - publish: commands/publish.md
     - test: commands/test.md
