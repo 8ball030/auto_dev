@@ -61,16 +61,16 @@ jobs:
           poetry run adev -n 0 lint -p auto_dev || poetry run adev -n 0 -v lint -p auto_dev
           poetry run adev -n 0 lint -p tests || poetry run adev -n 0 -v lint -p tests
 
-      - name: Docs
-        run: |
-          poetry run python scripts/generate_command_docs.py
-          poetry run mkdocs build --strict
-
       - name: Tests
         run: |
           git config --global user.name "CI"
           git config --global user.email "ci@station.codes"
           poetry run adev -v test -p tests || poetry run adev -v test -p tests
+          
+      - name: Docs
+        run: |
+          poetry run python scripts/generate_command_docs.py
+          poetry run mkdocs build --strict
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
