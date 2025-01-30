@@ -11,7 +11,7 @@ The tools within the `dao` subcommand are used to scaffold a new customs compone
 
 1. Ensure you have the OpenAPI 3 specification file. You can view its contents using:
 
-    ```bash
+    ```
     cat auto_dev/data/openapi/openapi_specification.yaml
     ```
 
@@ -84,6 +84,11 @@ The tools within the `dao` subcommand are used to scaffold a new customs compone
     ```
 
 2. If not already done, scaffold a repo and a customs component.
+
+    Initialise aea:
+    ```bash
+    aea init --remote --author xiuxiuxar --ipfs --reset 
+    ```
 
     Create a new repo:
     ```bash
