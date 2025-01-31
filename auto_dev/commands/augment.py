@@ -1,18 +1,20 @@
 """Implement scaffolding tooling."""
 
+import sys
 import difflib
 from copy import deepcopy
 from pathlib import Path
 
 import yaml
 import rich_click as click
-from aea.configurations.base import PublicId
+from aea.configurations.base import SKILLS, PublicId, PackageType
 
 from auto_dev.base import build_cli
-from auto_dev.enums import FileType
-from auto_dev.utils import get_logger, write_to_file, read_from_file
+from auto_dev.enums import FileType, BehaviourTypes
+from auto_dev.utils import get_logger, write_to_file, read_from_file, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
+from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 
 
 logger = get_logger()
@@ -170,7 +172,7 @@ AEA_CONFIG = "aea-config.yaml"
 
 class BaseScaffolder:
     """Base class for scaffolding functionality.
-    
+
     Initializes a scaffolder with logging and loads the AEA configuration.
     """
 
@@ -400,6 +402,50 @@ def customs(ctx, component_type, auto_confirm, use_daos):
     if use_daos:
         scaffolder.create_exceptions()
     logger.info("OpenAPI3 scaffolding completed successfully.")
+
+
+@augment.command()
+@click.argument("spec_file", type=click.Path(exists=True))
+@click.argument("skill_public_id", type=PublicId.from_str, required=True)
+@click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
+@click.option("--verbose", is_flag=True, default=False, help="Verbose output")
+def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool):
+    """Augment a skill with a new handler."""
+
+    if not Path(spec_file).exists():
+        logger.error(f"Specification file for FSM not found: {spec_file}")
+        sys.exit(1)
+    if not Path(AEA_CONFIG).exists():
+        logger.error(f"File {AEA_CONFIG} not found")
+        sys.exit(1)
+    if not skill_public_id:
+        logger.error("Skill public id not provided. Unsure which skill to augment.")
+
+    skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
+    config, *_overrides = load_autonolas_yaml(PackageType.SKILL, skill_dir)
+
+    if config.get("author") != skill_public_id.author or config.get("name") != skill_public_id.name:
+        logger.error(f"Skill {skill_public_id} not found in the current project.")
+        sys.exit(1)
+
+    behaviour_path = skill_dir / "behaviours.py"
+    if behaviour_path.exists():
+        logger.error(f"Behaviours file already exists for skill {skill_public_id}.")
+        sys.exit(1)
+
+    logger.info("Augmenting skill with a new handler.")
+    scaffolder = BehaviourScaffolder(
+        spec_file,
+        behaviour_type=BehaviourTypes.simple_fsm,
+        logger=logger,
+        verbose=verbose,
+        auto_confirm=auto_confirm,
+    )
+
+    output = scaffolder.scaffold()
+    logger.info(f"Skill scaffolded: {output}")
+
+    # We now need to update the behvaiours.py file with the new handler
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ from auto_dev.utils import change_dir, get_packages, update_author
 from auto_dev.constants import AUTO_DEV_FOLDER, AUTONOMY_PACKAGES_FILE
 from auto_dev.exceptions import OperationError
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.workflow_manager import WorkflowManager
 from auto_dev.services.package_manager.index import PackageManager
 
 
@@ -161,3 +162,18 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
         )
     logger.info(f"Agent {public_id!s} created successfully 🎉🎉🎉🎉")
     return None
+
+
+@cli.command()
+@click.argument(
+    "public_id",
+    type=PublicId.from_str,
+)
+@click.argument(
+    "fsm_spec_file_path",
+    type=click.Path(exists=True),
+)
+def create_from_fsm(public_id: PublicId, fsm_spec_file_path: str) -> None:
+    """Create an agent from a finite state machine specification."""
+    click.echo(f"Creating agent {public_id} from FSM specification {fsm_spec_file_path}")
+    WorkflowManager()
