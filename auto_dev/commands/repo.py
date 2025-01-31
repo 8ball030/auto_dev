@@ -182,9 +182,9 @@ class RepoScaffolder:
 def repo() -> None:
     r"""Repository management commands.
 
-    Available Commands:\n
-        scaffold: Create and initialize a new repository with template files\n
-        update_deps: Update and lock repository dependencies\n
+    Available Commands:
+        scaffold: Create and initialize a new repository with template files
+        update_deps: Update and lock repository dependencies
     """
 
 
@@ -199,15 +199,21 @@ def repo() -> None:
 def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_commit) -> None:
     r"""Create a new repository and scaffold necessary files.
 
-    Required Parameters:\n
-        name: Name of the repository to create\n
+    Required Parameters:
 
-    Optional Parameters:\n
-        type_of_repo (-t): Type of repository to scaffold (autonomy, python). (Default: autonomy)\n
-        force (-f): Overwrite existing repository if it exists. (Default: False)\n
-        auto_approve (-aa): Skip confirmation prompts. (Default: False)\n
-        install (--install/--no-install): Install dependencies after scaffolding. (Default: True)\n
-        initial_commit (--initial-commit/--no-commit): Create initial git commit. (Default: True)\n
+        name: Name of the repository to create
+
+    Optional Parameters:
+
+        type_of_repo (-t): Type of repository to scaffold (autonomy, python). (Default: autonomy)
+
+        force (-f): Overwrite existing repository if it exists. (Default: False)
+
+        auto_approve (-aa): Skip confirmation prompts. (Default: False)
+
+        install (--install/--no-install): Install dependencies after scaffolding. (Default: True)
+
+        initial_commit (--initial-commit/--no-commit): Create initial git commit. (Default: True)
 
     Usage:
         Create basic autonomy repo:

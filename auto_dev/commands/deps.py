@@ -267,10 +267,13 @@ def deps(
 ) -> None:
     r"""Commands for managing dependencies.
 
-    Available Commands:\n
-        update: Update packages.json from parent repo and packages in child repo\n
-        generate_gitignore: Generate .gitignore entries from packages.json\n
-        verify: Verify dependencies against version set and update if needed\n
+    Available Commands:
+
+        update: Update packages.json from parent repo and packages in child repo
+
+        generate_gitignore: Generate .gitignore entries from packages.json
+
+        verify: Verify dependencies against version set and update if needed
     """
 
 
@@ -320,15 +323,21 @@ def update(
     """Update dependencies from parent repo to child repo.
 
     Required Parameters:
-        parent_repo: Path to the parent repository containing source packages.json.
-        child_repo: Path to the child repository to update.
+
+        parent_repo (-p): Path to the parent repository containing source packages.json.
+
+        child_repo (-c): Path to the child repository to update.
 
     Optional Parameters:
-        location: Location of dependencies (local or remote). Default: local
-        auto_confirm: Skip confirmation prompts. Default: False
-        manual: Enable manual mode for updates. Default: False
+
+        location (--location): Location of dependencies (local or remote). Default: local
+
+        auto_confirm (--auto-confirm): Skip confirmation prompts. Default: False
+
+        manual (--manual): Enable manual mode for updates. Default: False
 
     Usage:
+
         Update with defaults:
             adev deps update -p /path/to/parent -c /path/to/child
 
@@ -365,14 +374,15 @@ def generate_gitignore(
     r"""Generate .gitignore entries from packages.json.
 
     Usage:
-        Generate gitignore entries:\n
-            adev deps generate-gitignore\n
+
+        Generate gitignore entries:
+            adev deps generate-gitignore
 
     Notes
     -----
-        - Only adds new entries, doesn't remove existing ones\n
-        - Focuses on third-party packages from packages.json\n
-        - Appends entries to existing .gitignore file\n
+        - Only adds new entries, doesn't remove existing ones
+        - Focuses on third-party packages from packages.json
+        - Appends entries to existing .gitignore file
 
     """
     package_dict = get_package_json(repo=Path())
@@ -644,43 +654,44 @@ def bump(
             - Use with caution in production
 
     Usage:
-        Verify with prompts:\n
-            adev deps verify\n
+        Verify with prompts:
+            adev deps verify
 
-        Auto-approve updates:\n
-            adev deps verify --auto-approve\n
+        Auto-approve updates:
+            adev deps verify --auto-approve
 
     Notes
     -----
-        - Authentication:\n
-            - Requires GITHUB_TOKEN environment variable\n
-            - Token needs repo and packages read access\n
-            - Can be generated at github.com/settings/tokens\n
+        - Authentication:
+            - Requires GITHUB_TOKEN environment variable
+            - Token needs repo and packages read access
+            - Can be generated at github.com/settings/tokens
+
 
         - Verification Process:
-            - Checks both autonomy and poetry dependencies\n
-            - Verifies against specified version sets\n
-            - Compares local vs remote package hashes\n
-            - Validates dependency compatibility\n
+            - Checks both autonomy and poetry dependencies
+            - Verifies against specified version sets
+            - Compares local vs remote package hashes
+            - Validates dependency compatibility
 
         - Update Process:
-            - Updates packages.json for autonomy packages\n
-            - Updates pyproject.toml for poetry dependencies\n
-            - Handles dependency resolution\n
-            - Maintains version consistency\n
+            - Updates packages.json for autonomy packages
+            - Updates pyproject.toml for poetry dependencies
+            - Handles dependency resolution
+            - Maintains version consistency
 
         - Features:\n
-            - Parallel version checking\n
-            - Detailed diff viewing\n
-            - Selective update approval\n
-            - Dependency tree analysis\n
-            - Version conflict detection\n
+            - Parallel version checking
+            - Detailed diff viewing
+            - Selective update approval
+            - Dependency tree analysis
+            - Version conflict detection
 
         - Best Practices:\n
-            - Run before deployments\n
-            - Include in CI/CD pipelines\n
-            - Regular scheduled verification\n
-            - Version pinning enforcement\n
+            - Run before deployments
+            - Include in CI/CD pipelines
+            - Regular scheduled verification
+            - Version pinning enforcement
 
     """
 

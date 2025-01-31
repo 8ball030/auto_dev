@@ -245,14 +245,20 @@ def logging(handlers) -> None:
     r"""Augment AEA logging configuration with additional handlers.
 
     Required Parameters:
+
         handlers: One or more handlers to add (console, http, logfile)
 
     Usage:
+
         Add console handler:
-            adev augment logging console
+
+        adev augment logging console
+
 
         Add multiple handlers:
-            adev augment logging console http logfile
+
+        adev augment logging console http logfile
+
 
     Notes
     -----
@@ -322,15 +328,18 @@ def connection(connections) -> None:
 def customs(ctx, component_type, auto_confirm, use_daos):
     """Augment a customs component with generated code.
 
-    Examples
-    --------
-    Basic usage:
+    Usage:
+    ```
     adev augment customs openapi3
+    ```
 
     With Data Access Object integration:
+    ```
     adev augment customs openapi3 --use-daos
+    ```
 
     Features:
+
     - Generates handlers for each OpenAPI operation
     - Creates dialogue classes for request/response handling
     - Optionally adds Data Access Object integration
@@ -404,7 +413,25 @@ def customs(ctx, component_type, auto_confirm, use_daos):
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
 @click.option("--verbose", is_flag=True, default=False, help="Verbose output")
 def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool):
-    """Augment a skill with a new handler."""
+    """Augment a skill with a new handler.
+
+    Required Parameters:
+
+        spec_file: Path to the FSM specification file
+
+        skill_public_id: Public ID of the skill to augment
+
+    Optional Parameters:
+
+        auto_confirm (--auto-confirm): Auto confirm the augmentation
+
+        verbose (--verbose): Verbose output
+
+    Usage:
+
+        adev augment skill_from_fsm fsm_spec.yaml author/skill_name:0.1.0
+
+    """
 
     if not Path(spec_file).exists():
         logger.error(f"Specification file for FSM not found: {spec_file}")
