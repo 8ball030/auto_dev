@@ -50,6 +50,14 @@ def check_path(path: str, verbose: bool = False) -> bool:
     if not ruff_result:
         return False
 
+    # run poetry run generate_command_docs.py
+    command_docs_command = CommandExecutor(
+        ["poetry", "run", "python", "scripts/generate_command_docs.py"]
+    )
+    command_docs_result = command_docs_command.execute(verbose=verbose)
+    if not command_docs_result:
+        return False
+
     pydoclint_command = CommandExecutor(
         [
             "poetry",

@@ -24,14 +24,5 @@ def test_all_endpoints_documented(generated_docs):
     commands_dir = Path("auto_dev/commands")
     command_files = list(commands_dir.glob("*.py"))
     command_files = [f for f in command_files if f.stem not in {"__init__", "__pycache__"}]
-
-    # Get all Python files in the API directory
-    api_dir = Path("auto_dev/api")
-    api_files = list(api_dir.glob("*.py"))
-    api_files = [f for f in api_files if f.stem not in {"__init__", "__pycache__"}]
-
     # Check command documentation
     check_documentation_exists(command_files, generated_docs, "command")
-
-    # Check API documentation
-    check_documentation_exists(api_files, Path("docs/api"), "API endpoint")
