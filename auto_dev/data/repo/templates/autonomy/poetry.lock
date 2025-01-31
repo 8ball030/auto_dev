@@ -255,13 +255,13 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.90"
+version = "0.2.92"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
-python-versions = "<3.12,>=3.9"
+python-versions = "<=3.13,>=3.9"
 files = [
-    {file = "autonomy_dev-0.2.90-py3-none-any.whl", hash = "sha256:7b31cc657728c3392002b94d33186abfb19c8cd9a032060bbfe1cfee331608f1"},
-    {file = "autonomy_dev-0.2.90.tar.gz", hash = "sha256:f8525b94d88da6338672f818eb5534e643c467305bdec9ca9ad6c3d9947eadb3"},
+    {file = "autonomy_dev-0.2.92-py3-none-any.whl", hash = "sha256:aea8f956ccd1abb8cc571a4aa2a8fb0693d4bc1e6f07f364b2a8ebb2a303bcbf"},
+    {file = "autonomy_dev-0.2.92.tar.gz", hash = "sha256:caf19efe66902191bc1d8682cd5b571103e0b827bfd71652faa02d3a8a62b6e8"},
 ]
 
 [package.dependencies]
@@ -298,7 +298,6 @@ web3 = ">=6.0.0,<7.0.0"
 [package.extras]
 all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.60.0)", "open-aea-ledger-cosmos (==1.60.0)", "open-aea-ledger-ethereum (==1.60.0)", "open-aea-ledger-solana (==1.60.0)", "open-autonomy (==0.18.4)", "pydantic (>=2.8.2,<3.0.0)", "ruff (>=0.5.7,<0.6.0)", "tbump (>=6.11.0,<7.0.0)"]
 dev = ["tbump (>=6.11.0,<7.0.0)", "toml (==0.10.2)"]
-doc = ["mkdocstrings[python] (>=0.25.2,<0.28.0)"]
 
 [[package]]
 name = "backoff"
@@ -633,13 +632,13 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2024.12.14"
+version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2024.12.14-py3-none-any.whl", hash = "sha256:1275f7a45be9464efc1173084eaa30f866fe2e47d389406136d332ed4967ec56"},
-    {file = "certifi-2024.12.14.tar.gz", hash = "sha256:b650d30f370c2b724812bee08008be0c4163b163ddaec3f2546c1caf65f191db"},
+    {file = "certifi-2025.1.31-py3-none-any.whl", hash = "sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"},
+    {file = "certifi-2025.1.31.tar.gz", hash = "sha256:3d5da6925056f6f18f119200434a4780a94263f10d1c21d032a6f6b2baa20651"},
 ]
 
 [[package]]
@@ -4446,5 +4445,5 @@ doc = []
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.9,<3.12"
-content-hash = "7ba0e7a1690625b649fb0333f02140e74a64d7717184782d4c4738cf3ede7256"
+python-versions = ">=3.9,<=3.13"
+content-hash = "3c6f85def2409f32449b53e03272a0a1971bd66e629164172c62433cca1d1b27"
