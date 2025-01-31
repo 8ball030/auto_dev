@@ -10,6 +10,7 @@ Also contains a Contract, which we will use to allow the user to;
 
 from pathlib import Path
 
+import sys
 import yaml
 import rich_click as click
 from web3 import Web3
@@ -727,7 +728,7 @@ def dao(ctx, auto_confirm) -> None:
         and not click.confirm("DAOs directory already exists. Do you want to overwrite it?")
     ):
         logger.info("Aborting DAO scaffolding.")
-        return
+        sys.exit(1)
 
     try:
         scaffolder = DAOScaffolder(logger, verbose, auto_confirm, public_id)
