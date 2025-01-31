@@ -33,7 +33,6 @@ jobs:
           pip install mkdocs-mermaid2-plugin
           pip install -e .
 
-
       - name: Build site
         run: mkdocs build
 
