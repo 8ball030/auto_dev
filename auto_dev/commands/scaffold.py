@@ -720,6 +720,14 @@ def dao(ctx, auto_confirm) -> None:
     component_author = customs_config.get("author")
     component_name = customs_config.get("name")
     public_id = PublicId(component_author, component_name.split(":")[0])
+    dao_dir = Path.cwd() / "daos"
+    if (
+        dao_dir.exists()
+        and not auto_confirm
+        and not click.confirm("DAOs directory already exists. Do you want to overwrite it?")
+    ):
+        logger.info("Aborting DAO scaffolding.")
+        return
 
     try:
         scaffolder = DAOScaffolder(logger, verbose, auto_confirm, public_id)
