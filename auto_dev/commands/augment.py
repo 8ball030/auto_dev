@@ -234,6 +234,7 @@ def augment() -> None:
     r"""Commands for augmenting project components.
 
     Available Commands:
+
         logging: Add logging handlers to AEA configuration
         customs: Augment customs components with OpenAPI3 handlers
     """

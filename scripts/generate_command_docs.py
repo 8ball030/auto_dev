@@ -10,11 +10,10 @@ from pathlib import Path
 from importlib import import_module
 from dataclasses import dataclass
 
-import yaml
 import click
+from aea.cli.utils.generic import load_yaml
 
 from auto_dev.utils import FileType, write_to_file
-from auto_dev.constants import DEFAULT_ENCODING
 
 
 # Configure logging
@@ -191,19 +190,22 @@ class CommandDocGenerator:
 
 
 def update_mkdocs_nav(commands: list[str]) -> None:
-    """Update the mkdocs.yml navigation to include all commands."""
+    """Update the mkdocs.yml navigation to include all commands.
 
+    Args:
+    ----
+        commands: List of command names to include in navigation
+
+    """
     mkdocs_path = Path("mkdocs.yml")
     try:
-        # Use safe_load for single-doc YAML
-        config = yaml.safe_load(mkdocs_path.read_text(encoding=DEFAULT_ENCODING))
+        config = load_yaml(mkdocs_path)
     except OSError as e:
         logger.exception(f"Failed to read mkdocs.yml: {e}")
         return
 
     # Ensure config is a dictionary
-    if not isinstance(config, dict):
-        # If somehow config is None or not a dict, make it a dict
+    if config is None:
         config = {}
 
     # Ensure nav exists
@@ -214,12 +216,12 @@ def update_mkdocs_nav(commands: list[str]) -> None:
     for item in config["nav"]:
         if isinstance(item, dict) and "Commands" in item:
             # Create new commands structure
-            commands_nav = [{cmd: f"commands/{cmd}.md"} for cmd in sorted(commands)]
+            commands_nav = {cmd: f"commands/{cmd}.md" for cmd in sorted(commands)}
             item["Commands"] = commands_nav
             break
     else:
         # If Commands section doesn't exist, add it
-        commands_nav = [{cmd: f"commands/{cmd}.md"} for cmd in sorted(commands)]
+        commands_nav = {cmd: f"commands/{cmd}.md" for cmd in sorted(commands)}
         config["nav"].append({"Commands": commands_nav})
 
     try:
