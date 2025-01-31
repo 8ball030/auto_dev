@@ -1,9 +1,5 @@
 # eject
 
-## Table of Contents
-- [Description](#description)
-
-
 ## Description
 ::: auto_dev.commands.eject.eject
     options:

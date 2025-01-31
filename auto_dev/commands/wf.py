@@ -16,7 +16,15 @@ cli = build_cli()
     default=None,
 )
 def wf(path) -> None:
-    """Run Workflow commands."""
+    """Run Workflow commands.
+
+    Required Parameters:
+
+        path: Path to the workflow file.
+
+    Usage:
+        adev wf run my_workflow.yaml
+    """
 
     wf_manager = WorkflowManager.from_yaml(path)
     wf_manager.run()
