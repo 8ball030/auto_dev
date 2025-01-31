@@ -341,7 +341,7 @@ class TestDAOScaffolder:
     @patch("auto_dev.dao.scaffolder.validate_openapi_spec", return_value=True)
     def test_scaffold_user_abort(self, mock_validate, mock_input, scaffolder, tmp_path):
         """Test scaffolding process when user aborts."""
-
+        scaffolder.auto_confirm = False
         assert mock_input.return_value == "n"
         assert mock_validate.return_value is True
         dummy_openapi_path = tmp_path / "dummy_openapi.yaml"

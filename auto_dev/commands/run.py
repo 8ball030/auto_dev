@@ -82,14 +82,16 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
             - Checks Tendermint health
             - Manages Docker containers
             - Handles network timeouts
-
     """
 
     if not agent_public_id:
         # We set fetch to false if the agent is not provided, as we assume the user wants to run the agent locally.
         fetch = False
         agent_config = load_autonolas_yaml(PackageType.AGENT)[0]
-        agent_public_id = PublicId.from_json(agent_config)
+        name = agent_config["agent_name"]
+        version = agent_config["version"]
+        author = agent_config["author"]
+        agent_public_id = PublicId.from_str(f"{author}/{name}:{version}")
     logger = ctx.obj["LOGGER"]
 
     runner = DevAgentRunner(
@@ -125,7 +127,6 @@ def prod(
     number_of_agents: int,
 ) -> None:
     """Run an agent in production mode.
-
     Required Parameters:
 
         service_public_id: The public ID of the service (author/name format).
