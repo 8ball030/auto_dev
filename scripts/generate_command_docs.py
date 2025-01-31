@@ -182,7 +182,6 @@ class CommandDocGenerator:
                 ),
                 encoding="utf-8",
             )
-            logger.info(f"Generated documentation for {command}")
         except OSError as e:
             logger.exception(f"Failed to write documentation for {command}: {e}")
 

@@ -3,7 +3,6 @@
 - print metadata: we read in a meta data file and print it in a way that can be copy pasted into the frontend.
 """
 
-import os
 import sys
 import json
 
@@ -19,7 +18,6 @@ from aea.configurations.constants import (
     CUSTOM,
     SKILLS,
     CUSTOMS,
-    SERVICE,
     SERVICES,
     CONTRACTS,
     PROTOCOLS,
@@ -229,10 +227,13 @@ def build_dependency_tree_for_metadata_components(component: str) -> dict:
     """Build dependency tree for metadata components.
 
     Args:
+    ----
         component: Component identifier string in format 'type/author/name'
 
     Returns:
+    -------
         Dictionary mapping dependency types to sets of dependencies
+
     """
     component_type = component.split("/")[0]
     component_author = component.split("/")[1]

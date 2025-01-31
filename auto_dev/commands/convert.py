@@ -43,10 +43,12 @@ def convert() -> None:
 
 class ConvertCliTool(BasePackageScaffolder):
     """Config for the agent service convert cli.
-    
+
     Args:
+    ----
         agent_public_id: Public ID of the source agent.
         service_public_id: Public ID for the target service.
+
     """
 
     package_type = SERVICES

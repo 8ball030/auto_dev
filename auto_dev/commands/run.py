@@ -82,6 +82,7 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
             - Checks Tendermint health
             - Manages Docker containers
             - Handles network timeouts
+
     """
 
     if not agent_public_id:
@@ -127,6 +128,7 @@ def prod(
     number_of_agents: int,
 ) -> None:
     """Run an agent in production mode.
+
     Required Parameters:
 
         service_public_id: The public ID of the service (author/name format).

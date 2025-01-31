@@ -8,9 +8,9 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
+import sys
 from pathlib import Path
 
-import sys
 import yaml
 import rich_click as click
 from web3 import Web3
