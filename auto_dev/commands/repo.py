@@ -183,6 +183,7 @@ def repo() -> None:
     r"""Repository management commands.
 
     Available Commands:
+
         scaffold: Create and initialize a new repository with template files
         update_deps: Update and lock repository dependencies
     """
@@ -361,6 +362,7 @@ def update_deps(ctx, lock: bool) -> None:
         lock (--lock): Lock dependencies after updating. Default: False
 
     Usage:
+
         Update dependencies:
             adev repo update-deps
 

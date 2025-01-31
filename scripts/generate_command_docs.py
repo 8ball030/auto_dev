@@ -190,13 +190,7 @@ class CommandDocGenerator:
 
 
 def update_mkdocs_nav(commands: list[str]) -> None:
-    """Update the mkdocs.yml navigation to include all commands.
-
-    Args:
-    ----
-        commands: List of command names to include in navigation
-
-    """
+    """Update the mkdocs.yml navigation to include all commands."""
     mkdocs_path = Path("mkdocs.yml")
     try:
         config = load_yaml(mkdocs_path)
@@ -216,13 +210,13 @@ def update_mkdocs_nav(commands: list[str]) -> None:
     for item in config["nav"]:
         if isinstance(item, dict) and "Commands" in item:
             # Create new commands structure
-            commands_nav = {cmd: f"commands/{cmd}.md" for cmd in sorted(commands)}
-            item["Commands"] = commands_nav
+            commands_nav = {"Commands": [{cmd: f"commands/{cmd}.md"} for cmd in sorted(commands)]}
+            config["nav"][config["nav"].index(item)] = commands_nav
             break
     else:
         # If Commands section doesn't exist, add it
-        commands_nav = {cmd: f"commands/{cmd}.md" for cmd in sorted(commands)}
-        config["nav"].append({"Commands": commands_nav})
+        commands_nav = {"Commands": [{cmd: f"commands/{cmd}.md"} for cmd in sorted(commands)]}
+        config["nav"].append(commands_nav)
 
     try:
         write_to_file(mkdocs_path, config, FileType.YAML)

@@ -11,23 +11,23 @@ nav:
   - OpenAPI: openapi.md
   - Data Access Object: dao.md
 - Commands:
-    augment: commands/augment.md
-    convert: commands/convert.md
-    create: commands/create.md
-    deps: commands/deps.md
-    eject: commands/eject.md
-    fmt: commands/fmt.md
-    fsm: commands/fsm.md
-    improve: commands/improve.md
-    lint: commands/lint.md
-    metadata: commands/metadata.md
-    publish: commands/publish.md
-    release: commands/release.md
-    repo: commands/repo.md
-    run: commands/run.md
-    scaffold: commands/scaffold.md
-    test: commands/test.md
-    wf: commands/wf.md
+  - augment: commands/augment.md
+  - convert: commands/convert.md
+  - create: commands/create.md
+  - deps: commands/deps.md
+  - eject: commands/eject.md
+  - fmt: commands/fmt.md
+  - fsm: commands/fsm.md
+  - improve: commands/improve.md
+  - lint: commands/lint.md
+  - metadata: commands/metadata.md
+  - publish: commands/publish.md
+  - release: commands/release.md
+  - repo: commands/repo.md
+  - run: commands/run.md
+  - scaffold: commands/scaffold.md
+  - test: commands/test.md
+  - wf: commands/wf.md
 - Contributing: contributing.md
 - Changelog: changelog.md
 theme:
