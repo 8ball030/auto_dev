@@ -20,9 +20,9 @@ def test_eject_metrics_skill_workflow(cli_runner, test_filesystem):
         "--no-clean-up",
         "--force",
     ]
-    result = cli_runner(create_cmd)
-    result.execute()
-    assert result.return_code == 0
+    runner = cli_runner(create_cmd)
+    result = runner.execute()
+    assert runner.return_code == 0
 
     # 2. CD into the agent directory
     agent_dir = Path(DEFAULT_AGENT_NAME)
@@ -67,9 +67,9 @@ def test_eject_metrics_skill_skip_deps(cli_runner, test_filesystem):
         "--no-clean-up",
         "--force",
     ]
-    result = cli_runner(create_cmd)
-    result.execute()
-    assert result.return_code == 0
+    runner = cli_runner(create_cmd)
+    result = runner.execute()
+    assert runner.return_code == 0
 
     # 2. CD into the agent directory
     agent_dir = Path(DEFAULT_AGENT_NAME)
