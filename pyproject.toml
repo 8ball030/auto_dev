@@ -73,8 +73,6 @@ openapi-spec-validator = "0.2.8"
 mkdocstrings = {extras = ["python"], version = ">=0.25.2,<0.28.0"}
 pydoclint = {extras = ["all"], version = "^0.6.0"}
 
-pre-commit = "^3.5.0"
-
 [tool.poetry.dev-dependencies]
 responses = "^0.23.1"
 mkdocs = "^1.6.0"
