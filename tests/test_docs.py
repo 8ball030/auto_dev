@@ -34,7 +34,7 @@ def extract_code_blocks(doc):
 
 # we test the documents works.
 
-documentation = ["docs/fsm.md"]
+documentation = ["docs/fsm.md", "docs/dao.md"]
 logger = getLogger()
 
 
