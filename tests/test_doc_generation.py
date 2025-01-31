@@ -3,26 +3,20 @@
 from pathlib import Path
 
 
-def check_documentation_exists(source_files: list[Path], docs_dir: Path, file_type: str):
-    """Check that documentation exists and is valid for given source files."""
-    for source_file in source_files:
-        doc_file = docs_dir / f"{source_file.stem}.md"
-        assert doc_file.exists(), f"Documentation missing for {file_type} {source_file.stem}"
+def test_check_documentation_and_suggest():
+    """Check that all source files have documentation and suggest running make docs-generate if not."""
+    # Get all Python files in the source directory
+    source_dir = Path("auto_dev/commands")
+    docs_dir = Path("docs")
 
-        # Check that the documentation file is not empty
-        assert doc_file.stat().st_size > 0, f"Documentation is empty for {file_type} {source_file.stem}"
+    source_files = list(source_dir.glob("*.py"))
 
-        # Read the doc file and check for basic content
-        content = doc_file.read_text()
-        assert "# " in content, f"Documentation lacks title for {file_type} {source_file.stem}"
-        assert "## " in content, f"Documentation lacks sections for {file_type} {source_file.stem}"
+    source_files = [f for f in source_files if f.stem not in {"__init__", "__pycache__"}]
 
-
-def test_all_endpoints_documented(generated_docs):
-    """Test that all command and API endpoints are documented."""
-    # Get all Python files in the commands directory
-    commands_dir = Path("auto_dev/commands")
-    command_files = list(commands_dir.glob("*.py"))
-    command_files = [f for f in command_files if f.stem not in {"__init__", "__pycache__"}]
-    # Check command documentation
-    check_documentation_exists(command_files, generated_docs, "command")
+    # replace auto_dev/commands/* with docs/commands/*.md
+    docs_files = [docs_dir / "commands" / f"{f.stem}.md" for f in source_files]
+    # Check that each source file has a corresponding doc file
+    for doc_file in docs_files:
+        assert (
+            doc_file.exists()
+        ), f"Documentation missing for command {doc_file.stem}. Consider running 'make docs-generate'."

@@ -6,6 +6,9 @@ lint:
 fmt: 
 	poetry run adev -n 0 fmt -p . -co
 
+docs-generate:
+	poetry run python scripts/generate_command_docs.py
+
 test:
 	poetry run adev -v test -p tests
 

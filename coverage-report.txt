@@ -1,25 +1,25 @@
 Name                               Stmts   Miss  Cover   Missing
 ----------------------------------------------------------------
 auto_dev/__init__.py                   0      0   100%
-auto_dev/base.py                      60      2    97%   89-90
+auto_dev/base.py                      60     60     0%   3-98
 auto_dev/check_dependencies.py       229    229     0%   26-457
-auto_dev/cli.py                        4      1    75%   9
-auto_dev/cli_executor.py              71     35    51%   35, 51, 57-59, 61-64, 68-101
-auto_dev/constants.py                 58      0   100%
-auto_dev/enums.py                     40      0   100%
-auto_dev/exceptions.py                10      0   100%
-auto_dev/fmt.py                       59     43    27%   16-17, 21-22, 27-45, 50, 60-61, 66-80, 85-97, 102-112
-auto_dev/lint.py                       9      6    33%   35-71
+auto_dev/cli.py                        4      4     0%   3-9
+auto_dev/cli_executor.py              71     71     0%   8-112
+auto_dev/constants.py                 58     58     0%   3-166
+auto_dev/enums.py                     40     40     0%   3-62
+auto_dev/exceptions.py                10     10     0%   4-40
+auto_dev/fmt.py                       62     62     0%   3-115
+auto_dev/lint.py                      15     15     0%   3-82
 auto_dev/local_fork.py                52     52     0%   3-95
-auto_dev/scaffolder.py                19      7    63%   15-16, 35, 39, 44, 49, 53
-auto_dev/test.py                      15     10    33%   50-63
-auto_dev/utils.py                    286    161    44%   72, 76, 111-112, 116, 129-136, 141-186, 202, 226-230, 239-263, 268, 275-277, 282, 287, 313-314, 323-327, 336-338, 346, 352-363, 368-382, 387-393, 415-417, 426, 433-461, 466-473, 478, 484-494
-auto_dev/workflow_manager.py         131    131     0%   5-228
+auto_dev/scaffolder.py                19     19     0%   3-53
+auto_dev/test.py                      15     15     0%   3-63
+auto_dev/utils.py                    286    286     0%   3-496
+auto_dev/workflow_manager.py         260    260     0%   5-408
 docs/__init__.py                       0      0   100%
 docs/hooks.py                         35     35     0%   3-75
 scripts/__init__.py                    0      0   100%
-scripts/generate_command_docs.py      87     87     0%   8-229
+scripts/generate_command_docs.py     113    113     0%   8-264
 site/__init__.py                       0      0   100%
 site/hooks.py                         35     35     0%   3-75
 ----------------------------------------------------------------
-TOTAL                               1200    834    30%
+TOTAL                               1364   1364     0%
