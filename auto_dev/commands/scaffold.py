@@ -10,6 +10,7 @@ Also contains a Contract, which we will use to allow the user to;
 
 from pathlib import Path
 
+import sys
 import yaml
 import rich_click as click
 from web3 import Web3
@@ -720,6 +721,14 @@ def dao(ctx, auto_confirm) -> None:
     component_author = customs_config.get("author")
     component_name = customs_config.get("name")
     public_id = PublicId(component_author, component_name.split(":")[0])
+    dao_dir = Path.cwd() / "daos"
+    if (
+        dao_dir.exists()
+        and not auto_confirm
+        and not click.confirm("DAOs directory already exists. Do you want to overwrite it?")
+    ):
+        logger.info("Aborting DAO scaffolding.")
+        sys.exit(1)
 
     try:
         scaffolder = DAOScaffolder(logger, verbose, auto_confirm, public_id)
