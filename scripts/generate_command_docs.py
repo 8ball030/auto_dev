@@ -10,10 +10,11 @@ from pathlib import Path
 from importlib import import_module
 from dataclasses import dataclass
 
+import yaml
 import click
-from aea.cli.utils.generic import load_yaml
 
 from auto_dev.utils import FileType, write_to_file
+from auto_dev.constants import DEFAULT_ENCODING
 
 
 # Configure logging
@@ -193,7 +194,7 @@ def update_mkdocs_nav(commands: list[str]) -> None:
     """Update the mkdocs.yml navigation to include all commands."""
     mkdocs_path = Path("mkdocs.yml")
     try:
-        config = load_yaml(mkdocs_path)
+        config = yaml.safe_load(mkdocs_path.read_text(encoding=DEFAULT_ENCODING))
     except OSError as e:
         logger.exception(f"Failed to read mkdocs.yml: {e}")
         return
