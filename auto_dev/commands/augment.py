@@ -312,35 +312,29 @@ def connection(connections) -> None:
 @augment.command()
 @click.argument("component_type", type=click.Choice(["openapi3"]))
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
-@click.option("--use-daos", is_flag=True, default=False, help="Augment OpenAPI3 handlers with DAOs")
+@click.option(
+    "--use-daos",
+    is_flag=True,
+    default=False,
+    help="Augment OpenAPI3 handlers with Data Access Objects (DAOs)",
+)
 @click.pass_context
 def customs(ctx, component_type, auto_confirm, use_daos):
-    r"""Augment a customs component with OpenAPI3 handlers.
+    """Augment a customs component with generated code.
 
-    Required Parameters:
-        component_type: Type of component to augment (currently only openapi3)
+    Examples
+    --------
+    Basic usage:
+    adev augment customs openapi3
 
-    Optional Parameters:\n
-        auto_confirm: Skip confirmation prompts. (Default: False)\n
-        use_daos: Include DAO integration in handlers. (Default: False)\n
+    With Data Access Object integration:
+    adev augment customs openapi3 --use-daos
 
-    Usage:\n
-        Basic OpenAPI3 augmentation:\n
-            adev augment customs openapi3\n
-
-        With DAO integration:
-            adev augment customs openapi3 --use-daos
-
-        Skip confirmations:
-            adev augment customs openapi3 --auto-confirm
-
-    Notes
-    -----
-        - Requires component.yaml with api_spec field
-        - Generates/updates handlers.py with OpenAPI endpoints
-        - Creates necessary dialogue classes
-        - Optionally adds DAO integration
-        - Shows diff before updating existing handlers
+    Features:
+    - Generates handlers for each OpenAPI operation
+    - Creates dialogue classes for request/response handling
+    - Optionally adds Data Access Object integration
+    - Includes error handling and logging
 
     """
     logger = ctx.obj["LOGGER"]

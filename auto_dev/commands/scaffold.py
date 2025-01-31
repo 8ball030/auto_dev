@@ -699,10 +699,21 @@ def tests(
 
 
 @scaffold.command()
-@click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm all actions")
+@click.option(
+    "--auto-confirm",
+    is_flag=True,
+    default=False,
+    help="Automatically confirm all prompts",
+)
 @click.pass_context
 def dao(ctx, auto_confirm) -> None:
-    """Scaffold Data Access Objects (DAOs) and generate test script based on an OpenAPI 3 specification."""
+    """Scaffold Data Access Objects (DAOs) and generate test scripts based on an OpenAPI 3 specification.
+
+    This command creates:
+    1. Data Access Object classes for each model in the OpenAPI spec
+    2. Sample data for testing
+    3. Test scripts to validate the Data Access Objects
+    """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
 

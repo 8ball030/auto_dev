@@ -80,6 +80,12 @@ To use auto_dev in a project, first install it via pip:
 pip install autonomy-dev[all]
 ```
 
+or if you are on bash
+
+```bash
+pip install 'autonomy-dev[all]'
+```
+
 ## Basic Commands
 
 ### Repository and Agent Creation
