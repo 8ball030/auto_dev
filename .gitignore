@@ -8,7 +8,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
 # C extensions
 *.so
 
@@ -115,13 +114,3 @@ ENV/
 site/
 .history
 
-packages/eightballer/protocols/prometheus
-packages/eightballer/protocols/http
-packages/eightballer/protocols/default
-packages/open_aea/protocols/signing
-packages/eightballer/connections/prometheus
-packages/eightballer/connections/http_client
-packages/eightballer/connections/http_server
-packages/eightballer/skills/metrics
-packages/eightballer/skills/prometheus
-packages/eightballer/agents/base

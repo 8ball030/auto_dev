@@ -36,15 +36,18 @@ class ScaffolderConfig(BaseModel):
 
 
 class HandlerScaffolder:
-    """Handler Scaffolder."""
+    """Handler Scaffolder for generating and managing API handlers.
+    
+    Args:
+        config: Configuration object containing scaffolding settings.
+        logger: Logger instance for output and debugging.
+    """
 
     def __init__(
         self,
         config: ScaffolderConfig,
         logger,
     ):
-        """Initialize HandlerScaffolder."""
-
         self.config = config
         self.logger = logger or get_logger()
         self.handler_code = ""
@@ -89,8 +92,9 @@ class HandlerScaffolder:
             raise ScaffolderError(msg)
 
     def extract_schema(self, operation: Operation) -> str | None:
-        """Extract the schema from the operation."""
+        """Extract schema from an operation."""
         if not operation.responses:
+            self.logger.debug("No responses found")
             return None
 
         success_response = next(
@@ -106,12 +110,14 @@ class HandlerScaffolder:
 
         try:
             schema = parse_schema_like(content.media_type_schema)
+            self.logger.debug(f"Parsed schema: {schema}")
             ref = None
 
             if isinstance(schema, Reference):
                 ref = schema.ref
             elif isinstance(schema, Schema):
-                if schema.type == "array" and schema.items:
+                self.logger.debug(f"Schema is a Schema object with type: {schema.type}")
+                if str(schema.type) == "array" and schema.items:
                     items = parse_schema_like(schema.items)
                     if isinstance(items, Reference):
                         ref = items.ref
@@ -119,7 +125,6 @@ class HandlerScaffolder:
                     ref = next((s.ref for s in schema.allOf if isinstance(s, Reference)), None)
                 elif hasattr(schema, "oneOf"):
                     ref = next((s.ref for s in schema.oneOf if isinstance(s, Reference)), None)
-
             return ref.split("/")[-1] if ref else None
         except AttributeError:
             self.logger.exception(f"Could not extract schema from response: {content}")
@@ -507,8 +512,10 @@ class HandlerScaffolder:
 
         return [schema for schema, usage in schema_usage.items() if "response" in usage or "nested_request" in usage]
 
-    def _resolve_path_item(self, path_item: PathItem | Reference, api_spec: OpenAPI, path: str) -> PathItem | None:
-        """Resolve a path item it's a reference."""
+    def _resolve_path_item(
+        self, path_item: PathItem | Reference, api_spec: OpenAPI, path: str
+    ) -> PathItem | None:
+        """Resolve a path item if it's a reference."""
         if isinstance(path_item, Reference):
             try:
                 path_item = path_item.resolve(api_spec)
@@ -607,10 +614,12 @@ class HandlerScaffolder:
 
 
 class HandlerScaffoldBuilder:
-    """Builder for HandlerScaffolder."""
+    """Builder class for creating HandlerScaffolder instances.
+    
+    Provides a fluent interface for configuring and creating HandlerScaffolder objects.
+    """
 
     def __init__(self):
-        """Initialize HandlerScaffoldBuilder."""
         self.config: ScaffolderConfig | None = None
         self.logger = None
 

@@ -1,11 +1,37 @@
-"""Implement fsm tooling."""
+r"""Commands for FSM (Finite State Machine) operations.
+
+Available Commands:\n
+    from_file: Convert between FSM specification formats\n
+
+Required Parameters:
+    fsm_spec: Path to the FSM specification file\n
+    fsm_name: Name of the FSM to process\n
+
+Optional Parameters:
+    in_type: Input format type (fsm_spec or mermaid). Default: fsm_spec\n
+    output: Output format type (fsm_spec or mermaid). Default: mermaid\n
+
+Usage:
+    Convert FSM spec to mermaid:\n
+        adev fsm from-file fsm_specification.yaml testAbciApp\n
+
+    Convert FSM spec to FSM spec (validation):\n
+        adev fsm from-file fsm_specification.yaml testAbciApp --output fsm_spec\n
+
+    Convert from mermaid to FSM spec:\n
+        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid --output fsm_spec\n
+
+    Convert mermaid to mermaid (validation):\n
+        adev fsm from-file diagram.mmd testAbciApp --in-type mermaid\n
+"""
+
+from enum import Enum
 
 import rich_click as click
 
 from auto_dev.base import build_cli
-from auto_dev.utils import get_logger, snake_to_camel
+from auto_dev.utils import get_logger
 from auto_dev.fsm.fsm import FsmSpec
-from auto_dev.constants import DEFAULT_ENCODING
 
 
 logger = get_logger()
@@ -19,42 +45,56 @@ def fsm() -> None:
     """Implement fsm tooling."""
 
 
+class FsmType(Enum):
+    """Type of FSM output."""
+
+    MERMAID = "mermaid"
+    FSM_SPEC = "fsm_spec"
+
+
+INPUT_TO_FUNC = {FsmType.MERMAID.value: FsmSpec.from_mermaid_path, FsmType.FSM_SPEC.value: FsmSpec.from_path}
+
+
 @fsm.command()
-@click.argument("fsm-spec", type=click.File("r", encoding=DEFAULT_ENCODING))
+@click.argument(
+    "fsm_spec",
+    type=click.Path(
+        "r",
+    ),
+)
 @click.argument("fsm_name", type=str)
-@click.option("--in-type", type=click.Choice(["mermaid", "fsm-spec"], case_sensitive=False))
-@click.option("--output", type=click.Choice(["mermaid", "fsm-spec"], case_sensitive=False))
+@click.option(
+    "--in-type", type=click.Choice([f.value for f in FsmType], case_sensitive=False), default=FsmType.FSM_SPEC.value
+)
+@click.option(
+    "--output", type=click.Choice([f.value for f in FsmType], case_sensitive=False), default=FsmType.MERMAID.value
+)
 def from_file(fsm_spec: str, fsm_name: str, in_type: str, output: str) -> None:
-    """We template from a file."""
-    # we need perform the following steps:
-    # 1. load the yaml file
-    # 2. validate the yaml file using the open-autonomy fsm tooling
-    # 3. perform the generation command
-    # 4. write the generated files to disk
-    # 5. perform the cleanup commands
-    # 5a. clean the tests
-    # 5b. clean the payloads
-    # 6. perform updates of the generated files
+    r"""Convert between FSM specification formats.
 
-    if in_type == "mermaid":
-        _fsm_spec = fsm_spec.read()
-        fsm = FsmSpec.from_mermaid(_fsm_spec)
-    else:
-        fsm = FsmSpec.from_yaml(fsm_spec)
+    Required Parameters:\n
+        fsm_spec: Path to the FSM specification file\n\n
+        fsm_name: Name of the FSM to process\n\n
 
-    def validate_name(name: str) -> str:
-        if not name:
-            raise ValueError("Name must not be empty.")
-        if not name.endswith("AbciApp"):
-            raise ValueError("Name must end with AbciApp.")
-        return name
+    Optional Parameters:\n
+        in_type: Input format type (fsm_spec or mermaid). (Default: fsm_spec)\n
+        output: Output format type (fsm_spec or mermaid). (Default: mermaid)\n
 
-    fsm.label = validate_name(fsm_name)
+    Usage:
+        Convert FSM spec to mermaid:\n
+            adev fsm from-file fsm_specification.yaml testAbciApp\n
 
-    if output == "mermaid":
-        output = fsm.to_mermaid()
-    else:   
-        output = fsm.to_string()
+        Convert FSM spec to FSM spec (validation):\n
+            adev fsm from-file fsm_specification.yaml testAbciApp --output fsm_spec\n
 
+        Convert from mermaid to FSM spec:\n
+            adev fsm from-file diagram.mmd testAbciApp --in-type mermaid --output fsm_spec\n
+
+        Convert mermaid to mermaid (validation):\n
+            adev fsm from-file diagram.mmd testAbciApp --in-type mermaid\n
+    """
+
+    fsm = INPUT_TO_FUNC[in_type](fsm_spec, label=fsm_name)
+    output_to_func = {FsmType.MERMAID.value: fsm.to_mermaid, FsmType.FSM_SPEC.value: fsm.to_string}
+    output = output_to_func[output]()
     click.echo(output)
-

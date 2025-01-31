@@ -13,6 +13,10 @@ class NetworkTimeoutError(Exception):
     """Network error."""
 
 
+class APIError(Exception):
+    """API error."""
+
+
 class AuthenticationError(Exception):
     """Authentication error."""
 
@@ -23,3 +27,15 @@ class UserInputError(Exception):
 
 class ScaffolderError(Exception):
     """Scaffolder error."""
+
+
+class UnsupportedSolidityVersion(Exception):
+    """Exception raised when processing ABIs from unsupported Solidity versions."""
+
+
+class ConfigUpdateError(Exception):
+    """Raised when there is an error updating component configuration."""
+
+
+class DependencyTreeError(Exception):
+    """Raised when there is an error building the dependency tree."""

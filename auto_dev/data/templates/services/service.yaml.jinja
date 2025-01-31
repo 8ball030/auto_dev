@@ -1,0 +1,19 @@
+name: {{ service_public_id.name}}
+author: {{ service_public_id.author}}
+version: {{ service_public_id.version}}
+description: A new service, scaffolded by the Adev cli from {{agent_public_id}}
+aea_version: '>=1.0.0, <2.0.0'
+license: apache-2.0
+fingerprint:
+  tests/__init__.py: bafybeiaeiayhjrfihy5lsgoc2c3hm67besegxueledgdslwwq52kl2p7k4
+  tests/test_service.py: bafybeidopguk7fzot3xh2x4c5atqklwfrf37kbaidjcjoq5uvqzbppyypq
+fingerprint_ignore_patterns: []
+agent: {{ agent_public_id}}
+number_of_agents: {{ number_of_agents }}
+deployment:
+  agent:
+    ports: {}
+    volumes: {}
+{% if overrides %}---
+{{overrides }}
+{% endif %}

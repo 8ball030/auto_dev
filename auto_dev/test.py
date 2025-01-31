@@ -1,9 +1,16 @@
 """Module for testing the project."""
 
+from pathlib import Path
 from multiprocessing import cpu_count
 
-# We execute using the pytest command.
 import pytest
+
+
+COVERAGE_COMMAND = f"""coverage report \
+                    -m \
+                    --omit='{Path('**') / 'tests' / '*.py'!s}' \
+                    {Path() / '**' / '*.py'!s} > 'coverage-report.txt'
+"""
 
 
 def test_path(
@@ -12,8 +19,33 @@ def test_path(
     watch: bool = False,
     multiple: bool = False,
 ) -> bool:
-    """Check the path for linting errors.
-    :param path: The path to check.
+    """Run tests for a specified path.
+
+    Args:
+    ----
+        path (str): The path to run tests on
+        verbose (bool, optional): Whether to show verbose output. Defaults to False
+        watch (bool, optional): Whether to watch for file changes and rerun tests. Defaults to False
+        multiple (bool, optional): Whether to run tests in parallel. Defaults to False
+
+    Returns:
+    -------
+        bool: True if all tests passed, False if any tests failed
+
+    Notes:
+    -----
+        Features:
+            - Supports pytest test discovery
+            - File watching for TDD workflow
+            - Parallel test execution
+            - Verbose output option
+
+        Configuration:
+            - Uses pytest as test runner
+            - Automatically detects CPU count for parallel runs
+            - Supports pytest command line arguments
+            - Integrates with coverage reporting
+
     """
     extra_args = []
 
@@ -24,9 +56,8 @@ def test_path(
         extra_args.append("-w")
 
     if multiple:
-        extra_args.append("-n")
-        extra_args.append(str(cpu_count()))
+        extra_args.extend(("-n", str(cpu_count())))
 
-    args = [path] + extra_args
+    args = [path, *extra_args]
     res = pytest.main(args)
     return bool(res == 0)

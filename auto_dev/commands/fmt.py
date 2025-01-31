@@ -1,4 +1,4 @@
-"""This module contains the logic for the fmt command."""
+"""Command to format code using configured formatters."""
 
 import rich_click as click
 
@@ -21,13 +21,75 @@ cli = build_cli()
 @click.option(
     "-co",
     "--changed-only",
-    help="Only lint the files that have changed.",
+    help="Only format the files that have changed.",
     is_flag=True,
     default=False,
 )
 @click.pass_context
-def fmt(ctx, path, changed_only) -> None:
-    """Runs the formatting tooling."""
+def fmt(
+    ctx: click.Context,
+    path: str | None,
+    changed_only: bool,
+) -> None:
+    """Format code using the configured formatters.
+
+    Required Parameters:
+        None
+
+    Optional Parameters:
+        path (-p): Path to code to format. (Default: None)
+            - If not provided, formats all packages
+            - Can be file or directory path
+            - Must exist in workspace
+        changed_only (-co): Only format files that have changed. (Default: False)
+            - Uses git to detect changes
+            - Only formats files with uncommitted changes
+            - Ignores untracked files
+
+    Usage:
+        Format all packages:
+            adev fmt
+
+        Format specific path:
+            adev fmt -p ./my_package
+
+        Format only changed files:
+            adev fmt --changed-only
+
+        Format specific path and only changed files:
+            adev fmt -p ./my_package --changed-only
+
+    Notes
+    -----
+        Formatters:
+            - black: Python code formatting
+            - isort: Import sorting
+            - docformatter: Docstring formatting
+
+        Features:
+            - Parallel processing for faster formatting
+            - Configurable via pyproject.toml
+            - Consistent code style enforcement
+            - Auto-fixes formatting issues
+            - Shows formatting statistics
+
+        Integration:
+            - Works with pre-commit hooks
+            - CI/CD pipeline support
+            - Editor/IDE integration
+            - Custom configuration support
+
+        Error Handling:
+            - Reports formatting failures
+            - Shows detailed error messages
+            - Exits with error on failure
+            - Preserves file content on error
+
+    Returns
+    -------
+        None
+
+    """
     verbose = ctx.obj["VERBOSE"]
     num_processes = ctx.obj["NUM_PROCESSES"]
     logger = ctx.obj["LOGGER"]

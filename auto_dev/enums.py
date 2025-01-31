@@ -52,3 +52,11 @@ class BehaviourTypes(Enum):
 
     metrics = "metrics"
     simple_fsm = "simple_fsm"
+
+
+class SupportedLedger(Enum):
+    """Supported ledger types."""
+
+    ETHEREUM = "ethereum"
+    COSMOS = "cosmos"
+    SOLANA = "solana"

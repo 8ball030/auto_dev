@@ -22,7 +22,7 @@ from auto_dev.utils import (
     folder_swapper,
     has_package_code_changed,
 )
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_AGENT_NAME
 
 
 TEST_PACKAGES_JSON = {
@@ -68,10 +68,20 @@ dependencies:
 }
 
 
-def test_get_logger():
+def test_get_logger(capsys):
     """Test get_logger."""
+    # Test default level (INFO)
     log = get_logger()
-    assert log.level == 20
+    assert log.level == 20  # INFO level
+
+    # Test DEBUG level
+    log = get_logger(log_level="DEBUG")
+    log.debug("Debug message")
+    log.info("Info message")
+    captured = capsys.readouterr()
+    assert log.level == 10  # DEBUG level
+    assert "Debug message" in captured.out
+    assert "Info message" in captured.out
 
 
 def test_get_packages(test_packages_filesystem):
@@ -198,7 +208,7 @@ def test_load_aea_ctx(dummy_agent_tim):
     result = decorated_func(mock_context, "arg1", "arg2", kwarg1="value1", kwarg2="value2")
 
     ctx, args, kwargs = result
-    assert ctx.aea_ctx.agent_config.name == "tim"
+    assert ctx.aea_ctx.agent_config.name == DEFAULT_AGENT_NAME
     assert args == ("arg1", "arg2")
     assert kwargs == {"kwarg1": "value1", "kwarg2": "value2"}
 

@@ -23,11 +23,16 @@ class ContractScaffolder:
         """Scaffold a contract from a file."""
         with open(path, encoding=DEFAULT_ENCODING) as file:
             abi = json.load(file)
+            if isinstance(abi, dict):
+                abi = abi["abi"]
         return Contract(abi=abi, name=name, address=address, author=self.author)
 
     def from_block_explorer(self, address: str, name: str):
         """Scaffold a contract from a block explorer."""
         abi = self.block_explorer.get_abi(address)
+        if abi is None:
+            msg = f"Failed to fetch ABI for contract at address {address}"
+            raise ValueError(msg)
         return Contract(abi=abi, name=name, address=address, author=self.author)
 
     def generate_openaea_contract(self, contract: Contract):
@@ -53,8 +58,8 @@ class ContractScaffolder:
             raise ValueError(msg)
 
         with isolated_filesystem():
-            if not CommandExecutor("aea create myagent".split(" ")).execute(verbose=verbose):
-                msg = "Failed to create agent."
+            if not (output := CommandExecutor("aea create myagent".split(" "))).execute(verbose=verbose):
+                msg = f"Failed to create agent.\n{output}"
                 raise ValueError(msg)
             os.chdir("myagent")
             if not CommandExecutor(f"aea scaffold contract {contract.name}".split(" ")).execute(verbose=verbose):

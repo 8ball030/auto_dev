@@ -116,8 +116,8 @@ class RepoScaffolder:
                 try:
                     content = content.format(**self.scaffold_kwargs)
                 except IndexError as e:
-                    self.logger.error(f"Error formatting {file}")
-                    self.logger.error(f"Error: {e}")
+                    self.logger.exception(f"Error formatting {file}")
+                    self.logger.exception(f"Error: {e}")
                     continue
                 target_file_path = new_repo_dir / rel_path.with_suffix("")
             else:
@@ -180,24 +180,59 @@ class RepoScaffolder:
 # We create a new command group
 @cli.group()
 def repo() -> None:
-    """Repository management commands."""
+    r"""Repository management commands.
+
+    Available Commands:\n
+        scaffold: Create and initialize a new repository with template files\n
+        update_deps: Update and lock repository dependencies\n
+    """
 
 
 @repo.command()
 @click.argument("name", type=str, required=True)
-@click.option(
-    "-t",
-    "--type-of-repo",
-    help="Type of repo to scaffold",
-    type=click.Choice(TEMPLATES),
-    required=True,
-)
+@click.option("-t", "--type-of-repo", help="Type of repo to scaffold", type=click.Choice(TEMPLATES), default="autonomy")
 @click.option("-f", "--force", is_flag=True, help="Force overwrite of existing repo", default=False)
 @click.option("--auto-approve", is_flag=True, help="Automatically approve all prompts", default=False)
 @click.option("--install/--no-install", is_flag=True, help="Do not install dependencies", default=True)
+@click.option("--initial-commit/--no-commit", is_flag=True, help="Add the initial commit. Requires git", default=True)
 @click.pass_context
-def scaffold(ctx, name, type_of_repo, force, auto_approve, install) -> None:
-    """Create a new repo and scaffold necessary files."""
+def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_commit) -> None:
+    r"""Create a new repository and scaffold necessary files.
+
+    Required Parameters:\n
+        name: Name of the repository to create\n
+
+    Optional Parameters:\n
+        type_of_repo (-t): Type of repository to scaffold (autonomy, python). (Default: autonomy)\n
+        force (-f): Overwrite existing repository if it exists. (Default: False)\n
+        auto_approve (-aa): Skip confirmation prompts. (Default: False)\n
+        install (--install/--no-install): Install dependencies after scaffolding. (Default: True)\n
+        initial_commit (--initial-commit/--no-commit): Create initial git commit. (Default: True)\n
+
+    Usage:
+        Create basic autonomy repo:
+            adev repo scaffold my_repo
+
+        Create Python repo:
+            adev repo scaffold my_repo -t python
+
+        Force overwrite existing repo:
+            adev repo scaffold my_repo -f
+
+        Skip dependency installation:
+            adev repo scaffold my_repo --no-install
+
+    Notes
+    -----
+        - Creates a new git repository in the specified directory
+        - For autonomy repos:
+            - Installs host dependencies via install.sh
+            - Initializes autonomy packages
+        - For Python repos:
+            - Creates src directory with __init__.py
+            - Adds sample main.py and cli.py files
+
+    """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
     logger.info(f"Creating a new {type_of_repo} repo.")
@@ -227,7 +262,13 @@ def scaffold(ctx, name, type_of_repo, force, auto_approve, install) -> None:
             logger.info("Installing host deps. This may take a while!")
             if install:
                 execute_commands("bash ./install.sh", verbose=verbose, logger=logger)
+
+            if initial_commit:
+                git_commands = ["git init", "git add .", "git commit -m 'feat-first-commit-from-StationsStation'"]
+                execute_commands(*git_commands, verbose=verbose, logger=logger)
+
             logger.info("Initialising autonomy packages.")
+
         elif type_of_repo == "python":
             src_dir = Path(name)
             src_dir.mkdir(exist_ok=False)
@@ -307,7 +348,27 @@ def update_against_version_set(logger, dry_run: bool = False) -> list[str]:
 )
 @click.pass_context
 def update_deps(ctx, lock: bool) -> None:
-    """Update dependencies in the current repo."""
+    r"""Update and lock repository dependencies.
+
+    Optional Parameters:
+        lock: Lock dependencies after updating. Default: False\n
+
+    Usage:
+        Update dependencies:\n
+            adev repo update-deps\n
+
+        Update and lock dependencies:\n
+            adev repo update-deps --lock\n
+
+    Notes
+    -----
+        - Updates dependencies in packages.json\n
+        - Optionally locks dependency versions\n
+        - Checks for changes in dependency files\n
+        - Prompts to commit changes if detected\n
+        - Exits with error if uncommitted changes exist\n
+
+    """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
     # We read in the pyproject.toml file

@@ -1,36 +1,85 @@
 """Test the contracts module."""
 
+import json
 import shutil
 from pathlib import Path
 
 import pytest
 import responses
 
+from auto_dev.constants import DEFAULT_ENCODING, Network
+from auto_dev.exceptions import APIError
 from auto_dev.commands.scaffold import BlockExplorer, ContractScaffolder
 
 
-KNOWN_ADDRESS = "0xc939df369C0Fc240C975A6dEEEE77d87bCFaC259"
-BLOCK_EXPLORER_URL = "https://api.etherscan.io"
-BLOCK_EXPLORER_API_KEY = None
+KNOWN_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # checksum address
+BLOCK_EXPLORER_URL = "https://abidata.net"
+NETWORK = Network.BASE
+
+DUMMY_ABI = json.loads((Path() / "tests" / "data" / "dummy_abi.json").read_text(DEFAULT_ENCODING))
 
 
 @pytest.fixture
 def block_explorer():
     """Block explorer fixture."""
-    return BlockExplorer(BLOCK_EXPLORER_URL, BLOCK_EXPLORER_API_KEY)
+    return BlockExplorer(BLOCK_EXPLORER_URL, network=NETWORK)
 
 
 @responses.activate
 def test_block_explorer(block_explorer):
     """Test the block explorer."""
+    expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}"
+
     responses.add(
         responses.GET,
-        f"{BLOCK_EXPLORER_URL}/api?module=contract&action=getabi&address={KNOWN_ADDRESS}",
-        json={"status": "1", "message": "OK", "result": '{"abi": "some_abi"}'},
+        expected_url,
+        json={"ok": True, "abi": DUMMY_ABI},
     )
-    block_explorer = BlockExplorer(BLOCK_EXPLORER_URL, BLOCK_EXPLORER_API_KEY)
+    block_explorer = BlockExplorer(BLOCK_EXPLORER_URL, network=NETWORK)
     abi = block_explorer.get_abi(KNOWN_ADDRESS)
-    assert abi
+    assert abi is not None, "ABI should not be None"
+    assert abi == DUMMY_ABI
+
+
+@responses.activate
+def test_block_explorer_error_handling(block_explorer):
+    """Test the block explorer handles errors gracefully."""
+    expected_url = f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}"
+
+    # Test case 1: API returns error
+    responses.add(responses.GET, expected_url, json={"ok": False, "error": "Not found"}, status=404)
+    with pytest.raises(APIError):
+        block_explorer.get_abi(KNOWN_ADDRESS)
+
+    # Reset responses
+    responses.reset()
+
+    # Test case 2: API returns invalid response
+    responses.add(
+        responses.GET,
+        expected_url,
+        json={"ok": True},  # Missing ABI
+    )
+    with pytest.raises(ValueError):
+        block_explorer.get_abi(KNOWN_ADDRESS)
+
+
+@responses.activate
+def test_block_explorer_invalid_network():
+    """Test the block explorer with an invalid network."""
+    with pytest.raises(TypeError) as exc_info:
+        BlockExplorer(BLOCK_EXPLORER_URL, network="invalid")
+    assert "network must be an instance of Network enum" in str(exc_info.value)
+
+
+@responses.activate
+def test_block_explorer_non_enum_network():
+    """Test the block explorer with a network that's not in the Network enum."""
+    non_enum_network = "unknown_network"
+
+    with pytest.raises(TypeError) as exc_info:
+        BlockExplorer(BLOCK_EXPLORER_URL, network=non_enum_network)
+    assert "network must be an instance of Network enum" in str(exc_info.value)
 
 
 # we now test the scaffolder
@@ -45,8 +94,8 @@ def test_scaffolder_generate(scaffolder):
     """Test the scaffolder."""
     responses.add(
         responses.GET,
-        f"{BLOCK_EXPLORER_URL}/api?module=contract&action=getabi&address={KNOWN_ADDRESS}",
-        json={"status": "1", "message": "OK", "result": '{"abi": "some_abi"}'},
+        f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}",
+        json={"ok": True, "abi": DUMMY_ABI},
     )
     new_contract = scaffolder.from_block_explorer(KNOWN_ADDRESS, "new_contract")
     assert new_contract
@@ -62,8 +111,8 @@ def test_scaffolder_generate_openaea_contract(scaffolder, test_filesystem):
     del test_filesystem
     responses.add(
         responses.GET,
-        f"{BLOCK_EXPLORER_URL}/api?module=contract&action=getabi&address={KNOWN_ADDRESS}",
-        json={"status": "1", "message": "OK", "result": '{"abi": "some_abi"}'},
+        f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}",
+        json={"ok": True, "abi": DUMMY_ABI},
     )
     new_contract = scaffolder.from_block_explorer(KNOWN_ADDRESS, "new_contract")
     contract_path = scaffolder.generate_openaea_contract(new_contract)
@@ -85,3 +134,12 @@ def test_scaffolder_from_abi(scaffolder, test_filesystem):
     assert new_contract.address == KNOWN_ADDRESS
     assert new_contract.name == "new_contract"
     assert new_contract.author == "eightballer"
+
+
+def test_scaffolder_extracts_events(scaffolder, test_filesystem):
+    """Test the scaffolder extracts events."""
+    assert test_filesystem
+    path = Path() / "tests" / "data" / "dummy_abi.json"
+    new_contract = scaffolder.from_abi(str(path), KNOWN_ADDRESS, "new_contract")
+    new_contract.parse_events()
+    assert new_contract.events

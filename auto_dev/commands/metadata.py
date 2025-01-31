@@ -3,6 +3,7 @@
 - print metadata: we read in a meta data file and print it in a way that can be copy pasted into the frontend.
 """
 
+import os
 import sys
 import json
 
@@ -10,7 +11,7 @@ import yaml
 import rich_click as click
 from rich import print_json
 from aea.helpers.cid import to_v1
-from aea.configurations.base import PublicId
+from aea.configurations.base import PublicId, ComponentType, _get_default_configuration_file_name_from_type  # noqa
 from aea_cli_ipfs.ipfs_utils import IPFSTool
 from aea.configurations.constants import (
     AGENT,
@@ -30,6 +31,7 @@ from auto_dev.base import build_cli
 from auto_dev.enums import FileType
 from auto_dev.utils import write_to_file
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.services.dependencies.index import DependencyBuilder
 
 
 cli = build_cli()
@@ -91,7 +93,12 @@ def get_metadata(root, name, hash_, target_id):
 
 @cli.group()
 def metadata() -> None:
-    """Commands for generating and printing metadata."""
+    r"""Commands for generating and managing package metadata.
+
+    Available Commands:\n
+        generate: Generate metadata JSON files for packages\n
+        validate: Validate existing metadata files\n
+    """
 
 
 # we make a command called generate
@@ -124,10 +131,33 @@ def metadata() -> None:
     default=False,
 )
 def generate(root, target_name, target_id, strict, all) -> None:  # pylint: disable=redefined-builtin
-    """Generate metadata for a package.
+    r"""Generate metadata JSON files for packages.
 
-    example usage:
-         python ./metadata.py generate . contract/eightballer/cool_skill/0.1.0 01
+    Required Parameters:\n
+        root: Path to root directory containing packages.json. Default: current directory\n
+        target_name: Name of the package to generate metadata for (e.g., contract/author/name/version)\n
+        target_id: Identifier for the metadata file (used in output filename)\n
+
+    Optional Parameters:\n
+        strict: Enable strict validation of metadata. (Default: False)\n
+        all: Generate metadata for all packages. (Default: False)\n
+
+    Usage:
+        Generate for specific package:
+            adev metadata generate . contract/author/package/0.1.0 01
+
+        Generate for all packages:
+            adev metadata generate . contract/author/package/0.1.0 01 --all
+
+        Generate with strict validation:
+            adev metadata generate . contract/author/package/0.1.0 01 --strict
+
+    Notes
+    -----
+    - Reads package information from packages.json
+    - Generates metadata files in mints/<target_id>.json
+    - Strict mode enforces additional validation
+    - Can process single package or all packages
 
     """
     if not target_id and not all:
@@ -188,43 +218,22 @@ class Dependency(PublicId):
     component_type: str
 
 
-def build_dependency_tree_for_component(component) -> list[str]:
-    """Build dependency tree for a component."""
+def build_dependency_tree_for_metadata_components(component: str) -> dict:
+    """Build dependency tree for metadata components.
+
+    Args:
+        component: Component identifier string in format 'type/author/name'
+
+    Returns:
+        Dictionary mapping dependency types to sets of dependencies
+    """
     component_type = component.split("/")[0]
     component_author = component.split("/")[1]
     component_name = component.split("/")[2]
     public_id = PublicId(component_author, component_name.split(":")[0])
-    if component_type == AGENT:
-        file_name = DEFAULT_AEA_CONFIG_FILE
-    elif component_type == SERVICE:
-        file_name = "service.yaml"
-    elif component_type == CUSTOM:
-        file_name = "component.yaml"
-    else:
-        file_name = f"{component_type}.yaml"
+    component_path = f"packages/{public_id.author}/{component_type}s/{public_id.name}"
 
-    component_path = f"packages/{public_id.author}/{component_type}s/{public_id.name}/{file_name}"
-    component_data = read_yaml_file(component_path)
-
-    dependencies = {}
-
-    for dependency_type in dependency_order:
-        if dependency_type == AGENTS and component_type != SERVICE:
-            continue
-        if component_type == SERVICE and dependency_type == SERVICES:
-            dependency_id = Dependency.from_str(component_data[AGENT])
-            dependency_id.component_type = AGENT
-            path = f"{dependency_type}/{dependency_id.author}/{dependency_id.name}"
-            dependencies[dependency_id] = path
-        else:
-            if dependency_type not in component_data:
-                continue
-            for dependency in component_data[dependency_type]:
-                dependency_id = Dependency.from_str(dependency)
-                dependency_id.component_type = dependency_type[:-1]
-                path = f"{dependency_type}/{dependency_id.author}/{dependency_id.name}"
-                dependencies[dependency_id] = path
-    return dependencies
+    return DependencyBuilder.build_dependency_tree_for_component(component_path, component_type)
 
 
 @cli.command()
@@ -234,7 +243,24 @@ def build_dependency_tree_for_component(component) -> list[str]:
 )
 @click.pass_context
 def validate(ctx, metadata_file) -> None:
-    """Print metadata for a package."""
+    r"""Validate metadata files for packages.
+
+    Required Parameters:
+        metadata_file: Path to the metadata JSON file to validate\n
+
+    Usage:
+        Validate a metadata file:\n
+            adev metadata validate mints/01.json\n
+
+    Notes
+    -----
+        - Validates the metadata file format and content\n
+        - Checks if all dependencies are minted\n
+        - Verifies component status in mapping.txt\n
+        - Displays detailed validation results with verbose flag\n
+        - Exits with error if validation fails\n
+
+    """
     verbose = ctx.obj["VERBOSE"]
     metadata = read_json_file(metadata_file)
     valid = render_metadata(metadata, verbose=verbose)
@@ -248,7 +274,7 @@ def render_metadata(metadata, verbose=False) -> bool:
     self_component = Dependency.from_str("/".join(metadata["name"].split("/")[1:]))
     self_component.component_type = metadata["name"].split("/")[0]
     self_component_status, self_component_id = check_component_status(self_component)
-    dependencies = build_dependency_tree_for_component(metadata["name"])
+    dependencies = build_dependency_tree_for_metadata_components(metadata["name"])
 
     if verbose:
         click.echo("Raw Data:")

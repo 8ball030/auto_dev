@@ -24,7 +24,7 @@ class Formatter:
     def _remote_format_path(self, path, verbose=False):
         """Format the path."""
         # pylint: disable=R1732
-        with requests.Session() as session, open(path, "r", encoding=DEFAULT_ENCODING) as file:
+        with requests.Session() as session, open(path, encoding=DEFAULT_ENCODING) as file:
             data = file.read()
             result = session.post(
                 "http://localhost:26659/format",

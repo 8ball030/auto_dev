@@ -1,6 +1,4 @@
-"""
-Dialogues scaffolder.
-"""
+"""Dialogues scaffolder."""
 
 from enum import Enum
 
@@ -19,7 +17,15 @@ class DialogueTypes(Enum):
 
 
 class DialogueScaffolder(BehaviourScaffolder):
-    """Dialogue Scaffolder."""
+    """Dialogue Scaffolder.
+    
+    Args:
+        protocol_specification_path: Path to the protocol specification file.
+        dialogue_type: Type of dialogue to scaffold.
+        logger: Logger instance.
+        verbose: Whether to enable verbose logging.
+        auto_confirm: Whether to automatically confirm prompts.
+    """
 
     component_class: str = "dialogues"
     type: DialogueTypes = DialogueTypes.simple
@@ -27,7 +33,6 @@ class DialogueScaffolder(BehaviourScaffolder):
     def __init__(
         self, protocol_specification_path: str, dialogue_type, logger, verbose: bool = True, auto_confirm: bool = False
     ):
-        """Initialize ProtocolScaffolder."""
         self.logger = logger or get_logger()
         self.verbose = verbose
         self.behaviour_type = dialogue_type

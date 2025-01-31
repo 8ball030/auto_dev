@@ -76,6 +76,42 @@ WRITE_FUNCTION_TEMPLATE: Template = Template(
 """
 )
 
+EVENT_TEMPLATE: Template = Template(
+    """
+    @classmethod
+    def get_${name}_events(
+        cls,
+        ledger_api: LedgerApi,
+        contract_address: str,
+        $params,
+        look_back: int=1000,
+        to_block: str="latest",
+        from_block: int=None
+        ) -> JSONLike:
+        \"\"\"Handler method for the '$camel_name' events .\"\"\"
+
+        instance = cls.get_instance(ledger_api, contract_address)
+        arg_filters = {
+            key: value for key, value in ($keywords)
+            if value is not None
+        }
+        to_block = to_block or "latest"
+        if to_block == "latest":
+            to_block = ledger_api.api.eth.block_number
+        from_block = from_block or (to_block - look_back)
+        result = instance.events.$camel_name().get_logs(
+            fromBlock=from_block,
+            toBlock=to_block,
+            argument_filters=arg_filters
+        )
+        return {
+            "events": result,
+            "from_block": from_block,
+            "to_block": to_block,
+        }
+"""
+)
+
 
 READ_TEST_CASES = [
     {

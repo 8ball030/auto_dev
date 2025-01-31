@@ -17,16 +17,16 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<=3.13"
 cython = "<3.0.0"
-open-aea-ledger-solana = "==1.57.0"
-open-aea-ledger-cosmos = "==1.57.0"
-open-aea-ledger-ethereum = "==1.57.0"
-open-aea = "==1.57.0"
-open-aea-cli-ipfs = "==1.57.0"
-open-aea-test-autonomy = "==0.16.1"
-open-autonomy = "==0.16.1"
-autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.78"}}
+open-aea-ledger-solana = "==1.60.0"
+open-aea-ledger-cosmos = "==1.60.0"
+open-aea-ledger-ethereum = "==1.60.0"
+open-aea = "==1.60.0"
+open-aea-cli-ipfs = "==1.60.0"
+open-aea-test-autonomy = "==0.18.4"
+open-autonomy = "==0.18.4"
+autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.92"}}
 
 [tool.poetry.dev-dependencies]
 

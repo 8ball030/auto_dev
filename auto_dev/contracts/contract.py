@@ -9,12 +9,25 @@ from web3 import Web3
 from auto_dev.enums import FileType
 from auto_dev.utils import write_to_file, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.exceptions import UnsupportedSolidityVersion
 from auto_dev.contracts.function import Function
+from auto_dev.contracts.contract_events import ContractEvent
 from auto_dev.contracts.contract_functions import FunctionType, ContractFunction
 
 
+DEFAULT_NULL_ADDRESS = "0x0000000000000000000000000000000000000000"
+
+
 class Contract:
-    """Class to scaffold a contract."""
+    """Class to scaffold a contract.
+    
+    Args:
+        author: The author of the contract.
+        name: The name of the contract.
+        abi: The contract's ABI (Application Binary Interface).
+        address: The contract's address on the blockchain. Defaults to null address.
+        web3: Optional Web3 instance for blockchain interaction.
+    """
 
     author: str
     name: str
@@ -23,6 +36,7 @@ class Contract:
     read_functions: list = []
     write_functions: list = []
     path: Path
+    events: list = []
 
     def parse_functions(self) -> None:
         """Get the functions from the abi."""
@@ -32,6 +46,18 @@ class Contract:
             raise ValueError(msg)
         with abi_path.open("r", encoding=DEFAULT_ENCODING) as file_pointer:
             abi = json.load(file_pointer)["abi"]
+
+        # this is added because web is not compatible with pre-Solidity 0.6
+        for item in abi:
+            if item.get("type") == "function" and "constant" in item:
+                msg = (
+                    "Outdated ABI format detected (pre-0.6 Solidity). "
+                    "The ABI uses 'constant' instead of 'stateMutability'. "
+                    "Please provide an ABI from Solidity 0.6 or later."
+                )
+                raise UnsupportedSolidityVersion(
+                    msg
+                )
         w3_contract = self.web3.eth.contract(address=self.address, abi=abi)
         for function in w3_contract.all_functions():
             mutability = function.abi["stateMutability"]
@@ -43,8 +69,9 @@ class Contract:
                 msg = f"Function {function} has unknown state mutability: {mutability}"
                 raise ValueError(msg)
 
-    def __init__(self, author: str, name: str, abi: dict, address: str, web3: Web3 | None = None):
-        """Initialise the contract."""
+    def __init__(
+        self, author: str, name: str, abi: dict, address: str = DEFAULT_NULL_ADDRESS, web3: Web3 | None = None
+    ):
         self.author = author
         self.name = name
         self.abi = abi
@@ -107,9 +134,11 @@ class Contract:
 
         read_functions = "\n".join([function.to_string() for function in self.read_functions])
         write_functions = "\n".join([function.to_string() for function in self.write_functions])
-        contract_py += read_functions + write_functions
 
-        write_to_file(str(contract_py_path), contract_py, FileType.TEXT)
+        events = "\n".join([event.to_string() for event in self.events])
+        contract_str = "\n".join(contract_py.split("/n")[:36]) + read_functions + write_functions + events
+
+        write_to_file(str(contract_py_path), contract_str, FileType.TEXT)
 
     def update_contract_init__(self) -> None:
         """Append the Public."""
@@ -132,4 +161,9 @@ class Contract:
         """Scaffold the contract and ensure it is written to the file system."""
         self.write_abi_to_file()
         self.parse_functions()
+        self.parse_events()
         self.update_all()
+
+    def parse_events(self):
+        """We need to parse the events from the abi."""
+        self.events = [ContractEvent(**event) for event in self.abi if event["type"] == "event"]

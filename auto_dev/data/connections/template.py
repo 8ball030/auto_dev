@@ -25,7 +25,6 @@ HEADER = """
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-'''Module for connection. '''
 """
 
 DOCSTRING = """\"\"\"{proper_name} connection and channel.\"\"\""""

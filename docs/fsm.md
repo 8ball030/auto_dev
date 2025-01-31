@@ -7,7 +7,7 @@ The tools within the `fsm` subcommand are used to scaffold a new agent.
 We start with a simple fsm;
 
 ```bash
-cat auto_dev/data/fsm/fsm_specification.yaml
+cat auto_dev/data/fsm/samples/fsm_specification.yaml
 ```
 
 Output:
@@ -36,7 +36,7 @@ transition_func:
 We can then convert this to a mermaid diagram using the adev tool.
 
 ```bash
-adev fsm from-file auto_dev/data/fsm/fsm_specification.yaml --output mermaid DemoAbciApp
+adev fsm from-file auto_dev/data/fsm/samples/fsm_specification.yaml --output mermaid DemoAbciApp
 ```
 
 Output:
@@ -66,7 +66,7 @@ graph TD
 We now scaffold the agent.
 
 ```bash
-adev create -t eightballer/base new_agent
+adev create --no-clean-up -t eightballer/base author/new_agent
 ```
 We now have a new agent.
 
@@ -81,7 +81,7 @@ Once we have a new agent, we can first scaffold the skill using the CORE autonom
 This reduces the amount of code we need to write to get a skill up and means that we have no need to write any code to re-implement the wheel.
 
 ```bash
-adev scaffold fsm --spec ../auto_dev/data/fsm/fsm_specification.yaml
+adev scaffold fsm --spec ../auto_dev/data/fsm/samples/fsm_specification.yaml
 ```
 
 We now have an agent with a new skill, HOWEVER

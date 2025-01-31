@@ -36,7 +36,65 @@ cli = build_cli()
 )
 @click.pass_context
 def lint(ctx, path, changed_only) -> None:
-    """Runs the linting tooling."""
+    """Run linting checks on code.
+
+    Required Parameters:
+        None
+
+    Optional Parameters:
+        path (-p): Path to code to lint. (Default: None)
+            - If not provided, lints all packages
+            - Can be file or directory path
+            - Must exist in workspace
+        changed_only (-co): Only lint files that have changed. (Default: False)
+            - Uses git to detect changes
+            - Only lints files with uncommitted changes
+            - Ignores untracked files
+
+    Usage:
+        Lint all packages:
+            adev lint
+
+        Lint specific path:
+            adev lint -p ./my_package
+
+        Lint only changed files:
+            adev lint --changed-only
+
+        Lint specific path and only changed files:
+            adev lint -p ./my_package --changed-only
+
+        Lint with verbose output:
+            adev lint -v
+
+    Notes
+    -----
+        Linting Tools:
+            - ruff: Fast Python linter
+            - pylint: Comprehensive code analysis
+            - mypy: Static type checking
+            - bandit: Security checks
+
+        Features:
+            - Parallel linting for performance
+            - Configurable via pyproject.toml
+            - Auto-fixes for common issues
+            - Detailed error reporting
+            - Custom rule configuration
+
+        Integration:
+            - Works with pre-commit hooks
+            - CI/CD pipeline support
+            - Editor/IDE integration
+            - Custom plugin support
+
+        Configuration:
+            - Severity levels customization
+            - Rule enabling/disabling
+            - File/directory exclusions
+            - Line length settings
+
+    """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
     num_processes = ctx.obj["NUM_PROCESSES"]

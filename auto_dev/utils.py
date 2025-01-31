@@ -6,6 +6,7 @@ import time
 import shutil
 import logging
 import operator
+import platform
 import tempfile
 import subprocess
 from glob import glob
@@ -20,15 +21,37 @@ from collections.abc import Callable
 import yaml
 import rich_click as click
 from rich.logging import RichHandler
+from aea.skills.base import PublicId
 from aea.cli.utils.config import get_registry_path_from_cli_config
 from aea.cli.utils.context import Context
 from openapi_spec_validator import validate_spec
-from aea.configurations.base import AgentConfig
+from aea.configurations.base import (
+    DEFAULT_AEA_CONFIG_FILE,
+    AgentConfig,
+    _get_default_configuration_file_name_from_type,  # noqa
+)
+from aea.configurations.data_types import PackageType
 from openapi_spec_validator.exceptions import OpenAPIValidationError
 
 from auto_dev.enums import FileType, FileOperation
-from auto_dev.constants import DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE
+from auto_dev.constants import OS_ENV_MAP, DEFAULT_ENCODING, AUTONOMY_PACKAGES_FILE, SupportedOS
 from auto_dev.exceptions import NotFound, OperationError
+
+
+def reset_logging():
+    """Forcefully remove any existing logging configuration."""
+    # Clear all handlers from the root logger
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    # Optionally, reset the root logger's level
+    logging.root.setLevel(logging.NOTSET)
+
+
+# Call reset_logging before applying your new configuration
+
+
+LOGGER = None
 
 
 def get_logger(name: str = __name__, log_level: str = "INFO") -> logging.Logger:
@@ -44,16 +67,30 @@ def get_logger(name: str = __name__, log_level: str = "INFO") -> logging.Logger:
         logging.Logger: Configured logger instance.
 
     """
+    global LOGGER  # noqa
+    if LOGGER:
+        return LOGGER
+    reset_logging()
+    # Reset any existing logging configuration
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    logging.root.setLevel(logging.NOTSET)  # Reset root logger level
+
     handler = RichHandler(
         rich_tracebacks=True,
         markup=True,
+        show_path=False,
+        tracebacks_show_locals=True,
+        enable_link_path=True,
+        show_level=False,
+        show_time=False,
     )
 
     datefmt = "%H:%M:%S"
     logging.basicConfig(
         level=getattr(logging, log_level.upper(), "INFO"),
         datefmt=datefmt,
-        format="%(levelname)s - %(message)s",
+        format="%(message)s",
         handlers=[handler],
     )
     log = logging.getLogger(name)
@@ -252,32 +289,43 @@ def remove_suffix(text: str, suffix: str) -> str:
     return text[: -len(suffix)] if suffix and text.endswith(suffix) else text
 
 
-def load_aea_config():
-    """Load the aea-config.yaml file."""
-    aea_config = Path("aea-config.yaml")
-    if not aea_config.exists():
-        msg = f"Could not find {aea_config}"
+def load_autonolas_yaml(package_type: PackageType, directory: str | Path | None = None) -> list:
+    """Load a component's yaml configuration file.
+
+    Args:
+    ----
+        package_type: Type of package (agent, skill, contract, protocol)
+        directory: Optional directory path where the config file is located
+
+    Returns:
+    -------
+        List of yaml documents from the file
+
+    Raises:
+    ------
+        FileNotFoundError: If the config file doesn't exist
+        ValueError: If invalid package type provided
+
+    """
+
+    config_file = _get_default_configuration_file_name_from_type(package_type)
+    config_path = Path(directory or ".") / config_file
+
+    if not config_path.exists():
+        msg = f"Could not find {config_path}, are you in the correct directory?"
         raise FileNotFoundError(msg)
 
-    # Notes, we have a bit of an issue here.
-    # The loader for the agent config only loads the first document in the yaml file.
-    # We have to load all the documents in the yaml file, however, later on, we run into issues
-    # with the agent config loader not being able to load the yaml file.
-    # I propose we we raise an issue to address ALL instances of agent loading
-    agent_config_yaml = list(yaml.safe_load_all(aea_config.read_text(encoding=DEFAULT_ENCODING)))[0]
-    agent_config_json = json.loads(json.dumps(agent_config_yaml))
-    return agent_config_json
+    return list(yaml.safe_load_all(config_path.read_text(encoding=DEFAULT_ENCODING)))
 
 
 def load_aea_ctx(func: Callable[[click.Context, Any, Any], Any]) -> Callable[[click.Context, Any, Any], Any]:
     """Load aea Context and AgentConfig if aea-config.yaml exists."""
 
     def wrapper(ctx: click.Context, *args, **kwargs):
-        agent_config_json = load_aea_config()
+        agent_config_json = load_autonolas_yaml(PackageType.AGENT)[0]
         registry_path = get_registry_path_from_cli_config()
         ctx.aea_ctx = Context(cwd=".", verbosity="INFO", registry_path=registry_path)
         ctx.aea_ctx.agent_config = AgentConfig.from_json(agent_config_json)
-
         return func(ctx, *args, **kwargs)
 
     wrapper.__name__ = func.__name__
@@ -289,8 +337,7 @@ def currenttz():
     """Return the current timezone."""
     if time.daylight:
         return timezone(timedelta(seconds=-time.altzone), time.tzname[1])
-    else:
-        return timezone(timedelta(seconds=-time.timezone), time.tzname[0])
+    return timezone(timedelta(seconds=-time.timezone), time.tzname[0])
 
 
 def write_to_file(file_path: str, content: Any, file_type: FileType = FileType.TEXT, **kwargs) -> None:
@@ -414,3 +461,36 @@ class FileLoader:
             return self.file_path.write_text(loader_func(*args, **kwargs), encoding=DEFAULT_ENCODING)
         msg = f"Operation {func} not supported"
         raise OperationError(msg)
+
+
+def log_operating_system(self) -> None:
+    """Log the current operating system."""
+    os_name = platform.system()
+    if os_name not in SupportedOS:
+        self.logger.error(f"Operating System {os_name} is not supported.")
+        msg = f"Operating System {os_name} is not supported."
+        raise RuntimeError(msg)
+
+    self.logger.info(f"Operating System: {os_name}")
+    self.map_os_to_env_vars(os_name)
+
+
+def map_os_to_env_vars(os_name: str) -> None:
+    """Map operating system to environment variables."""
+    return OS_ENV_MAP.get(os_name, {})
+
+
+def update_author(public_id: PublicId) -> None:
+    """Update the author in the recently created agent."""
+
+    complete_agent_config = load_autonolas_yaml(PackageType.AGENT)
+    agent_config, *_ = complete_agent_config
+    for key in ["author", "agent_name"]:
+        public_id.agent_name = public_id.name
+        if key not in agent_config:
+            msg = f"Key {key} not found in agent config. Please check the agent config file."
+            raise KeyError(msg)
+        if agent_config[key] != getattr(public_id, key):
+            agent_config[key] = getattr(public_id, key)
+            complete_agent_config[0] = agent_config
+            write_to_file(DEFAULT_AEA_CONFIG_FILE, complete_agent_config, FileType.YAML)

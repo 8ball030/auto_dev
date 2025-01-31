@@ -266,7 +266,8 @@ class TestDAOScaffolder:
     @pytest.fixture
     def scaffolder(self, mock_logger, tmp_path):
         """Create a scaffolder instance with a temporary working directory."""
-        scaffolder = DAOScaffolder(mock_logger, verbose=True, auto_confirm=True)
+        public_id = PublicId("dummy_author", "dummy_name", "0.1.0")
+        scaffolder = DAOScaffolder(mock_logger, verbose=True, auto_confirm=True, public_id=public_id)
         scaffolder.component_yaml = tmp_path / "component.yaml"
         return scaffolder
 

@@ -25,7 +25,7 @@ class Reference(BaseModel):
         return current
 
 
-class DataType(enum.StrEnum):
+class DataType(enum.Enum):
     """Data type."""
 
     STRING = "string"
@@ -34,6 +34,10 @@ class DataType(enum.StrEnum):
     BOOLEAN = "boolean"
     ARRAY = "array"
     OBJECT = "object"
+
+    def __str__(self):
+        """Return the string representation of the data type."""
+        return self.value
 
 
 class Schema(BaseModel):
@@ -67,6 +71,7 @@ class Encoding(BaseModel):
     """OpenAPI Encoding Object."""
 
     content_type: str | None = None
+
     model_config = ConfigDict(
         extra="allow",
     )
@@ -114,6 +119,7 @@ class Response(BaseModel):
     description: str
     content: dict[str, MediaType] | None = None
     headers: dict[str, Any] | None = None
+
     model_config = ConfigDict(
         extra="allow",
     )

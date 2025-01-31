@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+echo "Solving dependencies"
+
+poetry install || poetry lock --no-update
+
 echo 'Generating lock files for template repos'
 echo 'doing autonomy'
 REPO_NAME="test_repo"

@@ -1,18 +1,20 @@
 """Implement scaffolding tooling."""
 
+import sys
 import difflib
 from copy import deepcopy
 from pathlib import Path
 
 import yaml
 import rich_click as click
-from aea.configurations.base import PublicId
+from aea.configurations.base import SKILLS, PublicId, PackageType
 
 from auto_dev.base import build_cli
-from auto_dev.enums import FileType
-from auto_dev.utils import get_logger, write_to_file, read_from_file
+from auto_dev.enums import FileType, BehaviourTypes
+from auto_dev.utils import get_logger, write_to_file, read_from_file, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
+from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 
 
 logger = get_logger()
@@ -169,7 +171,10 @@ AEA_CONFIG = "aea-config.yaml"
 
 
 class BaseScaffolder:
-    """BaseScaffolder."""
+    """Base class for scaffolding functionality.
+
+    Initializes a scaffolder with logging and loads the AEA configuration.
+    """
 
     def load(self) -> None:
         """Load."""
@@ -180,7 +185,6 @@ class BaseScaffolder:
         self.aea_config = list(yaml.safe_load_all(content))
 
     def __init__(self) -> None:
-        """Init scaffolder."""
         self.logger = get_logger()
         self.load()
 
@@ -227,13 +231,39 @@ class LoggingScaffolder(BaseScaffolder):
 
 @cli.group()
 def augment() -> None:
-    """Scaffold commands."""
+    r"""Commands for augmenting project components.
+
+    Available Commands:\n
+        logging: Add logging handlers to AEA configuration\n
+        customs: Augment customs components with OpenAPI3 handlers\n
+    """
 
 
 @augment.command()
 @click.argument("handlers", nargs=-1, type=click.Choice(HANDLERS.keys()), required=True)
 def logging(handlers) -> None:
-    """Augment an aeas logging configuration."""
+    r"""Augment AEA logging configuration with additional handlers.
+
+    Required Parameters:\n
+        handlers: One or more handlers to add (console, http, logfile)\n
+
+    Usage:\n
+        Add console handler:\n
+            adev augment logging console\n
+
+        Add multiple handlers:\n
+            adev augment logging console http logfile\n
+
+    Notes
+    -----
+        - Modifies aea-config.yaml logging configuration
+        - Available handlers:
+            - console: Rich console output
+            - http: HTTP POST logging to server
+            - logfile: File-based logging
+        - Each handler can be configured via environment variables
+
+    """
     logger.info(f"Augmenting logging with handlers: {handlers}")
     logging_scaffolder = LoggingScaffolder()
     logging_scaffolder.scaffold(handlers)
@@ -285,7 +315,34 @@ def connection(connections) -> None:
 @click.option("--use-daos", is_flag=True, default=False, help="Augment OpenAPI3 handlers with DAOs")
 @click.pass_context
 def customs(ctx, component_type, auto_confirm, use_daos):
-    """Augment a customs component with OpenAPI3 handlers."""
+    r"""Augment a customs component with OpenAPI3 handlers.
+
+    Required Parameters:
+        component_type: Type of component to augment (currently only openapi3)
+
+    Optional Parameters:\n
+        auto_confirm: Skip confirmation prompts. (Default: False)\n
+        use_daos: Include DAO integration in handlers. (Default: False)\n
+
+    Usage:\n
+        Basic OpenAPI3 augmentation:\n
+            adev augment customs openapi3\n
+
+        With DAO integration:
+            adev augment customs openapi3 --use-daos
+
+        Skip confirmations:
+            adev augment customs openapi3 --auto-confirm
+
+    Notes
+    -----
+        - Requires component.yaml with api_spec field
+        - Generates/updates handlers.py with OpenAPI endpoints
+        - Creates necessary dialogue classes
+        - Optionally adds DAO integration
+        - Shows diff before updating existing handlers
+
+    """
     logger = ctx.obj["LOGGER"]
     logger.info(f"Augmenting {component_type} component")
     verbose = ctx.obj["VERBOSE"]
@@ -311,13 +368,7 @@ def customs(ctx, component_type, auto_confirm, use_daos):
     scaffolder = (
         HandlerScaffoldBuilder()
         .create_scaffolder(
-            api_spec_path,
-            public_id,
-            logger,
-            verbose,
-            new_skill=False,
-            auto_confirm=auto_confirm,
-            use_daos=use_daos
+            api_spec_path, public_id, logger, verbose, new_skill=False, auto_confirm=auto_confirm, use_daos=use_daos
         )
         .build()
     )
@@ -351,6 +402,50 @@ def customs(ctx, component_type, auto_confirm, use_daos):
     if use_daos:
         scaffolder.create_exceptions()
     logger.info("OpenAPI3 scaffolding completed successfully.")
+
+
+@augment.command()
+@click.argument("spec_file", type=click.Path(exists=True))
+@click.argument("skill_public_id", type=PublicId.from_str, required=True)
+@click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
+@click.option("--verbose", is_flag=True, default=False, help="Verbose output")
+def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool):
+    """Augment a skill with a new handler."""
+
+    if not Path(spec_file).exists():
+        logger.error(f"Specification file for FSM not found: {spec_file}")
+        sys.exit(1)
+    if not Path(AEA_CONFIG).exists():
+        logger.error(f"File {AEA_CONFIG} not found")
+        sys.exit(1)
+    if not skill_public_id:
+        logger.error("Skill public id not provided. Unsure which skill to augment.")
+
+    skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
+    config, *_overrides = load_autonolas_yaml(PackageType.SKILL, skill_dir)
+
+    if config.get("author") != skill_public_id.author or config.get("name") != skill_public_id.name:
+        logger.error(f"Skill {skill_public_id} not found in the current project.")
+        sys.exit(1)
+
+    behaviour_path = skill_dir / "behaviours.py"
+    if behaviour_path.exists():
+        logger.error(f"Behaviours file already exists for skill {skill_public_id}.")
+        sys.exit(1)
+
+    logger.info("Augmenting skill with a new handler.")
+    scaffolder = BehaviourScaffolder(
+        spec_file,
+        behaviour_type=BehaviourTypes.simple_fsm,
+        logger=logger,
+        verbose=verbose,
+        auto_confirm=auto_confirm,
+    )
+
+    output = scaffolder.scaffold()
+    logger.info(f"Skill scaffolded: {output}")
+
+    # We now need to update the behvaiours.py file with the new handler
 
 
 if __name__ == "__main__":

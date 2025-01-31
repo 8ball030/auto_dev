@@ -1,3 +1,0 @@
-# Connections
-
-::: connections

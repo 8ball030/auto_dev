@@ -170,16 +170,21 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
         doc = "".join(part.format(**self.kwargs) + "\n" for part in TEST_CONNECTION_TEMPLATE)
         self.test_connection.write_text(doc)
 
-        doc = "".join(part.format(**self.kwargs) + "\n" for part in HEADER)
+        doc = "".join(part.format(**self.kwargs) + "\n" for part in HEADER.split("\n"))
         self.test_connection_init = self.tests / "__init__.py"
         self.test_connection_init.write_text(doc)
 
 
 class ConnectionScaffolder:
-    """ConnectionScaffolder."""
+    """Class for scaffolding connection components.
+    
+    Args:
+        ctx: Click context object.
+        name: Name of the connection.
+        protocol_id: Public ID of the protocol to use.
+    """
 
     def __init__(self, ctx: click.Context, name: str, protocol_id: PublicId):
-        """Initialize ConnectionScaffolder."""
         # `aea add protocol`, currently works only with `adev scaffold protocol crud_protocol.yaml`
         protocol_specification_path = Path("protocols") / protocol_id.name / "README.md"
         if not protocol_specification_path.exists():

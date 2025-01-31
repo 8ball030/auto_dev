@@ -7,8 +7,27 @@ from pathlib import Path
 import pytest
 
 from auto_dev.utils import isolated_filesystem
-from auto_dev.constants import DEFAULT_ENCODING, SAMPLE_PACKAGE_FILE, SAMPLE_PACKAGES_JSON, AUTONOMY_PACKAGES_FILE
+from auto_dev.constants import (
+    DEFAULT_ENCODING,
+    DEFAULT_PUBLIC_ID,
+    SAMPLE_PACKAGE_FILE,
+    SAMPLE_PACKAGES_JSON,
+    AUTONOMY_PACKAGES_FILE,
+)
 from auto_dev.cli_executor import CommandExecutor
+from scripts.generate_command_docs import generate_docs
+from auto_dev.services.package_manager.index import PackageManager
+
+
+@pytest.fixture
+def generated_docs(test_filesystem):
+    """Fixture to ensure documentation is generated before tests."""
+    # Generate the documentation
+    (Path(test_filesystem) / "docs").mkdir(parents=True, exist_ok=True)
+    generate_docs()
+
+    # Return the docs directory path
+    return Path("docs/commands")
 
 
 OPENAPI_TEST_CASES = [
@@ -85,31 +104,36 @@ def cli_runner():
 
 
 @pytest.fixture
-def dummy_agent_tim(test_filesystem, monkeypatch) -> Path:
+def dummy_agent_tim(test_packages_filesystem) -> Path:
     """Fixture for dummy agent tim."""
-
-    monkeypatch.syspath_prepend(test_filesystem)
-    assert Path.cwd() == Path(test_filesystem)
-
-    agent = "tim"
-    command = f"adev create {agent} -t eightballer/base "
+    assert Path.cwd() == Path(test_packages_filesystem)
+    agent = DEFAULT_PUBLIC_ID
+    command = f"adev create {agent!s} -t eightballer/base --no-clean-up"
     command_executor = CommandExecutor(command)
     result = command_executor.execute(verbose=True, shell=True)
     if not result:
         msg = f"CLI command execution failed: `{command}`"
         raise ValueError(msg)
+    os.chdir(agent.name)
+    return True
 
-    os.chdir(str(Path.cwd() / agent))
 
-    commands = (
-        "aea generate-key ethereum",
-        "aea add-key ethereum",
-    )
-    for command in commands:
-        command_executor = CommandExecutor(command.split())
-        result = command_executor.execute(verbose=True)
-        if not result:
-            msg = f"CLI command execution failed: `{command}`"
-            raise ValueError(msg)
+@pytest.fixture
+def dummy_agent_default(test_packages_filesystem) -> Path:
+    """Fixture for dummy agent default."""
+    assert Path.cwd() == Path(test_packages_filesystem)
+    agent = DEFAULT_PUBLIC_ID
+    command = f"adev create {agent!s} -t eightballer/base --no-clean-up --no-publish"
+    command_executor = CommandExecutor(command)
+    result = command_executor.execute(verbose=True, shell=True)
+    if not result:
+        msg = f"CLI command execution failed: `{command}`"
+        raise ValueError(msg)
+    os.chdir(agent.name)
+    return True
 
-    return Path.cwd()
+
+@pytest.fixture
+def package_manager():
+    """Fixture for PackageManager."""
+    return PackageManager(verbose=True)

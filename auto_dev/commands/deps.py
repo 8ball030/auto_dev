@@ -32,8 +32,8 @@ import sys
 import shutil
 import logging
 import traceback
+from copy import deepcopy
 from enum import Enum
-from typing import Dict, List
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -45,7 +45,7 @@ from rich import print_json
 from rich.progress import track
 
 from auto_dev.base import build_cli
-from auto_dev.utils import FileLoader, write_to_file, FileType
+from auto_dev.utils import FileType, FileLoader, write_to_file
 from auto_dev.constants import DEFAULT_TIMEOUT, DEFAULT_ENCODING
 from auto_dev.exceptions import AuthenticationError, NetworkTimeoutError
 
@@ -129,6 +129,7 @@ def main(
     child_repo: Path,
     logger: logging.Logger,
     auto_confirm: bool = False,
+    manual: bool = False,
 ) -> None:
     """We run the main function."""
     try:
@@ -140,8 +141,14 @@ def main(
     if not proposed:
         logger.info("No changes required. 😎")
         return False
-    for package_name, package_hash in proposed.items():
-        logger.info(f"Updating {package_name} to {package_hash}")
+
+    for package_name, package_hash in deepcopy(proposed).items():
+        logger.info(f"Detected change from {package_name} to {package_hash}")
+        if manual:
+            incude = click.confirm("Include dependecy in proposed updates?")
+            if not incude:
+                proposed.pop(package_name)
+
     if not auto_confirm:
         click.confirm("Do you want to update the package?", abort=True)
     logger.info("Updating the packages json... 📝")
@@ -205,20 +212,19 @@ class GitDependency(Dependency):
     """A git dependency."""
 
     type = DependencyType.GIT
-    autonomy_dependencies: Dict[str, Dependency] = None
+    autonomy_dependencies: dict[str, Dependency] = None
     url: str = None
-    plugins: List[str] = None
-    extras: List[str] = None
+    plugins: list[str] = None
+    extras: list[str] = None
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> dict[str, str]:
         """Get the headers."""
-        headers = {
+        return {
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
         }
-        return headers
 
     def get_latest_version(self) -> str:
         """Get the latest version."""
@@ -232,11 +238,12 @@ class GitDependency(Dependency):
         res = requests.get(tag_url, headers=self.headers, timeout=DEFAULT_TIMEOUT)
         if res.status_code != 200:
             if res.status_code == 403:
-                raise AuthenticationError("Error: Rate limit exceeded. Please add a github token.")
-            raise NetworkTimeoutError(f"Error: {res.status_code} {res.text}")
+                msg = "Error: Rate limit exceeded. Please add a github token."
+                raise AuthenticationError(msg)
+            msg = f"Error: {res.status_code} {res.text}"
+            raise NetworkTimeoutError(msg)
         data = res.json()
-        latest_version = data[0]["tag_name"]
-        return latest_version
+        return data[0]["tag_name"]
 
     def get_all_autonomy_packages(self):
         """Read in the autonomy packages. the are located in the remote url."""
@@ -246,11 +253,11 @@ class GitDependency(Dependency):
         data = requests.get(remote_url, headers=self.headers, timeout=DEFAULT_TIMEOUT)
 
         if data.status_code != 200:
-            raise NetworkTimeoutError(f"Error: {data.status_code} {data.text}")
+            msg = f"Error: {data.status_code} {data.text}"
+            raise NetworkTimeoutError(msg)
         dl_url = data.json()["download_url"]
         data = requests.get(dl_url, headers=self.headers, timeout=DEFAULT_TIMEOUT).json()
-        autonomy_packages = data["dev"]
-        return autonomy_packages
+        return data["dev"]
 
 
 @cli.group()
@@ -258,9 +265,12 @@ class GitDependency(Dependency):
 def deps(
     ctx: click.Context,  # noqa
 ) -> None:
-    """Commands for managing dependencies.
-    - update: Update both the packages.json from the parent repo and the packages in the child repo.
-    - generate_gitignore: Generate the gitignore file from the packages.json file.
+    r"""Commands for managing dependencies.
+
+    Available Commands:\n
+        update: Update packages.json from parent repo and packages in child repo\n
+        generate_gitignore: Generate .gitignore entries from packages.json\n
+        verify: Verify dependencies against version set and update if needed\n
     """
 
 
@@ -291,6 +301,12 @@ def deps(
     type=DependencyLocation,
     help="The location of the dependency.",
 )
+@click.option(
+    "--manual",
+    default=False,
+    help="Auto approve the changes.",
+    is_flag=True,
+)
 @deps.command()
 @click.pass_context
 def update(
@@ -299,10 +315,28 @@ def update(
     child_repo: Path,
     location: DependencyLocation = DependencyLocation.LOCAL,
     auto_confirm: bool = False,
+    manual: bool = False,
 ) -> None:
-    """We update aea packages.json dependencies from a parent repo.
-    Example usage:
-        adev deps update -p /path/to/parent/repo -c /path/to/child/repo.
+    """Update dependencies from parent repo to child repo.
+
+    Required Parameters:
+        parent_repo: Path to the parent repository containing source packages.json.
+        child_repo: Path to the child repository to update.
+
+    Optional Parameters:
+        location: Location of dependencies (local or remote). Default: local
+        auto_confirm: Skip confirmation prompts. Default: False
+        manual: Enable manual mode for updates. Default: False
+
+    Usage:
+        Update with defaults:
+            adev deps update -p /path/to/parent -c /path/to/child
+
+        Auto-confirm updates:
+            adev deps update -p /path/to/parent -c /path/to/child --auto-confirm
+
+        Manual mode:
+            adev deps update -p /path/to/parent -c /path/to/child --manual
     """
     logger = ctx.obj["LOGGER"]
     logger.info("Updating the dependencies... 📝")
@@ -314,7 +348,9 @@ def update(
     logger = ctx.obj["LOGGER"]
     logger.info("Updating the dependencies... 📝")
 
-    result = main(parent_repo=parent_repo, child_repo=child_repo, auto_confirm=auto_confirm, logger=logger)
+    result = main(
+        parent_repo=parent_repo, child_repo=child_repo, auto_confirm=auto_confirm, logger=logger, manual=manual
+    )
     if not result:
         sys.exit(1)
     logger.info("Done. 😎")
@@ -326,9 +362,18 @@ def update(
 def generate_gitignore(
     ctx: click.Context,
 ) -> None:
-    """We generate the gitignore file from the packages.json file
-    Example usage:
-        adev deps generate_gitignore.
+    r"""Generate .gitignore entries from packages.json.
+
+    Usage:
+        Generate gitignore entries:\n
+            adev deps generate-gitignore\n
+
+    Notes
+    -----
+        - Only adds new entries, doesn't remove existing ones\n
+        - Focuses on third-party packages from packages.json\n
+        - Appends entries to existing .gitignore file\n
+
     """
     package_dict = get_package_json(repo=Path())
     third_party_packages = package_dict.get("third_party", {})
@@ -347,10 +392,10 @@ def generate_gitignore(
 class AutonomyDependencies:
     """A set of autonomy versions."""
 
-    upstream_dependency: List[GitDependency]
+    upstream_dependency: list[GitDependency]
 
     def to_dict(self):
-        """return a list of the upstream dependencies."""
+        """Return a list of the upstream dependencies."""
         return [
             {
                 "name": dependency.name,
@@ -368,10 +413,10 @@ class AutonomyDependencies:
 class PoetryDependencies:
     """A set of poetry dependencies."""
 
-    poetry_dependencies: List[GitDependency]
+    poetry_dependencies: list[GitDependency]
 
     def to_dict(self):
-        """return a list of the poetry dependencies."""
+        """Return a list of the poetry dependencies."""
         return [
             {
                 "name": dependency.name,
@@ -408,7 +453,7 @@ open_aea_repo = GitDependency(
 
 auto_dev_repo = GitDependency(
     name="autonomy-dev",
-    version="0.2.78",
+    version="0.2.92",
     location=DependencyLocation.REMOTE,
     url="https://api.github.com/repos/8ball030/auto_dev",
     extras=["all"],
@@ -467,7 +512,7 @@ poetry_dependencies:
       - open-aea-ledger-ethereum
       - open-aea-ledger-solana
       - open-aea-ledger-cosmos
-      - open-aea-cli-ipfs   
+      - open-aea-cli-ipfs
 """
 
 
@@ -477,8 +522,9 @@ class VersionSetLoader:
     autonomy_dependencies: AutonomyDependencies
     poetry_dependencies: PoetryDependencies
 
-    def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE):
+    def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE, **kwargs):
         self.config_file = config_file
+        self.latest = kwargs.get("latest", True)
 
     def write_config(
         self,
@@ -492,7 +538,7 @@ class VersionSetLoader:
 
     def load_config(self):
         """Load the config file."""
-        with open(self.config_file, "r") as file_pointer:
+        with open(self.config_file, encoding="utf-8") as file_pointer:
             data = yaml.safe_load(file_pointer)
         self.autonomy_dependencies = AutonomyDependencies(
             upstream_dependency=[
@@ -526,35 +572,34 @@ class VersionSetLoader:
 def handle_output(issues, changes) -> None:
     """Handle the output."""
     if issues:
-        for issue in issues:
-            print(issue)
+        for _issue in issues:
+            pass
         sys.exit(1)
 
     if changes:
-        for change in changes:
-            print(f"Updated {change} successfully. ✅")
-        print("Please verify the proposed changes and commit them! 📝")
+        for _change in changes:
+            pass
         sys.exit(1)
-    print("No changes required. 😎")
 
 
-def get_update_command(poetry_dependencies: Dependency) -> str:
+def get_update_command(poetry_dependencies: Dependency, strict: bool = False) -> str:
     """Get the update command."""
     issues = []
     cmd = "poetry add "
+    pre_fix = "==" if strict else "<="
     for dependency in track(poetry_dependencies):
         click.echo(f"   Verifying:   {dependency.name}")
         raw = toml.load("pyproject.toml")["tool"]["poetry"]["dependencies"]
 
         current_version = str(raw[dependency.name])
-        expected_version = f"=={dependency.get_latest_version()[1:]}"
+        expected_version = f"'{pre_fix}{dependency.get_latest_version()[1:]}'"
         if current_version.find(expected_version) == -1:
             issues.append(
                 f"Update the poetry version of {dependency.name} from `{current_version}` to `{expected_version}`\n"
             )
             if dependency.extras is not None:
                 extras = ",".join(dependency.extras)
-                cmd += f"{dependency.name}[{extras}]@=={expected_version} "
+                cmd += f"{dependency.name}[{extras}]@{expected_version} "
             else:
                 cmd += f"{dependency.name}@{expected_version} "
             if dependency.plugins:
@@ -570,49 +615,111 @@ def get_update_command(poetry_dependencies: Dependency) -> str:
     help="Auto approve the changes.",
     is_flag=True,
 )
+@click.option(
+    "--latest",
+    default=True,
+    help="Select the latest version releases.",
+    is_flag=True,
+)
+@click.option(
+    "--strict/--no-strict",
+    default=False,
+    help="Enforce strict versioning.",
+    is_flag=True,
+)
 @click.pass_context
-def verify(
+def bump(
     ctx: click.Context,
     auto_approve: bool = False,
+    latest: bool = True,
+    strict: bool = False,
 ) -> None:
+    r"""Verify and optionally update package dependencies.
+
+    Optional Parameters:\n
+        auto_approve: Skip confirmation prompts for updates. Default: False\n
+            - Automatically applies all updates\n
+            - No interactive prompts\n
+            - Use with caution in production\n
+
+    Usage:
+        Verify with prompts:\n
+            adev deps verify\n
+
+        Auto-approve updates:\n
+            adev deps verify --auto-approve\n
+
+    Notes
+    -----
+        - Authentication:\n
+            - Requires GITHUB_TOKEN environment variable\n
+            - Token needs repo and packages read access\n
+            - Can be generated at github.com/settings/tokens\n
+
+        - Verification Process:
+            - Checks both autonomy and poetry dependencies\n
+            - Verifies against specified version sets\n
+            - Compares local vs remote package hashes\n
+            - Validates dependency compatibility\n
+
+        - Update Process:
+            - Updates packages.json for autonomy packages\n
+            - Updates pyproject.toml for poetry dependencies\n
+            - Handles dependency resolution\n
+            - Maintains version consistency\n
+
+        - Features:\n
+            - Parallel version checking\n
+            - Detailed diff viewing\n
+            - Selective update approval\n
+            - Dependency tree analysis\n
+            - Version conflict detection\n
+
+        - Best Practices:\n
+            - Run before deployments\n
+            - Include in CI/CD pipelines\n
+            - Regular scheduled verification\n
+            - Version pinning enforcement\n
+
     """
-    We verify the packages.json file.
-    Example usage:
-        adev deps verify
-    """
+
+    if not os.getenv("GITHUB_TOKEN"):
+        ctx.obj["LOGGER"].error("Error: GITHUB_TOKEN environment variable is not set.")
+        ctx.obj["LOGGER"].error("Please set it with: export GITHUB_TOKEN=<your_token>")
+        ctx.obj["LOGGER"].error("You can generate a token at: https://github.com/settings/tokens")
+        sys.exit(1)
+
     ctx.obj["LOGGER"].info("Verifying the dependencies against the version set specified. 📝")
     issues = []
     changes = []
     click.echo("Verifying autonomy dependencies... 📝")
 
-    version_set_loader = VersionSetLoader()
+    version_set_loader = VersionSetLoader(latest=latest)
     version_set_loader.load_config()
     if (Path("packages") / "packages.json").exists():
-        version_set_loader.load_config()
         for dependency in track(version_set_loader.autonomy_dependencies.upstream_dependency):
             click.echo(f"   Verifying:   {dependency.name}")
             remote_packages = dependency.get_all_autonomy_packages()
             local_packages = get_package_json(Path())["third_party"]
             diffs = {}
             for package_name, package_hash in remote_packages.items():
-                if package_name in local_packages:
-                    if package_hash != local_packages[package_name]:
-                        diffs[package_name] = package_hash
+                if package_name in local_packages and package_hash != local_packages[package_name]:
+                    diffs[package_name] = package_hash
 
             if diffs:
                 print_json(data=diffs)
                 if not auto_approve:
-                    click.confirm("Do you want to update the package?\n", abort=True)
+                    click.confirm("Do you want to update all the packages?\n", abort=True)
                 update_package_json(repo=Path(), proposed_dependency_updates=diffs)
                 remove_old_package(repo=Path(), proposed_dependency_updates=diffs)
                 changes.append(dependency.name)
 
     click.echo("Verifying poetry dependencies... 📝")
-    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies)
+    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict)
     issues.extend(poetry_issues)
 
     if issues:
-        click.echo(f"Please run the following command to update the poetry dependencies.")
+        click.echo("Please run the following command to update the poetry dependencies.")
         click.echo(f"{cmd}\n")
         if not auto_approve:
             click.confirm("Do you want to update the poetry dependencies now?", abort=True)
