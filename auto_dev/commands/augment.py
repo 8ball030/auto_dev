@@ -7,13 +7,11 @@ from pathlib import Path
 
 import yaml
 import rich_click as click
-from aea.cli.eject import fingerprint_item
-from aea.cli.utils.context import Context
 from aea.configurations.base import SKILLS, PublicId, PackageType
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
-from auto_dev.utils import get_logger, write_to_file, read_from_file, load_autonolas_yaml
+from auto_dev.utils import get_logger, write_to_file, read_from_file, snake_to_camel, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.exceptions import OperationError
 from auto_dev.cli_executor import CommandExecutor
@@ -494,34 +492,18 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
     logger.info(f"Skill scaffolded: {output}")
     write_to_file(behaviour_path, output, FileType.PYTHON)
     logger.info(f"Behaviours file updated: {behaviour_path}")
-
-    # Extract the FSM behavior class name
-    class_name = None
-    for line in output.splitlines():
-        if line.startswith("class ") and "FsmBehaviour" in line:
-            class_name = line.split("(")[0].replace("class ", "").strip()
-            break
-
-    if not class_name:
-        logger.error("Could not find FSM behavior class name in generated code")
-        sys.exit(1)
-
+    class_name = f"{snake_to_camel(scaffolder.fsm_spec.label).capitalize()}FsmBehaviour"
     skill_yaml = read_from_file(skill_dir / "skill.yaml", FileType.YAML)
-    skill_yaml["behaviours"] = {
-        "main": {
-            "args": {},
-            "class_name": class_name,
-        }
+    if "behaviours" not in skill_yaml:
+        skill_yaml["behaviours"] = {}
+    skill_yaml["behaviours"]["main"] = {
+        "args": {},
+        "class_name": class_name,
     }
     write_to_file(skill_dir / "skill.yaml", skill_yaml, FileType.YAML)
     logger.info(f"Skill.yaml updated: {skill_dir / 'skill.yaml'}")
-    ctx = Context(
-        cwd=Path.cwd(),
-        verbosity="info",
-        registry_path=Path.cwd() / "vendor",
-    )
-    fingerprint_item(ctx, str(PackageType.SKILL), skill_public_id)
     package_manager = PackageManager(verbose=verbose)
+    package_manager.fingerprint_component(PackageType.SKILL, skill_public_id)
     package_manager.publish_agent(force=True)
 
 

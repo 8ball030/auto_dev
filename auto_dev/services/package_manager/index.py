@@ -3,6 +3,8 @@
 import shutil
 from pathlib import Path
 
+from aea.cli.eject import fingerprint_item
+from aea.cli.utils.context import Context
 from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 from aea.configurations.data_types import PackageType
@@ -282,6 +284,22 @@ class PackageManager:
         self._publish_internal(force, new_public_id=new_public_id)
 
         logger.debug("Agent published!")
+
+    def fingerprint_component(self, component_type: str, new_public_id: PublicId) -> None:
+        """Fingerprint a component.
+
+        Args:
+        ----
+            component_type: Type of component to fingerprint.
+            new_public_id: Public ID of the component to fingerprint.
+
+        """
+        ctx = Context(
+            cwd=Path.cwd(),
+            verbosity="info",
+            registry_path=Path.cwd() / "vendor",
+        )
+        fingerprint_item(ctx, str(component_type), new_public_id)
 
     def publish_component(
         self,
