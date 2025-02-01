@@ -7,14 +7,19 @@ from pathlib import Path
 
 import yaml
 import rich_click as click
+from aea.cli.eject import fingerprint_item
+from aea.cli.utils.context import Context
 from aea.configurations.base import SKILLS, PublicId, PackageType
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
 from auto_dev.utils import get_logger, write_to_file, read_from_file, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.exceptions import OperationError
+from auto_dev.cli_executor import CommandExecutor
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.behaviours.scaffolder import BehaviourScaffolder
+from auto_dev.services.package_manager.index import PackageManager
 
 
 logger = get_logger()
@@ -413,7 +418,8 @@ def customs(ctx, component_type, auto_confirm, use_daos):
 @click.argument("skill_public_id", type=PublicId.from_str, required=True)
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
 @click.option("--verbose", is_flag=True, default=False, help="Verbose output")
-def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool):
+@click.option("--force", is_flag=True, default=False, help="Force the augmentation")
+def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool, force: bool):
     """Augment a skill with a new handler.
 
     Required Parameters:
@@ -427,7 +433,7 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
         auto_confirm (--auto-confirm): Auto confirm the augmentation
 
         verbose (--verbose): Verbose output
-
+        force (--force): Force the augmentation
     Usage:
 
         adev augment skill_from_fsm fsm_spec.yaml author/skill_name:0.1.0
@@ -444,16 +450,36 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
         logger.error("Skill public id not provided. Unsure which skill to augment.")
 
     skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
+    behaviour_path = skill_dir / "behaviours.py"
     config, *_overrides = load_autonolas_yaml(PackageType.SKILL, skill_dir)
 
     if config.get("author") != skill_public_id.author or config.get("name") != skill_public_id.name:
         logger.error(f"Skill {skill_public_id} not found in the current project.")
         sys.exit(1)
 
-    behaviour_path = skill_dir / "behaviours.py"
     if behaviour_path.exists():
         logger.error(f"Behaviours file already exists for skill {skill_public_id}.")
-        sys.exit(1)
+        if not force:
+            sys.exit(1)
+        else:
+            command = CommandExecutor(
+                [
+                    "rm",
+                    "-rf",
+                    behaviour_path,
+                ]
+            )
+            logger.info(
+                f"Directory {behaviour_path} already exists. Removing with: {command.command}",
+            )
+            result = command.execute(verbose=verbose)
+            if not result:
+                msg = f"Command failed: {command.command}"
+                click.secho(msg, fg="red")
+                raise OperationError(msg)
+            logger.info(
+                "Command executed successfully.",
+            )
 
     logger.info("Augmenting skill with a new handler.")
     scaffolder = BehaviourScaffolder(
@@ -466,8 +492,37 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
 
     output = scaffolder.scaffold()
     logger.info(f"Skill scaffolded: {output}")
+    write_to_file(behaviour_path, output, FileType.PYTHON)
+    logger.info(f"Behaviours file updated: {behaviour_path}")
 
-    # We now need to update the behvaiours.py file with the new handler
+    # Extract the FSM behavior class name
+    class_name = None
+    for line in output.splitlines():
+        if line.startswith("class ") and "FsmBehaviour" in line:
+            class_name = line.split("(")[0].replace("class ", "").strip()
+            break
+
+    if not class_name:
+        logger.error("Could not find FSM behavior class name in generated code")
+        sys.exit(1)
+
+    skill_yaml = read_from_file(skill_dir / "skill.yaml", FileType.YAML)
+    skill_yaml["behaviours"] = {
+        "main": {
+            "args": {},
+            "class_name": class_name,
+        }
+    }
+    write_to_file(skill_dir / "skill.yaml", skill_yaml, FileType.YAML)
+    logger.info(f"Skill.yaml updated: {skill_dir / 'skill.yaml'}")
+    ctx = Context(
+        cwd=Path.cwd(),
+        verbosity="info",
+        registry_path=Path.cwd() / "vendor",
+    )
+    fingerprint_item(ctx, str(PackageType.SKILL), skill_public_id)
+    package_manager = PackageManager(verbose=verbose)
+    package_manager.publish_agent(force=True)
 
 
 if __name__ == "__main__":
