@@ -24,6 +24,8 @@ jobs:
       matrix:
         python-versions:
         - "3.10"
+        - "3.11"
+        - "3.12"
         os:
         - ubuntu-20.04
         poetry-version:
