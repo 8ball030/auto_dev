@@ -1,10 +1,8 @@
-# Project Status Badges
+# Autonomy Dev
 
 [![Code Quality](https://github.com/8ball030/auto_dev/actions/workflows/common_check.yaml/badge.svg)](https://github.com/8ball030/auto_dev/actions/workflows/common_check.yaml)
 [![Documentation](https://github.com/8ball030/auto_dev/actions/workflows/github_action.yml/badge.svg)](https://github.com/8ball030/auto_dev/actions/workflows/github_action.yml)
-
-
-# Autonomy Dev
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 Tooling to speed up open-autonomy development.
 
