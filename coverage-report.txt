@@ -13,7 +13,7 @@ auto_dev/lint.py                      15     15     0%   3-82
 auto_dev/local_fork.py                52     52     0%   3-95
 auto_dev/scaffolder.py                19     19     0%   3-53
 auto_dev/test.py                      15     15     0%   3-63
-auto_dev/utils.py                    286    271     5%   3-101, 113-114, 118, 122-368, 374-496
+auto_dev/utils.py                    286    255    11%   3-41, 54-57, 72, 76, 101, 113-114, 118, 122-321, 325-329, 336-368, 374-496
 auto_dev/workflow_manager.py         260    260     0%   5-408
 docs/__init__.py                       0      0   100%
 docs/hooks.py                         35     35     0%   3-75
@@ -22,4 +22,4 @@ scripts/generate_command_docs.py     113    113     0%   8-267
 site/__init__.py                       0      0   100%
 site/hooks.py                         35     35     0%   3-75
 ----------------------------------------------------------------
-TOTAL                               1364   1337     2%
+TOTAL                               1364   1321     3%
