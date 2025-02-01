@@ -1,0 +1,47 @@
+FROM pypy:3.10 AS base
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PYTHONPATH=.
+ENV PYTHONUNBUFFERED=TRUE
+ENV PATH="/root/.cargo/bin:$PATH"
+
+RUN mkdir /app
+WORKDIR /app
+
+RUN python3 -m venv $VIRTUAL_ENV
+
+RUN apt-get update && \
+    apt-get install -y \
+	--no-install-recommends \
+	make python3-dev 
+
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+
+RUN pip install poetry 
+COPY README.md pyproject.toml poetry.lock ./
+RUN poetry run pip install -U setuptools wheel packaging pip
+
+
+# We need to make sure we have all the necessary deps to build cffi
+RUN apt-get install build-essential curl gcc libffi-dev libssl-dev -y
+
+# Get Rust
+
+RUN rustc --version
+RUN cargo install --locked maturin
+
+RUN poetry run pip install -U setuptools yarl
+RUN poetry install --only-main
+
+COPY auto_dev auto_dev
+RUN poetry install
+
+RUN poetry run python -m pip install maturin
+
+
+
+
+ENTRYPOINT ["poetry", "run"]
+
+CMD ["--help"]
+
