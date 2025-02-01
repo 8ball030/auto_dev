@@ -6,15 +6,12 @@ lint:
 fmt: 
 	poetry run adev -n 0 fmt -p . -co
 
-docs-generate:
-	poetry run python scripts/generate_command_docs.py
-
 test:
 	poetry run adev -v test -p tests
 
 .PHONY: docs
 docs:
-	poetry run mkdocs build
+	poetry run python scripts/generate_command_docs.py && poetry run mkdocs build
 
 docs-serve:
 	poetry run mkdocs serve

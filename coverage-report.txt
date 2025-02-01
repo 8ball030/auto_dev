@@ -1,25 +1,25 @@
 Name                               Stmts   Miss  Cover   Missing
 ----------------------------------------------------------------
 auto_dev/__init__.py                   0      0   100%
-auto_dev/base.py                      60     60     0%   3-98
+auto_dev/base.py                      60     34    43%   24-29, 33-38, 44-45, 65-83, 89-90, 95-97
 auto_dev/check_dependencies.py       229    229     0%   26-457
 auto_dev/cli.py                        4      4     0%   3-9
-auto_dev/cli_executor.py              71     71     0%   8-112
-auto_dev/constants.py                 58     58     0%   3-166
-auto_dev/enums.py                     40     40     0%   3-62
-auto_dev/exceptions.py                10     10     0%   4-40
-auto_dev/fmt.py                       62     62     0%   3-115
-auto_dev/lint.py                      15     15     0%   3-82
+auto_dev/cli_executor.py              71     41    42%   35, 57-59, 61-64, 68-101, 106-112
+auto_dev/constants.py                 58      0   100%
+auto_dev/enums.py                     40      0   100%
+auto_dev/exceptions.py                10      0   100%
+auto_dev/fmt.py                       62     45    27%   17-18, 22-25, 30-48, 53, 63-64, 69-83, 88-100, 105-115
+auto_dev/lint.py                      15     11    27%   38-82
 auto_dev/local_fork.py                52     52     0%   3-95
-auto_dev/scaffolder.py                19     19     0%   3-53
-auto_dev/test.py                      15     15     0%   3-63
-auto_dev/utils.py                    286    286     0%   3-496
-auto_dev/workflow_manager.py         260    260     0%   5-408
+auto_dev/scaffolder.py                19      7    63%   15-16, 35, 39, 44, 49, 53
+auto_dev/test.py                      15     10    33%   50-63
+auto_dev/utils.py                    286    185    35%   72, 76, 113-114, 118, 131-138, 143-188, 196-211, 217-222, 228-232, 241-265, 270, 277-279, 284, 289, 311-318, 325-329, 338-340, 348, 351, 354-365, 370-384, 389-395, 417-419, 428, 435-463, 468-475, 480, 486-496
+auto_dev/workflow_manager.py         260    186    28%   33-43, 69-74, 93, 103-110, 114-118, 122-126, 130-133, 137-144, 148-156, 171-175, 179-186, 190, 194-198, 202-215, 219-227, 232-243, 248-252, 257-258, 266-297, 301-307, 312-338, 342-351, 358-404, 408
 docs/__init__.py                       0      0   100%
 docs/hooks.py                         35     35     0%   3-75
 scripts/__init__.py                    0      0   100%
-scripts/generate_command_docs.py     113    113     0%   8-264
+scripts/generate_command_docs.py     113    113     0%   8-267
 site/__init__.py                       0      0   100%
 site/hooks.py                         35     35     0%   3-75
 ----------------------------------------------------------------
-TOTAL                               1364   1364     0%
+TOTAL                               1364    987    28%

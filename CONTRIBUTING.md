@@ -98,7 +98,7 @@ make lint
 make test
 
 # Update documentation
-make docs-generate
+make docs
 ```
 
 These commands will ensure your code:
