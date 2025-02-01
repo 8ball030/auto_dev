@@ -111,6 +111,7 @@ class ComponentEjector:
         # We use a find and replace to update all references in the agent to the new name.
         for package_id, new_package_id in ejected_components.items():
             self.update_python_files(package_id, new_package_id, ejected_components)
+
             self.update_yaml_files(package_id, new_package_id, ejected_components)
 
         agent_config, *overrides = load_autonolas_yaml(PackageType.AGENT)
@@ -187,23 +188,30 @@ class ComponentEjector:
         self, package_id: PackageId, new_package_id: PublicId, ejected_components: dict[PackageId, PackageId]
     ) -> None:
         """We search for all python files in the agent and update the references to the new package id."""
+        replacements = []
         old_dotted_path = (
             f"packages.{package_id.public_id.author}.{package_id.package_type.value}s.{package_id.public_id.name}"
         )
         new_dotted_path = f"packages.{new_package_id.public_id.author}.{new_package_id.package_type.value}s.{new_package_id.public_id.name}"  # noqa: E501
+        replacements.append((old_dotted_path, new_dotted_path))
 
-        old_str_public_id = str(package_id.public_id)
-        new_str_public_id = str(new_package_id.public_id)
+        old_str_public_id = str(package_id.public_id).replace("latest", DEFAULT_VERSION)
+        new_str_public_id = str(new_package_id.public_id).replace("latest", DEFAULT_VERSION)
+        replacements.append((old_str_public_id, new_str_public_id))
 
-        for dependent_package_id in ejected_components:
+        if package_id.package_type is PackageType.PROTOCOL:
+            # mecessary due to the way the protocol is imported in the generated code
+            old_name_camel = "".join(word.capitalize() for word in package_id.public_id.name.split("_")) + "Message"
+            new_name_camel = "".join(word.capitalize() for word in new_package_id.public_id.name.split("_")) + "Message"
+            replacements.append((old_name_camel, new_name_camel))
+
+        for dependent_package_id in ejected_components.values():
             directory = Path.cwd() / ITEM_TYPE_TO_PLURAL[dependent_package_id.package_type.value]
-            if not directory.exists():
-                continue
             for python_file in directory.rglob("*.py"):
                 file_data = python_file.read_text()
-                new_file_data = file_data.replace(old_dotted_path, new_dotted_path)
-                new_file_data = new_file_data.replace(old_str_public_id, new_str_public_id)
-                python_file.write_text(new_file_data, encoding=DEFAULT_ENCODING)
+                for old, new in replacements:
+                    file_data = file_data.replace(old, new)
+                python_file.write_text(file_data, encoding=DEFAULT_ENCODING)
 
     def update_yaml_files(self, package_id: PackageId, new_package_id: PackageId, ejected_components) -> None:
         """We search for all yaml files in the agent and update the references to the new package id."""
