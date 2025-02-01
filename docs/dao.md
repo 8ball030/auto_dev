@@ -1,13 +1,13 @@
-# Scaffolding a new DAO
+# Scaffolding a new Data Access Object (DAO)
 
-The tools within the `dao` subcommand are used to scaffold a new customs component DAO (Data Access Object) based on an OpenAPI 3 specification. This process automates the creation of DAO classes, dummy data, and test scripts.
+The tools within the `dao` subcommand are used to scaffold a new customs component Data Access Object (DAO) based on an OpenAPI 3 specification. This process automates the creation of Data Access Object classes, dummy data, and test scripts.
 
 ## Prerequisites
 
 1. An OpenAPI 3 specification file with components/schema models defined.
 2. A `component.yaml` file in the current directory that references the OpenAPI specification using the `api_spec` field.
 
-## Steps to Scaffold a DAO
+## Steps to Create a Data Access Object
 
 1. Ensure you have the OpenAPI 3 specification file. You can view its contents using:
 
@@ -85,7 +85,7 @@ The tools within the `dao` subcommand are used to scaffold a new customs compone
 
 2. If not already done, scaffold a repo and a customs component.
 
-    Initialise aea:
+    Initialize aea:
     ```bash
     aea init --remote --author xiuxiuxar --ipfs --reset 
     ```
@@ -147,51 +147,25 @@ The tools within the `dao` subcommand are used to scaffold a new customs compone
     adev scaffold dao --auto-confirm
     ```
 
-The scaffolding process creates the following:
+## Generated Files
 
-1. DAO Classes: For each model defined in the OpenAPI specification, a corresponding DAO class is generated.
-2. Dummy Data: 
-   - Aggregated dummy data for all models
-   - Individual dummy data instances for testing
-3. Test Script: A test script to validate the generated DAO classes
-
-To identify the persistent schemas, the scaffolder uses the following logic:
-
-- It first checks for explicit `x-persistent` tags in schemas:
-
-   ```yaml
-   components:
-      schemas:
-         User:
-            x-persistent: true  # Marking the User schema as persistent
-            type: object
-            properties:
-               name:
-                  type: string
-                  ...
-   ```
-
-- If no `x-persistent` tags are found, it identifies schemas as persistent if they are:
-  - Used in a responses
-  - Used as nested objects in requests
-
-The scaffolder will show the identified schemas and prompt for confirmation (unless `--auto-confirm` is used).
-
-## Generated File Structure
-
-After running the scaffold command, you'll find the following structure in your custom component:
+The scaffolding process generates the following files in your customs component:
 
 ```
 daos/
 ├── __init__.py
-├── base_dao.py
-├── <model_name_1>_dao.py
-├── <model_name_2>_dao.py
-├── ...
-└── aggregated_data.json
-tests/
-└── test_dao.py
+├── base_dao.py              # Base Data Access Object class
+├── <model_name_1>_dao.py   # Model-specific Data Access Object
+├── <model_name_2>_dao.py   # Model-specific Data Access Object
+├── aggregated_data.json     # Sample data for testing
+└── test_dao.py             # Test script
 ```
+
+## Implementation Details
+
+1. Base Data Access Object Class
+2. Generating Data Access Object classes for each model
+3. Test Script Generation
 
 ## How It Works
 
@@ -221,11 +195,10 @@ Detailed error messages are logged for troubleshooting.
 
 ## Next Steps
 
-After scaffolding your DAO:
+After scaffolding your Data Access Objects:
 
-1. Review the generated DAO classes in the `daos/` directory.
-2. Examine the `aggregated_data.json` file for the structure of the dummy data.
-3. Run the `test_dao.py` script to ensure the basic functionality of your DAOs.
-4. Customize the generated classes as needed for your specific use case.
+1. Review the generated Data Access Object classes in the `daos/` directory.
+2. Customize the generated classes as needed.
+3. Run the `test_dao.py` script to ensure the basic functionality of your Data Access Objects.
 
-Remember to regenerate the DAOs if you make changes to your OpenAPI specification to keep them in sync.
+Remember to regenerate the Data Access Objects if you make changes to your OpenAPI specification to keep them in sync.

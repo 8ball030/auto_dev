@@ -112,9 +112,11 @@ def release(
 ) -> None:
     r"""Release a new version of the package.
 
-    Optional Parameters:\n
-        dep_path: Path to the dependency file (pyproject.toml). (Default: pyproject.toml)\n
-        verbose (--verbose/--no-verbose): Enable verbose output. (Default: False)\n
+    Optional Parameters:
+
+        dep_path: Path to the dependency file (pyproject.toml). (Default: pyproject.toml)
+
+        verbose (--verbose/--no-verbose): Enable verbose output. (Default: False)
 
     Usage:
         Release with default settings:

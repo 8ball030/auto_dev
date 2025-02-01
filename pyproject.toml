@@ -116,3 +116,6 @@ adev = "auto_dev.cli:cli"
 [tool.pytest.ini_options]
 filterwarnings = ["ignore:.*CoverageWarning.*:Warning"]
 addopts = "--cov=auto_dev --cov-report html"
+
+[tool.poetry-post-install]
+post-install = "pre-commit install"

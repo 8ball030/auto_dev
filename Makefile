@@ -11,7 +11,7 @@ test:
 
 .PHONY: docs
 docs:
-	poetry run mkdocs build
+	poetry run python scripts/generate_command_docs.py && poetry run mkdocs build
 
 docs-serve:
 	poetry run mkdocs serve

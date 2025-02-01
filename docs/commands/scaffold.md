@@ -1,20 +1,5 @@
 # scaffold
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [behaviour](#behaviour)
-  - [connection](#connection)
-  - [contract](#contract)
-  - [dao](#dao)
-  - [dialogues](#dialogues)
-  - [fsm](#fsm)
-  - [handler](#handler)
-  - [handlers](#handlers)
-  - [protocol](#protocol)
-  - [tests](#tests)
-
-
 ## Description
 ::: auto_dev.commands.scaffold.scaffold
     options:

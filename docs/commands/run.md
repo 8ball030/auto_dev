@@ -1,12 +1,5 @@
 # run
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [dev](#dev)
-  - [prod](#prod)
-
-
 ## Description
 ::: auto_dev.commands.run.run
     options:

@@ -1,9 +1,5 @@
 # create
 
-## Table of Contents
-- [Description](#description)
-
-
 ## Description
 ::: auto_dev.commands.create.create
     options:

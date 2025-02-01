@@ -29,6 +29,7 @@ def convert() -> None:
     """Commands for converting between component types.
 
     Available Commands:
+
         agent_to_service: Convert an autonomous agent into a deployable service
 
     Notes
@@ -43,10 +44,11 @@ def convert() -> None:
 
 class ConvertCliTool(BasePackageScaffolder):
     """Config for the agent service convert cli.
-    
-    Args:
-        agent_public_id: Public ID of the source agent.
-        service_public_id: Public ID for the target service.
+
+
+    agent_public_id: Public ID of the source agent.
+    service_public_id: Public ID for the target service.
+
     """
 
     package_type = SERVICES
@@ -145,20 +147,30 @@ def agent_to_service(
 ) -> None:
     """Convert an autonomous agent into a deployable service.
 
-    :param PublicId agent_public_id: Public ID of the source agent
-    :param PublicId service_public_id: Public ID for the target service
-    :param int number_of_agents: Number of agents to include in the service
-    :param bool force: Force overwrite if service exists
-    :rtype: None
-    :return: None
+    Required Parameters:
 
+        agent_public_id: Public ID of the source agent
+
+        service_public_id: Public ID for the target service
+
+    Optional Parameters:
+
+        number_of_agents (-n): Number of agents to include in the service
+
+        force (-f): Force overwrite if service exists
+
+    Notes
+    -----
     The agent must exist in the agent registry. The service must not exist unless force=True.
+
     The function will validate these prerequisites before proceeding.
+
     Exceptions are handled by the underlying ConvertCliTool class.
 
-    Example usage::
+    Example usage:
 
-        agent_to_service(PublicId.from_str("author/my_agent"), PublicId.from_str("author/my_service"))
+        adev convert agent-to-service author/some_agent author/some_finished_service
+
     """
     logger.info(f"Converting agent {agent_public_id} to service {service_public_id}.")
     converter = ConvertCliTool(agent_public_id, service_public_id)

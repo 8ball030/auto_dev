@@ -22,6 +22,7 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
 
 - Python >= 3.10
 - Poetry <= 2.0.0
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ## Features
 

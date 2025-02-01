@@ -1,14 +1,5 @@
 # augment
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [connection](#connection)
-  - [customs](#customs)
-  - [logging](#logging)
-  - [skill-from-fsm](#skill-from-fsm)
-
-
 ## Description
 ::: auto_dev.commands.augment.augment
     options:

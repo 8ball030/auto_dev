@@ -1,5 +1,6 @@
 """Module to format the code."""
 
+from pathlib import Path
 from multiprocessing import Pool
 
 import requests
@@ -18,6 +19,8 @@ class Formatter:
 
     def format(self, path):
         """Format the path."""
+        if not Path(path).exists():
+            return True
         func = self._format_path if not self.remote else self._remote_format_path
         return func(path, verbose=self.verbose)
 

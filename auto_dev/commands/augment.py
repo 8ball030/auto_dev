@@ -233,9 +233,10 @@ class LoggingScaffolder(BaseScaffolder):
 def augment() -> None:
     r"""Commands for augmenting project components.
 
-    Available Commands:\n
-        logging: Add logging handlers to AEA configuration\n
-        customs: Augment customs components with OpenAPI3 handlers\n
+    Available Commands:
+
+        logging: Add logging handlers to AEA configuration
+        customs: Augment customs components with OpenAPI3 handlers
     """
 
 
@@ -244,15 +245,21 @@ def augment() -> None:
 def logging(handlers) -> None:
     r"""Augment AEA logging configuration with additional handlers.
 
-    Required Parameters:\n
-        handlers: One or more handlers to add (console, http, logfile)\n
+    Required Parameters:
 
-    Usage:\n
-        Add console handler:\n
-            adev augment logging console\n
+        handlers: One or more handlers to add (console, http, logfile)
 
-        Add multiple handlers:\n
-            adev augment logging console http logfile\n
+    Usage:
+
+        Add console handler:
+
+        adev augment logging console
+
+
+        Add multiple handlers:
+
+        adev augment logging console http logfile
+
 
     Notes
     -----
@@ -312,35 +319,32 @@ def connection(connections) -> None:
 @augment.command()
 @click.argument("component_type", type=click.Choice(["openapi3"]))
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
-@click.option("--use-daos", is_flag=True, default=False, help="Augment OpenAPI3 handlers with DAOs")
+@click.option(
+    "--use-daos",
+    is_flag=True,
+    default=False,
+    help="Augment OpenAPI3 handlers with Data Access Objects (DAOs)",
+)
 @click.pass_context
 def customs(ctx, component_type, auto_confirm, use_daos):
-    r"""Augment a customs component with OpenAPI3 handlers.
+    """Augment a customs component with generated code.
 
-    Required Parameters:
-        component_type: Type of component to augment (currently only openapi3)
+    Usage:
+    ```
+    adev augment customs openapi3
+    ```
 
-    Optional Parameters:\n
-        auto_confirm: Skip confirmation prompts. (Default: False)\n
-        use_daos: Include DAO integration in handlers. (Default: False)\n
+    With Data Access Object integration:
+    ```
+    adev augment customs openapi3 --use-daos
+    ```
 
-    Usage:\n
-        Basic OpenAPI3 augmentation:\n
-            adev augment customs openapi3\n
+    Features:
 
-        With DAO integration:
-            adev augment customs openapi3 --use-daos
-
-        Skip confirmations:
-            adev augment customs openapi3 --auto-confirm
-
-    Notes
-    -----
-        - Requires component.yaml with api_spec field
-        - Generates/updates handlers.py with OpenAPI endpoints
-        - Creates necessary dialogue classes
-        - Optionally adds DAO integration
-        - Shows diff before updating existing handlers
+    - Generates handlers for each OpenAPI operation
+    - Creates dialogue classes for request/response handling
+    - Optionally adds Data Access Object integration
+    - Includes error handling and logging
 
     """
     logger = ctx.obj["LOGGER"]
@@ -410,7 +414,25 @@ def customs(ctx, component_type, auto_confirm, use_daos):
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
 @click.option("--verbose", is_flag=True, default=False, help="Verbose output")
 def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool):
-    """Augment a skill with a new handler."""
+    """Augment a skill with a new handler.
+
+    Required Parameters:
+
+        spec_file: Path to the FSM specification file
+
+        skill_public_id: Public ID of the skill to augment
+
+    Optional Parameters:
+
+        auto_confirm (--auto-confirm): Auto confirm the augmentation
+
+        verbose (--verbose): Verbose output
+
+    Usage:
+
+        adev augment skill_from_fsm fsm_spec.yaml author/skill_name:0.1.0
+
+    """
 
     if not Path(spec_file).exists():
         logger.error(f"Specification file for FSM not found: {spec_file}")

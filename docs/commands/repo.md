@@ -1,12 +1,5 @@
 # repo
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [scaffold](#scaffold)
-  - [update-deps](#update-deps)
-
-
 ## Description
 ::: auto_dev.commands.repo.repo
     options:

@@ -1,13 +1,5 @@
 # deps
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [bump](#bump)
-  - [generate-gitignore](#generate-gitignore)
-  - [update](#update)
-
-
 ## Description
 ::: auto_dev.commands.deps.deps
     options:

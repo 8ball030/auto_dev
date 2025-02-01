@@ -96,6 +96,9 @@ make lint
 
 # Run tests
 make test
+
+# Update documentation
+make docs
 ```
 
 These commands will ensure your code:

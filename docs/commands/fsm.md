@@ -1,11 +1,5 @@
 # fsm
 
-## Table of Contents
-- [Description](#description)
-- [Subcommands](#subcommands)
-  - [from-file](#from-file)
-
-
 ## Description
 ::: auto_dev.commands.fsm.fsm
     options:

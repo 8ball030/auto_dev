@@ -39,19 +39,23 @@ def lint(ctx, path, changed_only) -> None:
     """Run linting checks on code.
 
     Required Parameters:
+
         None
 
     Optional Parameters:
+
         path (-p): Path to code to lint. (Default: None)
             - If not provided, lints all packages
             - Can be file or directory path
             - Must exist in workspace
+
         changed_only (-co): Only lint files that have changed. (Default: False)
             - Uses git to detect changes
             - Only lints files with uncommitted changes
             - Ignores untracked files
 
     Usage:
+
         Lint all packages:
             adev lint
 
