@@ -728,6 +728,30 @@ def dao(ctx, auto_confirm) -> None:
         logger.exception(f"Failed to scaffold DAO: {e!s}")
         msg = "Error during DAO scaffolding and test generation"
         raise ValueError(msg) from e
+    
+@scaffold.command()
+@click.option("--type", type=click.Choice(["mech", "other_types"]), required=True, help="Specify the type of scaffold to create")
+@click.argument("api_file", type=str, required=False)
+@click.argument("tool_name", type=str, required=False)
+@click.argument("author_name", type=str, required=False)
+@click.argument("gpt_key", type=str, required=False)
+@click.pass_context
+def custom(ctx, type, api_file, tool_name, author_name, gpt_key):
+    """Scaffold a custom tool, such as a Mech tool."""
+    
+    if type == "mech":
+        if not api_file or not tool_name or not author_name or not gpt_key:
+            raise click.ClickException("For --type mech, you must provide api_file, tool_name, author_name, and gpt_key.")
+
+        from mech.create_mech_tool import main as create_mech_tool
+
+        # Run the Mech tool creator script
+        create_mech_tool(api_file=api_file, tool_name=tool_name, author_name=author_name, gpt_key=gpt_key)
+        click.echo(f"Mech tool '{tool_name}' successfully scaffolded!")
+    
+    else:
+        click.echo(f"Scaffolding for type '{type}' is not implemented yet.")
+
 
 
 if __name__ == "__main__":
