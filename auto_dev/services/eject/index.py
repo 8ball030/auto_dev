@@ -62,6 +62,7 @@ class ComponentEjector:
         self.executor = CommandExecutor([""])  # Placeholder, will be set per command
         self.logger = get_logger(__name__)
         self.package_manager = PackageManager(verbose=True)
+        self._ejected_components: dict[PackageId, PackageId] = {}
 
     def eject(self, display=False) -> list[PublicId]:
         """Eject a component and all its dependencies recursively.
@@ -103,32 +104,14 @@ class ComponentEjector:
 
     def get_ejected_components(self) -> dict[PackageId, PackageId]:
         """Search for ejected components in the current directory."""
-        ejected_components = {}
-        for item_type, plural in ITEM_TYPE_TO_PLURAL.items():
-            component_pattern = f"{plural}/*"
-            for item_dir in Path.cwd().glob(component_pattern):
-                if not item_dir.is_dir():
-                    continue
-                component_config = load_autonolas_yaml(item_type, item_dir)[0]
-                public_id = PublicId.from_json(component_config)
-                package_id = PackageId(
-                    public_id=public_id,
-                    package_type=item_type,
-                )
-                new_package_id = PackageId(
-                    public_id=PublicId(
-                        name=public_id.name, author=self.config.fork_id.author, version=public_id.version
-                    ),
-                    package_type=item_type,
-                )
-                ejected_components[package_id] = new_package_id
-        return ejected_components
+        return self._ejected_components
 
     def update_all_references(self, ejected_components: dict[PackageId, PackageId]) -> None:
         """We need to update all references in the agent to the new components."""
         # We use a find and replace to update all references in the agent to the new name.
         for package_id, new_package_id in ejected_components.items():
             self.update_python_files(package_id, new_package_id, ejected_components)
+
             self.update_yaml_files(package_id, new_package_id, ejected_components)
 
         agent_config, *overrides = load_autonolas_yaml(PackageType.AGENT)
@@ -137,7 +120,6 @@ class ComponentEjector:
         for package_id, new_package_id in ejected_components.items():
             agent_config = self.update_agent_config(agent_config, package_id, new_package_id)
 
-        # We now need to do a
         new_overrides = []
         for override in overrides:
             override_package_id = PackageId(
@@ -159,10 +141,18 @@ class ComponentEjector:
                 and override.get("config")
                 and override.get("config").get("target_skill_id")
             ):
-                target_skill_id = PublicId.from_str(override.get("config").get("target_skill_id"))
+                target_skill_id = PublicId.from_str(
+                    override.get("config").get("target_skill_id"),
+                )
+                target_skill_id = PublicId(
+                    author=target_skill_id.author,
+                    name=target_skill_id.name,
+                    version="latest",
+                )
                 filtered_ejected_components = {
                     k.public_id: v for k, v in ejected_components.items() if k.package_type == PackageType.SKILL
                 }
+
                 if target_skill_id in filtered_ejected_components:
                     package_id = filtered_ejected_components[target_skill_id]
                     override["config"]["target_skill_id"] = str(package_id.public_id)
@@ -198,32 +188,39 @@ class ComponentEjector:
         self, package_id: PackageId, new_package_id: PublicId, ejected_components: dict[PackageId, PackageId]
     ) -> None:
         """We search for all python files in the agent and update the references to the new package id."""
+        replacements = []
         old_dotted_path = (
             f"packages.{package_id.public_id.author}.{package_id.package_type.value}s.{package_id.public_id.name}"
         )
         new_dotted_path = f"packages.{new_package_id.public_id.author}.{new_package_id.package_type.value}s.{new_package_id.public_id.name}"  # noqa: E501
+        replacements.append((old_dotted_path, new_dotted_path))
 
-        old_str_public_id = str(package_id.public_id)
-        new_str_public_id = str(new_package_id.public_id)
+        old_str_public_id = str(package_id.public_id).replace("latest", DEFAULT_VERSION)
+        new_str_public_id = str(new_package_id.public_id).replace("latest", DEFAULT_VERSION)
+        replacements.append((old_str_public_id, new_str_public_id))
 
-        for dependent_package_id in ejected_components:
+        if package_id.package_type is PackageType.PROTOCOL:
+            # mecessary due to the way the protocol is imported in the generated code
+            old_name_camel = "".join(word.capitalize() for word in package_id.public_id.name.split("_")) + "Message"
+            new_name_camel = "".join(word.capitalize() for word in new_package_id.public_id.name.split("_")) + "Message"
+            replacements.append((old_name_camel, new_name_camel))
+
+        for dependent_package_id in ejected_components.values():
             directory = Path.cwd() / ITEM_TYPE_TO_PLURAL[dependent_package_id.package_type.value]
-            if not directory.exists():
-                continue
             for python_file in directory.rglob("*.py"):
                 file_data = python_file.read_text()
-                new_file_data = file_data.replace(old_dotted_path, new_dotted_path)
-                new_file_data = new_file_data.replace(old_str_public_id, new_str_public_id)
-                python_file.write_text(new_file_data, encoding=DEFAULT_ENCODING)
+                for old, new in replacements:
+                    file_data = file_data.replace(old, new)
+                python_file.write_text(file_data, encoding=DEFAULT_ENCODING)
 
     def update_yaml_files(self, package_id: PackageId, new_package_id: PackageId, ejected_components) -> None:
         """We search for all yaml files in the agent and update the references to the new package id."""
-        directory = Path.cwd() / ITEM_TYPE_TO_PLURAL[package_id.package_type.value] / package_id.public_id.name
 
         old_str_public_id = str(package_id.public_id)
         new_str_public_id = str(new_package_id.public_id)
         plural_package_type = ITEM_TYPE_TO_PLURAL[package_id.package_type.value]
 
+        directory = Path.cwd() / ITEM_TYPE_TO_PLURAL[package_id.package_type.value] / new_package_id.public_id.name
         for yaml_file in directory.glob("*.yaml"):
             component_config = load_autonolas_yaml(package_id.package_type.value, yaml_file.parent)[0]
             component_config["author"] = new_package_id.public_id.author
@@ -234,7 +231,7 @@ class ComponentEjector:
 
             write_to_file(yaml_file, component_config, file_type=FileType.YAML)
 
-        for dependent_package_id in ejected_components:
+        for dependent_package_id in ejected_components.values():
             dependent_package_type_plural = ITEM_TYPE_TO_PLURAL[dependent_package_id.package_type.value]
             dependent_config = load_autonolas_yaml(
                 dependent_package_id.package_type.value,
@@ -301,8 +298,22 @@ class ComponentEjector:
             msg = f"{item_type.title()} {public_id} not found in agent's vendor items."
             raise UserInputError(msg)
 
+        is_target = all(
+            [
+                public_id.author == self.config.public_id.author,
+                public_id.name == self.config.public_id.name,
+            ]
+        )
+        new_public_id = PublicId(
+            self.config.fork_id.author, self.config.fork_id.name if is_target else public_id.name, DEFAULT_VERSION
+        )
+
+        self._ejected_components[PackageId(PackageType(item_type), public_id)] = PackageId(
+            PackageType(item_type), new_public_id
+        )
+
         src = get_package_path(cwd, item_type, public_id)
-        dst = get_package_path(cwd, item_type, public_id, is_vendor=False)
+        dst = get_package_path(cwd, item_type, new_public_id, is_vendor=False)
 
         if is_item_present(cwd, config, item_type, public_id, is_vendor=False):  # pragma: no cover
             msg = f"{item_type.title()} {public_id} is already a non-vendor package."
@@ -315,6 +326,8 @@ class ComponentEjector:
         package_id = PackageId(PackageType(item_type), public_id)
 
         self.logger.info(f"Ejecting item {package_id.package_type.value} {package_id.public_id!s}")
+        self.logger.info(f"Destination: {dst}")
+        self.logger.info(f"New public id: {new_public_id}")
 
         # first, eject all the vendor packages that depend on this
         item_remover = ItemRemoveHelper(ctx, ignore_non_vendor=True)
@@ -333,8 +346,6 @@ class ComponentEjector:
 
         ctx.clean_paths.append(dst)
         copy_package_directory(Path(src), dst)
-
-        new_public_id = PublicId(public_id.author, public_id.name, DEFAULT_VERSION)
 
         item_config_update = {
             "author": new_public_id.author,
