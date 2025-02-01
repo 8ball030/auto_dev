@@ -69,6 +69,8 @@ ruff = "^0.5.7"
 pydantic = "^2.8.2"
 isort = "^5.13.2"
 openapi-spec-validator = "0.2.8"
+disutils = "^1.4.32.post2"
+setuptools = "^75.8.0"
 
 
 [tool.poetry.dev-dependencies]
@@ -90,6 +92,7 @@ all = [
   "tbump",
   "ruff",
   "isort",
+  "setuptools",
   "pydantic",
   "open-autonomy",
   "open-aea",
@@ -109,7 +112,6 @@ doc = [
 
 [tool.poetry.scripts]
 adev = "auto_dev.cli:cli"
-gen-docs = "scripts.generate_command_docs:main"
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore:.*CoverageWarning.*:Warning"]
