@@ -439,12 +439,9 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
         adev augment skill_from_fsm fsm_spec.yaml author/skill_name:0.1.0
 
     """
-    skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
+
     if not Path(spec_file).exists():
         logger.error(f"Specification file for FSM not found: {spec_file}")
-        sys.exit(1)
-    if not Path(skill_dir).exists():
-        logger.error(f"Skill directory {skill_dir} not found. please eject the skill first.")
         sys.exit(1)
     if not Path(AEA_CONFIG).exists():
         logger.error(f"File {AEA_CONFIG} not found")
@@ -452,6 +449,7 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
     if not skill_public_id:
         logger.error("Skill public id not provided. Unsure which skill to augment.")
 
+    skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
     behaviour_path = skill_dir / "behaviours.py"
     config, *_overrides = load_autonolas_yaml(PackageType.SKILL, skill_dir)
 
