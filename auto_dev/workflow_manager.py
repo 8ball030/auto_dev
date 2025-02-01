@@ -67,7 +67,7 @@ class Task:
     def work(self):
         """Perform the task's work."""
         self.client = CommandExecutor(self.command.split(" "), cwd=self.working_dir, logger=self.logger)
-        print(f"Executing command: `{self.command}`")
+        print(f"Executing command: `{self.command}` in {self.working_dir}")
         print()
         self.is_failed = not self.client.execute(stream=self.stream, shell=self.shell)
         self.is_done = True
@@ -256,6 +256,62 @@ class WorkflowManager:
         """Load a yaml file."""
         with open(file_path, encoding="utf-8") as file:
             return yaml.safe_load(file)
+
+    @staticmethod
+    def load_custom_workflow(workflow_file: str, params: str) -> "WorkflowManager":
+        """Get a workflow with custom parameters.
+
+        Args:
+        ----
+            workflow_file (str): Path to the workflow YAML file.
+            params (str): A string containing key-value pairs for placeholders in format "key1=value1,key2=value2".
+
+        Returns:
+        -------
+            WorkflowManager: A WorkflowManager instance with the configured workflow.
+
+        Example:
+        -------
+           wf = WorkflowManager.load_custom_workflow("workflow.yaml", "public_id=author/name,param1=value1")
+
+        """
+        parameters = dict(param.split("=") for param in params.split(",") if param)
+        # Check if publicId is in parameters and split it into author and name
+        if "public_id" in parameters:
+            author, name = parameters["public_id"].split("/")
+            parameters["author"] = author
+            parameters["agent_name"] = name
+
+        workflow_yaml = WorkflowManager.load_yaml(workflow_file)
+
+        # Replace placeholders in the loaded YAML data
+        def replace_placeholders(obj):
+            if isinstance(obj, dict):
+                return {k: replace_placeholders(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [replace_placeholders(item) for item in obj]
+            if isinstance(obj, str):
+                result = obj
+                for key, value in parameters.items():
+                    placeholder = f"${{{key}}}"
+                    result = result.replace(placeholder, str(value))
+                return result
+            return obj
+
+        workflow_yaml = replace_placeholders(workflow_yaml)
+
+        # Create a new WorkflowManager instance
+        wf_manager = WorkflowManager()
+
+        # Convert tasks dictionary to Task objects
+        if "tasks" in workflow_yaml:
+            workflow_yaml["tasks"] = [Task(**task) for task in workflow_yaml["tasks"]]
+
+        # Create and add the workflow
+        workflow = Workflow(**workflow_yaml)
+        wf_manager.add_workflow(workflow)
+
+        return wf_manager
 
     def run_workflow(
         self, workflow_id: str, wait: bool = True, exit_on_failure: bool = True, display_process: bool = True
