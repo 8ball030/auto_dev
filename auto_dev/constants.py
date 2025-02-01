@@ -110,9 +110,11 @@ BASE_FSM_SKILLS = {
     "termination_abci": "bafybeieb3gnvjxxsh73g67m7rivzknwb63xu4qeagpkv7f4mqz33ecikem",
 }
 AGENT_PUBLISHED_SUCCESS_MSG = "Agent published successfully."
-CREATE_AGENT_WORKFLOW_PATH = os.path.join(
-    os.path.dirname(__file__), "data", "workflows", "create_new_agent_from_fsm.yaml"
-)
+
+# Workflow related paths
+WORKFLOWS_FOLDER = os.path.join(AUTO_DEV_FOLDER, "data", "workflows")
+CREATE_AGENT_WORKFLOW_PATH = os.path.join(WORKFLOWS_FOLDER, "create_new_agent_from_fsm.yaml")
+
 
 class CheckResult(Enum):
     """Check result enum."""

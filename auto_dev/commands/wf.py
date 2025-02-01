@@ -31,5 +31,7 @@ def wf(path, params) -> None:
 
     """
 
-    wf_manager = WorkflowManager.load_custom_workflow(path, params)
-    wf_manager.run()
+    params = dict(param.split("=") for param in params.split(",") if param)
+
+    workflow_manager = WorkflowManager.load_custom_workflow(path, params)
+    workflow_manager.run()
