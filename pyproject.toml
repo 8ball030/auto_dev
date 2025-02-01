@@ -4,7 +4,7 @@ requires = ["poetry-core>=1.0.0", "setuptools"]
 
 [tool.poetry]
 name = "autonomy_dev"
-version = "0.2.92"
+version = "0.2.95"
 homepage = "https://github.com/8ball030/auto_dev"
 description = "A collection of tooling to enable open source development of autonomy tools"
 authors = ["8Baller <8ball030@gmail.com>"]
@@ -69,6 +69,8 @@ ruff = "^0.5.7"
 pydantic = "^2.8.2"
 isort = "^5.13.2"
 openapi-spec-validator = "0.2.8"
+disutils = "^1.4.32.post2"
+setuptools = "^75.8.0"
 
 
 [tool.poetry.dev-dependencies]
@@ -90,6 +92,7 @@ all = [
   "tbump",
   "ruff",
   "isort",
+  "setuptools",
   "pydantic",
   "open-autonomy",
   "open-aea",
@@ -109,7 +112,6 @@ doc = [
 
 [tool.poetry.scripts]
 adev = "auto_dev.cli:cli"
-gen-docs = "scripts.generate_command_docs:main"
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore:.*CoverageWarning.*:Warning"]

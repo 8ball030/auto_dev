@@ -255,13 +255,13 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.90"
+version = "0.2.95"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
-python-versions = "<3.12,>=3.9"
+python-versions = "<=3.13,>=3.9"
 files = [
-    {file = "autonomy_dev-0.2.90-py3-none-any.whl", hash = "sha256:7b31cc657728c3392002b94d33186abfb19c8cd9a032060bbfe1cfee331608f1"},
-    {file = "autonomy_dev-0.2.90.tar.gz", hash = "sha256:f8525b94d88da6338672f818eb5534e643c467305bdec9ca9ad6c3d9947eadb3"},
+    {file = "autonomy_dev-0.2.95-py3-none-any.whl", hash = "sha256:f9212b3f3284c8fc63c35a83c4ff23f14e1dc8112980b037c4eb279779bc861a"},
+    {file = "autonomy_dev-0.2.95.tar.gz", hash = "sha256:aed941950b443a62701fba830c54f462ab00884eac9baeb4e81aaa45f58250e4"},
 ]
 
 [package.dependencies]
@@ -298,7 +298,6 @@ web3 = ">=6.0.0,<7.0.0"
 [package.extras]
 all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.60.0)", "open-aea-ledger-cosmos (==1.60.0)", "open-aea-ledger-ethereum (==1.60.0)", "open-aea-ledger-solana (==1.60.0)", "open-autonomy (==0.18.4)", "pydantic (>=2.8.2,<3.0.0)", "ruff (>=0.5.7,<0.6.0)", "tbump (>=6.11.0,<7.0.0)"]
 dev = ["tbump (>=6.11.0,<7.0.0)", "toml (==0.10.2)"]
-doc = ["mkdocstrings[python] (>=0.25.2,<0.28.0)"]
 
 [[package]]
 name = "backoff"
@@ -4637,5 +4636,5 @@ doc = []
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.9,<3.12"
-content-hash = "2c053a237bc539ed51e2301e36f1de59a6fc65b0b0e811f59a49c9c6155d9a48"
+python-versions = ">=3.9,<=3.13"
+content-hash = "15e55ecc75a27cca6c97e4834805f1955cd044a13e221c18f3bd7f15f22216fc"

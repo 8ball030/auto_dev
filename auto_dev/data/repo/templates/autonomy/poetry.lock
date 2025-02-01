@@ -235,6 +235,19 @@ files = [
 ]
 
 [[package]]
+name = "asyncio"
+version = "3.4.3"
+description = "reference implementation of PEP 3156"
+optional = false
+python-versions = "*"
+files = [
+    {file = "asyncio-3.4.3-cp33-none-win32.whl", hash = "sha256:b62c9157d36187eca799c378e572c969f0da87cd5fc42ca372d92cdb06e7e1de"},
+    {file = "asyncio-3.4.3-cp33-none-win_amd64.whl", hash = "sha256:c46a87b48213d7464f22d9a497b9eef8c1928b68320a2fa94240f969f6fec08c"},
+    {file = "asyncio-3.4.3-py3-none-any.whl", hash = "sha256:c4d18b22701821de07bd6aea8b53d21449ec0ec5680645e5317062ea21817d2d"},
+    {file = "asyncio-3.4.3.tar.gz", hash = "sha256:83360ff8bc97980e4ff25c964c7bd3923d333d177aa4f7fb736b019f26c7cb41"},
+]
+
+[[package]]
 name = "attrs"
 version = "25.1.0"
 description = "Classes Without Boilerplate"
@@ -255,13 +268,13 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.90"
+version = "0.2.95"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
-python-versions = "<3.12,>=3.9"
+python-versions = "<=3.13,>=3.9"
 files = [
-    {file = "autonomy_dev-0.2.90-py3-none-any.whl", hash = "sha256:7b31cc657728c3392002b94d33186abfb19c8cd9a032060bbfe1cfee331608f1"},
-    {file = "autonomy_dev-0.2.90.tar.gz", hash = "sha256:f8525b94d88da6338672f818eb5534e643c467305bdec9ca9ad6c3d9947eadb3"},
+    {file = "autonomy_dev-0.2.95-py3-none-any.whl", hash = "sha256:f9212b3f3284c8fc63c35a83c4ff23f14e1dc8112980b037c4eb279779bc861a"},
+    {file = "autonomy_dev-0.2.95.tar.gz", hash = "sha256:aed941950b443a62701fba830c54f462ab00884eac9baeb4e81aaa45f58250e4"},
 ]
 
 [package.dependencies]
@@ -298,7 +311,6 @@ web3 = ">=6.0.0,<7.0.0"
 [package.extras]
 all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.60.0)", "open-aea-ledger-cosmos (==1.60.0)", "open-aea-ledger-ethereum (==1.60.0)", "open-aea-ledger-solana (==1.60.0)", "open-autonomy (==0.18.4)", "pydantic (>=2.8.2,<3.0.0)", "ruff (>=0.5.7,<0.6.0)", "tbump (>=6.11.0,<7.0.0)"]
 dev = ["tbump (>=6.11.0,<7.0.0)", "toml (==0.10.2)"]
-doc = ["mkdocstrings[python] (>=0.25.2,<0.28.0)"]
 
 [[package]]
 name = "backoff"
@@ -633,13 +645,13 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2024.12.14"
+version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2024.12.14-py3-none-any.whl", hash = "sha256:1275f7a45be9464efc1173084eaa30f866fe2e47d389406136d332ed4967ec56"},
-    {file = "certifi-2024.12.14.tar.gz", hash = "sha256:b650d30f370c2b724812bee08008be0c4163b163ddaec3f2546c1caf65f191db"},
+    {file = "certifi-2025.1.31-py3-none-any.whl", hash = "sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"},
+    {file = "certifi-2025.1.31.tar.gz", hash = "sha256:3d5da6925056f6f18f119200434a4780a94263f10d1c21d032a6f6b2baa20651"},
 ]
 
 [[package]]
@@ -1232,6 +1244,25 @@ files = [
     {file = "distro-1.9.0-py3-none-any.whl", hash = "sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2"},
     {file = "distro-1.9.0.tar.gz", hash = "sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed"},
 ]
+
+[[package]]
+name = "disutils"
+version = "1.4.32.post2"
+description = "disutils is a very useful library made to be used with discord.py"
+optional = false
+python-versions = ">= 3.6"
+files = [
+    {file = "disutils-1.4.32.post2-py3-none-any.whl", hash = "sha256:fbd5402027e3ad99402d889b79f76f6e045bbdb7aa6a4a43abf7a136e46cd019"},
+    {file = "disutils-1.4.32.post2.tar.gz", hash = "sha256:29529e3436a95e9863934d6ce3f20335860c7fdffe5e6f95b5ceaeb3ffea4574"},
+]
+
+[package.dependencies]
+aiohttp = "*"
+asyncio = "*"
+
+[package.extras]
+docs = ["Sphinx (==4.5.0)", "py-cord (==2.0.0b7)", "sphinx-rtd-theme (==1.0.0)", "sphinxcontrib-napoleon (==0.7)", "sphinxcontrib-trio (==1.1.2)", "typing-extensions"]
+voice = ["youtube-dl"]
 
 [[package]]
 name = "docker"
@@ -3709,6 +3740,26 @@ files = [
 ]
 
 [[package]]
+name = "setuptools"
+version = "75.8.0"
+description = "Easily download, build, install, upgrade, and uninstall Python packages"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "setuptools-75.8.0-py3-none-any.whl", hash = "sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3"},
+    {file = "setuptools-75.8.0.tar.gz", hash = "sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6"},
+]
+
+[package.extras]
+check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1)", "ruff (>=0.8.0)"]
+core = ["importlib_metadata (>=6)", "jaraco.collections", "jaraco.functools (>=4)", "jaraco.text (>=3.7)", "more_itertools", "more_itertools (>=8.8)", "packaging", "packaging (>=24.2)", "platformdirs (>=4.2.2)", "tomli (>=2.0.1)", "wheel (>=0.43.0)"]
+cover = ["pytest-cov"]
+doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "pyproject-hooks (!=1.1)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier", "towncrier (<24.7)"]
+enabler = ["pytest-enabler (>=2.2)"]
+test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.7.2)", "jaraco.test (>=5.5)", "packaging (>=24.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-home (>=0.5)", "pytest-perf", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel (>=0.44.0)"]
+type = ["importlib_metadata (>=7.0.2)", "jaraco.develop (>=7.21)", "mypy (==1.14.*)", "pytest-mypy"]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -4446,5 +4497,5 @@ doc = []
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.9,<3.12"
-content-hash = "7ba0e7a1690625b649fb0333f02140e74a64d7717184782d4c4738cf3ede7256"
+python-versions = ">=3.9,<=3.13"
+content-hash = "7c0f239c205cc4bbf71b56269c4a5fb6c77de22d0e7d2e59bb17d7b042030eb6"
