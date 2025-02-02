@@ -1,6 +1,7 @@
 """This module contains the logic for the fmt command."""
 
 import sys
+import shutil
 from pathlib import Path
 
 import rich_click as click
@@ -10,8 +11,8 @@ from auto_dev.base import build_cli
 from auto_dev.utils import change_dir, get_packages, update_author
 from auto_dev.constants import AUTO_DEV_FOLDER, AUTONOMY_PACKAGES_FILE
 from auto_dev.exceptions import OperationError
-from auto_dev.cli_executor import CommandExecutor
 from auto_dev.workflow_manager import WorkflowManager
+from auto_dev.services.runner.runner import DevAgentRunner
 from auto_dev.services.package_manager.index import PackageManager
 
 
@@ -76,17 +77,22 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
             adev create --no-clean-up new_author/new_agent
 
     """
-    agent_name = public_id.name
     verbose = ctx.obj["VERBOSE"]
     logger = ctx.obj["LOGGER"]
-    package_path = str(Path("packages") / public_id.author / "agents" / public_id.name)
+    agent_runner = DevAgentRunner(
+        agent_name=public_id,
+        logger=logger,
+        verbose=verbose,
+        force=force,
+        ipfs_hash=available_agents[template],
+    )
     for name in [
-        agent_name,
-        package_path,
+        agent_runner.agent_name.name,
+        agent_runner.agent_package_path,
     ]:
         is_proposed_path_exists = Path(name).exists()
         if is_proposed_path_exists and not force:
-            msg = f"Directory {name} already exists. " "Please remove it or use the --force flag to overwrite it."
+            msg = f"Directory {name} already exists. " + "Please remove it or use the --force flag to overwrite it."
             click.secho(
                 msg,
                 fg="red",
@@ -94,54 +100,20 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
             sys.exit(1)
 
         if is_proposed_path_exists and force:
-            command = CommandExecutor(
-                [
-                    "rm",
-                    "-rf",
-                    name,
-                ]
-            )
+            shutil.rmtree(name)
             logger.info(
-                f"Directory {name} already exists. Removing with: {command.command}",
-            )
-            result = command.execute(verbose=ctx.obj["VERBOSE"])
-            if not result:
-                msg = f"Command failed: {command.command}"
-                click.secho(msg, fg="red")
-                raise OperationError(msg)
-            logger.info(
-                "Command executed successfully.",
+                f"Directory {name} removed successfully.",
             )
 
     logger.info(f"Creating agent {public_id} from template {template}")
 
-    ipfs_hash = available_agents[template]
+    agent_runner.fetch_agent()
 
-    create_commands = [
-        f"poetry run autonomy fetch {ipfs_hash} --alias {agent_name}",
-    ]
-
-    for command in create_commands:
-        command = CommandExecutor(
-            command.split(" "),
-        )
-        logger.debug(
-            f"Executing command: {command.command}",
-        )
-        result = command.execute(verbose=verbose)
-        if not result:
-            msg = f"Command failed: {command.command}  failed to create agent {public_id!s}"
-            click.secho(msg, fg="red")
-            return OperationError(msg)
-        logger.debug(
-            "Command executed successfully.",
-        )
-
-    with change_dir(agent_name):
+    with change_dir(agent_runner.agent_dir):
         update_author(public_id=public_id)
         if publish:
             try:
-                package_manager = PackageManager(verbose=verbose)
+                package_manager = PackageManager(verbose=verbose, agent_runner=agent_runner)
                 # We're already in the agent directory after update_author
                 package_manager.publish_agent(force=force)
                 logger.info(
@@ -152,23 +124,11 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
                 raise click.Abort from e
 
     if clean_up:
-        command = CommandExecutor(
-            [
-                "rm",
-                "-rf",
-                agent_name,
-            ]
-        )
-        result = command.execute(verbose=verbose)
-        if not result:
-            msg = f"Command failed: {command.command}"
-            click.secho(msg, fg="red")
-            return OperationError(msg)
+        shutil.rmtree(agent_runner.agent_dir)
         logger.info(
             "Agent cleaned up successfully.",
         )
     logger.info(f"Agent {public_id!s} created successfully 🎉🎉🎉🎉")
-    return None
 
 
 @cli.command()

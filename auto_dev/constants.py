@@ -37,16 +37,18 @@ DOCKERCOMPOSE_TEMPLATE_FOLDER = os.path.join(
 AEA_CONFIG = get_or_create_cli_config()
 NAME_PATTERN = r"[a-z_][a-z0-9_]{0,127}"
 
+DEFAULT_IPFS_HASH = "bafybeiaa3jynk3bx4uged6wye7pddkpbyr2t7avzze475vkyu2bbjeddrm"
+
 SAMPLE_PACKAGES_JSON = {
     "packages/packages.json": """
 {
     "dev": {
-        "agent/eightballer/tmp/aea-config.yaml": "bafybeiaa3jynk3bx4uged6wye7pddkpbyr2t7avzze475vkyu2bbjeddrm"
+        "agent/eightballer/tmp/aea-config.yaml": ipfs_hash,
     },
     "third_party": {
     }
 }
-"""
+""".replace("ipfs_hash", DEFAULT_IPFS_HASH),
 }
 
 SAMPLE_PACKAGE_FILE = {

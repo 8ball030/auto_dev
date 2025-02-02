@@ -1,15 +1,20 @@
 """This module contains the service logic for publishing agents."""
 
+import json
 import shutil
 from pathlib import Path
 
+from aea.cli.eject import get_package_path
 from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
-from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
-from aea.configurations.data_types import PackageType
+from aea.configurations.constants import PACKAGES, ITEM_TYPE_TO_PLURAL, DEFAULT_AEA_CONFIG_FILE
+from aea.configurations.data_types import PackageId, PackageType
 
-from auto_dev.utils import change_dir, get_logger, update_author, load_autonolas_yaml
+from auto_dev.utils import get_logger, update_author, load_autonolas_yaml
+from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH
 from auto_dev.exceptions import OperationError
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.workflow_manager import Task
+from auto_dev.services.runner.runner import DEFAULT_VERSION, DevAgentRunner
 
 
 logger = get_logger()
@@ -26,8 +31,10 @@ class PackageManager:
 
     def __init__(
         self,
+        agent_runner: DevAgentRunner,
         verbose: bool = False,
     ):
+        self.agent_runner = agent_runner
         self.verbose = verbose
 
     def ensure_local_registry(self) -> None:
@@ -45,51 +52,6 @@ class PackageManager:
             if not result:
                 msg = f"Command failed: {command.command}"
                 raise OperationError(msg)
-
-    def _get_workspace_root(self) -> Path:
-        """Get the workspace root directory (where packages directory should be).
-
-        Returns
-        -------
-            Path to the workspace root directory.
-
-        """
-        current = Path.cwd()
-        while current != current.parent:
-            if (current / "packages").exists() or (current / "pyproject.toml").exists():
-                return current
-            current = current.parent
-        return Path.cwd().parent
-
-    def _get_package_config(self, component_type: str | None) -> tuple[str, str, dict]:
-        """Get package configuration details.
-
-        Args:
-        ----
-            component_type: Optional component type if publishing a component.
-
-        Returns:
-        -------
-            Tuple of (package_type, config_file, config)
-
-        Raises:
-        ------
-            OperationError: If not in correct directory or config file not found.
-
-        """
-        package_type = PackageType.AGENT if component_type is None else component_type
-        config_file = (
-            DEFAULT_AEA_CONFIG_FILE
-            if component_type is None
-            else _get_default_configuration_file_name_from_type(component_type)
-        )
-
-        if not Path(config_file).exists():
-            msg = f"Not in correct directory ({config_file} not found)"
-            raise OperationError(msg)
-
-        config, *_ = load_autonolas_yaml(package_type)
-        return package_type, config_file, config
 
     def _update_config_with_new_id(
         self, config: dict, new_public_id: PublicId | None, component_type: str | None
@@ -118,30 +80,6 @@ class PackageManager:
         name = config.get("agent_name") or config.get("name")
         author = config["author"]
         return name, author
-
-    def _get_package_path(self, author: str, name: str, component_type: str | None) -> Path:
-        """Get the path where the package will be published.
-
-        Args:
-        ----
-            author: Package author
-            name: Package name
-            component_type: Optional component type
-
-        Returns:
-        -------
-            Path where package will be published
-
-        """
-        workspace_root = self._get_workspace_root()
-
-        # For custom components, use simplified path structure
-        if component_type == "custom":
-            return workspace_root / "packages" / author / "customs" / name
-
-        # For other components, use standard path structure
-        package_type_dir = "agents" if component_type is None else f"{component_type}s"
-        return workspace_root / "packages" / author / package_type_dir / name
 
     def _handle_custom_component(self, package_path: Path) -> None:
         """Handle publishing of custom components.
@@ -177,6 +115,7 @@ class PackageManager:
             return
 
         workspace_root = self._get_workspace_root()
+
         for package in config["customs"]:
             custom_id = PublicId.from_str(package)
             # For customs, use simplified path structure
@@ -186,6 +125,23 @@ class PackageManager:
                 package_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copytree(customs_path, package_path)
 
+    def _get_workspace_root(self) -> Path:
+        """Get the workspace root.
+
+        Returns
+        -------
+            Path to workspace root i.e. the parent directory of the agent directory.
+
+        """
+        path = Path(DEFAULT_AEA_CONFIG_FILE)
+        if not path.exists():
+            msg = "Not in an agent directory. Please run this command from an agent directory."
+            raise OperationError(msg)
+        if not (path.resolve().parent.parent / PACKAGES).exists():
+            msg = "Packages directory not found, please initialize the registry."
+            raise OperationError(msg)
+        return path.resolve().parent.parent
+
     def _run_publish_commands(self) -> None:
         """Run the AEA publish commands.
 
@@ -194,29 +150,30 @@ class PackageManager:
             OperationError: If command execution fails
 
         """
-        publish_commands = ["aea publish --push-missing --local"]
-        for command in publish_commands:
-            cmd_executor = CommandExecutor(command.split(" "))
-            result = cmd_executor.execute(verbose=self.verbose)
-            if not result:
-                msg = f"""
-                Command failed: {cmd_executor.command}
-                Error: {cmd_executor.stderr}
-                stdout: {cmd_executor.stdout}"""
+        tasks = [
+            Task(command="aea -s publish --push-missing --local"),
+            Task(command="autonomy packages lock", working_dir=self._get_workspace_root()),
+        ]
+        for task in tasks:
+            task.work()
+            if task.is_failed:
+                msg = f"Command failed: {task.command}"
                 raise OperationError(msg)
 
     def _publish_internal(
         self,
         force: bool = False,
         new_public_id: PublicId | None = None,
-        component_type: str | None = None,
     ) -> None:
         """Internal function to handle publishing logic.
+
+
+        # Get package configuration
 
         Args:
         ----
             force: If True, remove existing package before publishing.
-            new_public_id: Optional new public ID to publish as.
+            new_public_id: Optional new public ID to publish as. Updating config as needed.
             component_type: Optional component type if publishing a component.
 
         Raises:
@@ -225,36 +182,102 @@ class PackageManager:
             OSError: If file operations fail
 
         """
-        # Get package configuration
-        _package_type, _config_file, config = self._get_package_config(component_type)
+        if new_public_id:
+            update_author(new_public_id)
 
-        # Update config with new public ID if provided
-        name, author = self._update_config_with_new_id(config, new_public_id, component_type)
+        config, *_ = load_autonolas_yaml(PackageType.AGENT)
 
-        # Get package path
-        package_path = self._get_package_path(author, name, component_type)
-        logger.debug(f"Package path: {package_path}")
+        (
+            author,
+            name,
+        ) = config["author"], config["agent_name"]
+        # Get package paths
+        dev, third_party = self.get_all_packages()
 
-        # Handle existing package
-        if package_path.exists():
-            if force:
-                logger.info(f"Removing existing package at {package_path}")
-                shutil.rmtree(package_path)
-            else:
-                msg = f"Package already exists at {package_path}. Use --force to overwrite."
-                raise OperationError(msg)
+        agent_package_id = PackageId(
+            public_id=PublicId(
+                author=author,
+                name=name,
+                version=DEFAULT_VERSION,
+                package_hash=DEFAULT_IPFS_HASH,
+            ),
+            package_type=PackageType.AGENT,
+        )
+        dev[agent_package_id] = Path.cwd()
 
-        # For custom components, just copy the directory
-        if component_type == "custom":
-            self._handle_custom_component(package_path)
-            return
-
-        # For other components, handle customs if this is an agent
-        if component_type is None:
-            self._handle_agent_customs(config)
-
-        # Run AEA publish commands
+        self.add_to_packages(dev, third_party, overwrite=force)
         self._run_publish_commands()
+
+    def add_to_packages(
+        self, dev_packages: list[PackageId], third_party_packages: list[PackageId], overwrite=True
+    ) -> None:
+        """Add packages to the local registry json file, using the package manager.
+
+        Args:
+        ----
+            dev_packages: List of dev packages to add
+            third_party_packages: List of third party packages to add
+
+        Raises:
+        ------
+            OperationError: If package addition fails
+
+        """
+
+        packages_path = self._get_workspace_root() / PACKAGES / "packages.json"
+        if not packages_path.exists():
+            msg = f"Packages file not found at {packages_path}"
+            raise OperationError(msg)
+        if not packages_path.is_file():
+            msg = f"Invalid packages file at {packages_path}"
+            raise OperationError(msg)
+        data = json.loads(packages_path.read_text(encoding=DEFAULT_ENCODING))
+        for package_id in dev_packages:
+            key = package_id.to_uri_path
+            if key in data["dev"] and not overwrite:
+                self.logger.warning(f"Package already exists in dev packages: {key} skipping.")
+                continue
+            data["dev"][key] = package_id.package_hash
+        for package_id in third_party_packages:
+            key = package_id.to_uri_path
+            if key in data["third_party"] and not overwrite:
+                self.logger.warning(f"Package already exists in third party packages: {key} skipping.")
+                if package_id.package_hash != data["third_party"][key]:
+                    self.logger.warning(
+                        f"Package hash mismatch: {package_id.package_hash} != {data['third_party'][key]}"
+                    )
+                continue
+            data["third_party"][key] = package_id.package_hash
+
+        packages_path.write_text(json.dumps(data, indent=2), encoding=DEFAULT_ENCODING)
+
+    def get_all_packages(
+        self,
+    ) -> tuple[list[PackageId], list[PackageId]]:
+        """Get all packages in the local registry.
+
+        Returns
+        -------
+            Tuple of (dev, third_party) packages
+
+        """
+        dev, third_party = {}, {}
+
+        config, *_ = load_autonolas_yaml(PackageType.AGENT)
+        for package_type in PackageType:
+            if package_type in {PackageType.SERVICE, PackageType.AGENT}:
+                continue
+            key = ITEM_TYPE_TO_PLURAL[package_type.value]
+            for public_id_str in config.get(key, []):
+                public_id = PublicId.from_str(public_id_str)
+                package_id = PackageId(public_id=public_id, package_type=package_type)
+                third_party_path = get_package_path(Path.cwd(), package_type.value, public_id, is_vendor=True)
+                dev_path = get_package_path(Path.cwd(), package_type.value, public_id, is_vendor=False)
+                if Path(third_party_path).exists():
+                    third_party[package_id] = third_party_path
+                elif Path(dev_path).exists():
+                    dev[package_id] = dev_path
+        return dev, third_party
 
     def publish_agent(
         self,
@@ -273,41 +296,8 @@ class PackageManager:
             OperationError: if the command fails.
 
         """
-        # Initialize registry in workspace root
-        workspace_root = self._get_workspace_root()
-        with change_dir(workspace_root):
-            self.ensure_local_registry()
-
+        if not Path(DEFAULT_AEA_CONFIG_FILE).exists():
+            msg = "Not in an agent directory. Please run this command from an agent directory."
+            raise OperationError(msg)
         # Publish from agent directory (we're already there)
         self._publish_internal(force, new_public_id=new_public_id)
-
-        logger.debug("Agent published!")
-
-    def publish_component(
-        self,
-        component_type: str,
-        force: bool = False,
-        new_public_id: PublicId | None = None,
-    ) -> None:
-        """Publish a component.
-
-        Args:
-        ----
-            component_type: Type of component to publish (e.g., 'skill', 'connection', etc.)
-            force: If True, remove existing package before publishing.
-            new_public_id: Optional new public ID to publish as.
-
-        Raises:
-        ------
-            OperationError: if the command fails.
-
-        """
-        # Initialize registry in workspace root
-        workspace_root = self._get_workspace_root()
-        with change_dir(workspace_root):
-            self.ensure_local_registry()
-
-        # Publish from component directory
-        self._publish_internal(force, new_public_id=new_public_id, component_type=component_type)
-
-        logger.debug(f"Component {component_type} published!")
