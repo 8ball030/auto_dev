@@ -14,7 +14,7 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
     # Make a new agent
     adev create author/cool_agent
     # Run the new agent
-    adev run author/cool_agent
+    adev run dev author/cool_agent
 
 ## Requirements
 
