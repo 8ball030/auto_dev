@@ -31,7 +31,7 @@ class PackageManager:
 
     def __init__(
         self,
-        agent_runner: DevAgentRunner,
+        agent_runner: DevAgentRunner = None,
         verbose: bool = False,
     ):
         self.agent_runner = agent_runner
@@ -206,7 +206,29 @@ class PackageManager:
         dev[agent_package_id] = Path.cwd()
 
         self.add_to_packages(dev, third_party, overwrite=force)
+        if force:
+            self.clear_if_force(dev, third_party)
         self._run_publish_commands()
+
+    @property
+    def packages_path(self) -> Path:
+        """Get the packages directory path."""
+        return self._get_workspace_root() / PACKAGES
+
+    @property
+    def packages_file(self) -> Path:
+        """Get the packages file path."""
+        return self.packages_path / "packages.json"
+
+    def get_current_packages(self) -> tuple[list[PackageId], list[PackageId]]:
+        """Get the current packages from the local registry."""
+        if not self.packages_file.exists():
+            msg = f"Packages file not found at {self.packages_path}"
+            raise OperationError(msg)
+        if not self.packages_file.is_file():
+            msg = f"Invalid packages file at {self.packages_path}"
+            raise OperationError(msg)
+        return json.loads(self.packages_file.read_text(encoding=DEFAULT_ENCODING))
 
     def add_to_packages(
         self, dev_packages: list[PackageId], third_party_packages: list[PackageId], overwrite=True
@@ -223,15 +245,8 @@ class PackageManager:
             OperationError: If package addition fails
 
         """
+        data = self.get_current_packages()
 
-        packages_path = self._get_workspace_root() / PACKAGES / "packages.json"
-        if not packages_path.exists():
-            msg = f"Packages file not found at {packages_path}"
-            raise OperationError(msg)
-        if not packages_path.is_file():
-            msg = f"Invalid packages file at {packages_path}"
-            raise OperationError(msg)
-        data = json.loads(packages_path.read_text(encoding=DEFAULT_ENCODING))
         for package_id in dev_packages:
             key = package_id.to_uri_path
             if key in data["dev"] and not overwrite:
@@ -249,7 +264,7 @@ class PackageManager:
                 continue
             data["third_party"][key] = package_id.package_hash
 
-        packages_path.write_text(json.dumps(data, indent=2), encoding=DEFAULT_ENCODING)
+        self.packages_file.write_text(json.dumps(data, indent=2), encoding=DEFAULT_ENCODING)
 
     def get_all_packages(
         self,
@@ -278,6 +293,29 @@ class PackageManager:
                 elif Path(dev_path).exists():
                     dev[package_id] = dev_path
         return dev, third_party
+
+    def clear_if_force(self, dev: dict[PackageId, Path], third_party: dict[PackageId, Path]) -> None:
+        """Clear the package from the packages directory if set to force.
+
+        Args:
+        ----
+            dev: Dev packages
+            agent_package_id: Agent package ID
+
+        Raises:
+        ------
+            OSError: If directory operations fail
+
+        """
+        for data, _ in [dev, third_party]:
+            for package_id in data:
+                item_type_plural = ITEM_TYPE_TO_PLURAL[package_id.package_type.value]
+                package_path = Path(
+                    self.packages_path, package_id.public_id.author, item_type_plural, package_id.public_id.name
+                )
+                if package_path.exists():
+                    shutil.rmtree(package_path)
+                    logger.warning(f"Removed package at {package_path}")
 
     def publish_agent(
         self,
