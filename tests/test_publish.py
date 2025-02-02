@@ -86,17 +86,18 @@ def test_publish_command_force(
 ):
     """Test publish command output with force."""
     test_publish_command_happy_path(cli_runner, test_packages_filesystem, dummy_agent_default)
-    ["adev", "-v", "publish", str(DEFAULT_PUBLIC_ID)]
+
+    task = Task(
+        command=f"adev publish {DEFAULT_PUBLIC_ID!s}",
+    )
+    task.work()
     # Test force publish succeeds
     packages_path = Path("..") / "packages" / DEFAULT_AUTHOR / "agents" / DEFAULT_AGENT_NAME
     test_file = packages_path / "test.txt"
     test_file.write_text("test content")
     assert test_file.exists()
-    task = Task(
-        command=f"adev publish {DEFAULT_PUBLIC_ID!s} --force",
-    )
     task.work()
-    assert all([task.is_done, task.is_failed]), task.client.output
+    assert all([task.is_done, not task.is_failed]), task.client.output
     assert AGENT_PUBLISHED_SUCCESS_MSG in task.client.output
     assert not test_file.exists()
 

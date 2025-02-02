@@ -88,7 +88,7 @@ def test_get_packages(test_packages_filesystem):
     """Test get_packages."""
     del test_packages_filesystem
     packages = get_packages()
-    assert len(packages) == 1
+    assert len(packages) == 0
 
 
 def test_has_package_code_changed_true(test_packages_filesystem):

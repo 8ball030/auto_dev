@@ -12,13 +12,15 @@ from aea.configurations.data_types import PackageId, PackageType
 from auto_dev.utils import get_logger, update_author, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH
 from auto_dev.exceptions import OperationError
-from auto_dev.cli_executor import CommandExecutor
 from auto_dev.workflow_manager import Task
 from auto_dev.services.runner.runner import DEFAULT_VERSION, DevAgentRunner
 
 
 ALREADY_EXISTS_MSG = "Agent already exists at packages {path}"
 INCORRECT_PATH_MSG = "Not in an agent directory. Please run this command from an agent directory."
+PACKAGES_NOT_FOUND = (
+    "Packages ../packages/packages.json Please run `autonomy packages init` to initialize the registry."
+)
 
 logger = get_logger()
 
@@ -39,22 +41,6 @@ class PackageManager:
     ):
         self.agent_runner = agent_runner
         self.verbose = verbose
-
-    def ensure_local_registry(self) -> None:
-        """Ensure a local registry exists.
-
-        Raises
-        ------
-            OperationError: if the command fails.
-
-        """
-        if not Path("packages").exists():
-            logger.info("Initializing local registry")
-            command = CommandExecutor(["poetry", "run", "autonomy", "packages", "init"])
-            result = command.execute(verbose=self.verbose)
-            if not result:
-                msg = f"Command failed: {command.command}"
-                raise OperationError(msg)
 
     def _update_config_with_new_id(
         self, config: dict, new_public_id: PublicId | None, component_type: str | None
@@ -140,8 +126,7 @@ class PackageManager:
         if not path.exists():
             raise OperationError(INCORRECT_PATH_MSG)
         if not (path.resolve().parent.parent / PACKAGES).exists():
-            msg = "Packages directory not found, please initialize the registry."
-            raise OperationError(msg)
+            raise OperationError(PACKAGES_NOT_FOUND)
         return path.resolve().parent.parent
 
     def _run_publish_commands(self) -> None:
@@ -240,8 +225,7 @@ class PackageManager:
     def get_current_packages(self) -> tuple[list[PackageId], list[PackageId]]:
         """Get the current packages from the local registry."""
         if not self.packages_file.exists():
-            msg = f"Packages file not found at {self.packages_path}"
-            raise OperationError(msg)
+            raise OperationError(PACKAGES_NOT_FOUND)
         if not self.packages_file.is_file():
             msg = f"Invalid packages file at {self.packages_path}"
             raise OperationError(msg)
