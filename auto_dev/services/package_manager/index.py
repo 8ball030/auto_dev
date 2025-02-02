@@ -17,6 +17,9 @@ from auto_dev.workflow_manager import Task
 from auto_dev.services.runner.runner import DEFAULT_VERSION, DevAgentRunner
 
 
+ALREADY_EXISTS_MSG = "Agent already exists at packages {path}"
+INCORRECT_PATH_MSG = "Not in an agent directory. Please run this command from an agent directory."
+
 logger = get_logger()
 
 
@@ -135,8 +138,7 @@ class PackageManager:
         """
         path = Path(DEFAULT_AEA_CONFIG_FILE)
         if not path.exists():
-            msg = "Not in an agent directory. Please run this command from an agent directory."
-            raise OperationError(msg)
+            raise OperationError(INCORRECT_PATH_MSG)
         if not (path.resolve().parent.parent / PACKAGES).exists():
             msg = "Packages directory not found, please initialize the registry."
             raise OperationError(msg)
@@ -205,6 +207,21 @@ class PackageManager:
         )
         dev[agent_package_id] = Path.cwd()
 
+        expected_agent_path = get_package_path(
+            self.packages_path,
+            ITEM_TYPE_TO_PLURAL[PackageType.AGENT.value],
+            agent_package_id.public_id,
+            is_vendor=False,
+        )
+        if Path(expected_agent_path).exists():
+            msg = ALREADY_EXISTS_MSG.format(path=expected_agent_path)
+            logger.warning(msg)
+            if force:
+                logger.warning("Force flag set, removing existing agent.")
+                shutil.rmtree(expected_agent_path)
+            else:
+                raise OperationError(msg)
+
         self.add_to_packages(dev, third_party, overwrite=force)
         if force:
             self.clear_if_force(dev, third_party)
@@ -250,17 +267,15 @@ class PackageManager:
         for package_id in dev_packages:
             key = package_id.to_uri_path
             if key in data["dev"] and not overwrite:
-                self.logger.warning(f"Package already exists in dev packages: {key} skipping.")
+                logger.warning(f"Package already exists in dev packages: {key} skipping.")
                 continue
             data["dev"][key] = package_id.package_hash
         for package_id in third_party_packages:
             key = package_id.to_uri_path
             if key in data["third_party"] and not overwrite:
-                self.logger.warning(f"Package already exists in third party packages: {key} skipping.")
+                logger.warning(f"Package already exists in third party packages: {key} skipping.")
                 if package_id.package_hash != data["third_party"][key]:
-                    self.logger.warning(
-                        f"Package hash mismatch: {package_id.package_hash} != {data['third_party'][key]}"
-                    )
+                    logger.warning(f"Package hash mismatch: {package_id.package_hash} != {data['third_party'][key]}")
                 continue
             data["third_party"][key] = package_id.package_hash
 
@@ -307,7 +322,7 @@ class PackageManager:
             OSError: If directory operations fail
 
         """
-        for data, _ in [dev, third_party]:
+        for data in [dev, third_party]:
             for package_id in data:
                 item_type_plural = ITEM_TYPE_TO_PLURAL[package_id.package_type.value]
                 package_path = Path(
