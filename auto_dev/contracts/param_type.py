@@ -23,6 +23,7 @@ class ParamType(Enum):
     TUPLE = "tuple"
     UINT256_ARRAY = "uint256[]"
     UINT64_ARRAY = "uint64[]"
+    INT256_ARRAY = "int256[]"
     INT80_ARRAY = "int80[]"
     ADDRESS_ARRAY = "address[]"
     STRING = "string"
