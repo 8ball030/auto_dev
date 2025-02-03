@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 import rich_click as click
 from aea.configurations.base import SKILLS, PublicId, PackageType
+from aea.configurations.constants import DEFAULT_SKILL_CONFIG_FILE
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
@@ -493,15 +494,15 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
     write_to_file(behaviour_path, output, FileType.PYTHON)
     logger.info(f"Behaviours file updated: {behaviour_path}")
     class_name = f"{snake_to_camel(scaffolder.fsm_spec.label).capitalize()}FsmBehaviour"
-    skill_yaml = read_from_file(skill_dir / "skill.yaml", FileType.YAML)
+    skill_yaml = read_from_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, FileType.YAML)
     if "behaviours" not in skill_yaml:
         skill_yaml["behaviours"] = {}
     skill_yaml["behaviours"]["main"] = {
         "args": {},
         "class_name": class_name,
     }
-    write_to_file(skill_dir / "skill.yaml", skill_yaml, FileType.YAML)
-    logger.info(f"Skill.yaml updated: {skill_dir / 'skill.yaml'}")
+    write_to_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, skill_yaml, FileType.YAML)
+    logger.info(f"Skill.yaml updated: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
     package_manager = PackageManager(verbose=verbose)
     package_manager.fingerprint_component(PackageType.SKILL, skill_public_id)
     package_manager.publish_agent(force=True)
