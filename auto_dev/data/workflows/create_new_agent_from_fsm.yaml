@@ -5,7 +5,7 @@ tasks:
   - id: '1'
     name: Create Agent
     description: Create a new agent
-    command: adev -v create ${public_id} --no-clean-up -t eightballer/base --force
+    command: adev -v create ${public_id} --no-clean-up -t eightballer/base --no-publish
 
   - id: '2'
     name: Eject Metrics Skill
@@ -19,3 +19,8 @@ tasks:
     command: adev augment skill-from-fsm ${fsm} ${author}/metrics
     working_dir: ${agent_name}
 
+  - id: '4'
+    name: Publish Agent
+    description: Publish the agent to the local packages
+    command: adev publish eightballer/${agent_name}
+    working_dir: ${agent_name}
