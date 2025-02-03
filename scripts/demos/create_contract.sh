@@ -12,12 +12,12 @@ gum format """
 We can generate a contract from any deployed verified contract.
 This is done by using the following command;
 
-    adev scaffold contract author/usdc \
-        --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 \
+    adev scaffold contract author/usdc /\
+        --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 /\
         --network base
 """
 sleep $SLEEP_TIME
-call_and_wait "adev scaffold contract author/balancer_vault --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 --network base" 4
+call_and_wait "adev scaffold contract author/usdc --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 --network base" 4
 
 gum format """
 we now have extracted all read, write and events from the deployed contract.
