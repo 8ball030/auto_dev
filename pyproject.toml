@@ -112,9 +112,16 @@ doc = [
 
 [tool.poetry.scripts]
 adev = "auto_dev.cli:cli"
-
 [tool.pytest.ini_options]
-filterwarnings = ["ignore:.*CoverageWarning.*:Warning"]
+filterwarnings = [
+  "ignore:.*CoverageWarning.*",
+  "ignore:datetime.datetime.utcfromtimestamp.*:DeprecationWarning",
+  "ignore:There is no current event loop:DeprecationWarning",
+  "ignore:DeprecationWarning*.py:DeprecationWarning",
+  "ignore:CoverageWarning*.py:",
+  "ignore::DeprecationWarning"
+]
+
 addopts = "--cov=auto_dev --cov-report html"
 
 [tool.poetry-post-install]

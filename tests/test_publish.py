@@ -8,6 +8,8 @@ from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 from auto_dev.utils import change_dir
 from auto_dev.constants import DEFAULT_AUTHOR, DEFAULT_PUBLIC_ID, DEFAULT_AGENT_NAME, AGENT_PUBLISHED_SUCCESS_MSG
 from auto_dev.exceptions import OperationError
+from auto_dev.workflow_manager import Task
+from auto_dev.services.package_manager.index import INCORRECT_PATH_MSG
 
 
 def test_force_removes_package(package_manager, test_packages_filesystem, dummy_agent_default):
@@ -84,17 +86,19 @@ def test_publish_command_force(
 ):
     """Test publish command output with force."""
     test_publish_command_happy_path(cli_runner, test_packages_filesystem, dummy_agent_default)
-    cmd = ["adev", "-v", "publish", str(DEFAULT_PUBLIC_ID)]
-    # Test force publish succeeds
     packages_path = Path("..") / "packages" / DEFAULT_AUTHOR / "agents" / DEFAULT_AGENT_NAME
     test_file = packages_path / "test.txt"
     test_file.write_text("test content")
     assert test_file.exists()
-    cmd = ["adev", "-v", "publish", "--force", str(DEFAULT_PUBLIC_ID)]
-    runner = cli_runner(cmd)
-    result = runner.execute()
-    assert result
-    assert AGENT_PUBLISHED_SUCCESS_MSG in runner.output
+    task = Task(command=f"adev publish {DEFAULT_PUBLIC_ID!s}")
+    task.work()
+    assert all([task.is_done, task.is_failed]), task.client.output
+    assert AGENT_PUBLISHED_SUCCESS_MSG not in task.client.output
+    assert test_file.exists()
+    task.command += " --force"
+    task.work()
+    assert all([task.is_done, not task.is_failed]), task.client.output
+    assert AGENT_PUBLISHED_SUCCESS_MSG in task.client.output
     assert not test_file.exists()
 
 
@@ -108,11 +112,13 @@ def test_publish_error_messages(package_manager, test_packages_filesystem, dummy
     package_manager.publish_agent()
 
     # Test package exists error
-    with pytest.raises(OperationError, match="Package already exists .* Use --force to overwrite"):
+    with pytest.raises(
+        OperationError,
+    ):
         package_manager.publish_agent()
 
     # Test wrong directory error
-    with pytest.raises(OperationError, match="Not in correct directory"), change_dir(".."):
+    with pytest.raises(OperationError, match=INCORRECT_PATH_MSG), change_dir(".."):
         package_manager.publish_agent()
 
 

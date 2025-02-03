@@ -30,6 +30,8 @@ TENDERMINT_RESET_TIMEOUT = 10
 TENDERMINT_RESET_ENDPOINT = "http://localhost:8080/hard_reset"
 TENDERMINT_RESET_RETRIES = 20
 
+DEFAULT_VERSION = "0.1.0"
+
 
 @dataclass
 class DevAgentRunner(AgentRunner):
@@ -40,6 +42,19 @@ class DevAgentRunner(AgentRunner):
     force: bool
     logger: Any
     fetch: bool = False
+    ipfs_hash: str | None = None
+
+    def __post_init__(
+        self,
+    ):
+        """Post init method to set the agents package_hash if needed."""
+        if self.ipfs_hash:
+            self.agent_name = PublicId(
+                author=self.agent_name.author,
+                name=self.agent_name.name,
+                version=DEFAULT_VERSION,
+                package_hash=self.ipfs_hash,
+            )
 
     def run(self) -> None:
         """Run the agent."""
@@ -155,7 +170,10 @@ class DevAgentRunner(AgentRunner):
 
     def fetch_agent(self) -> None:
         """Fetch the agent from registry if needed."""
-        self.logger.info(f"Fetching agent {self.agent_name} from the local package registry...")
+        msg = "Fetching from the local package registry..."
+        msg = "Fetching agent from local package registry..." if not self.ipfs_hash else "Fetching agent from IPFS..."
+
+        self.logger.info(msg)
 
         if self.check_exists(locally=True, in_packages=False):
             if not self.force:
@@ -164,10 +182,14 @@ class DevAgentRunner(AgentRunner):
             self.logger.info(f"Removing existing agent `{self.agent_name}` due to --force option.")
             self.execute_command(f"rm -rf {self.agent_name.name}")
 
-        command = f"aea -s fetch {self.agent_name} --local"
+        command = f"aea -s fetch {self.agent_name}"
+        if not self.ipfs_hash:
+            command += " --local"
         if not self.execute_command(command):
             self.logger.error(f"Failed to fetch agent {self.agent_name}.")
             sys.exit(1)
+        if self.ipfs_hash:
+            self.logger.info(f"Agent {self.agent_name} fetched successfully from IPFS.")
 
     def setup(self) -> None:
         """Setup the agent."""

@@ -37,48 +37,7 @@ DOCKERCOMPOSE_TEMPLATE_FOLDER = os.path.join(
 AEA_CONFIG = get_or_create_cli_config()
 NAME_PATTERN = r"[a-z_][a-z0-9_]{0,127}"
 
-SAMPLE_PACKAGES_JSON = {
-    "packages/packages.json": """
-{
-    "dev": {
-        "agent/eightballer/tmp/aea-config.yaml": "bafybeiaa3jynk3bx4uged6wye7pddkpbyr2t7avzze475vkyu2bbjeddrm"
-    },
-    "third_party": {
-    }
-}
-"""
-}
-
-SAMPLE_PACKAGE_FILE = {
-    "packages/eightballer/agents/tmp/aea-config.yaml": f"""
-agent_name: tmp
-author: {DEFAULT_AUTHOR}
-version: 0.1.0
-license: Apache-2.0
-description: ''
-aea_version: '>=1.35.0, <2.0.0'
-fingerprint: {{}}
-fingerprint_ignore_patterns: []
-connections: []
-contracts: []
-protocols:
-- open_aea/signing:1.0.0:bafybeibqlfmikg5hk4phzak6gqzhpkt6akckx7xppbp53mvwt6r73h7tk4
-skills: []
-default_connection: null
-default_ledger: ethereum
-required_ledgers:
-- ethereum
-default_routing: {{}}
-connection_private_key_paths: {{}}
-private_key_paths: {{}}
-logging_config:
-  disable_existing_loggers: false
-  version: 1
-dependencies:
-  open-aea-ledger-ethereum: {{}}
-"""
-}
-
+DEFAULT_IPFS_HASH = "bafybeidohldv57m3jkc33zpgbxukaushmcibmt4ncnsnomd3pvpocxs3ui"
 
 SAMPLE_PYTHON_CLI_FILE = """
 \"\"\"CLI for {project_name}.\"\"\"

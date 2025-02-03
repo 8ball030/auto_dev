@@ -10,6 +10,7 @@ from copy import deepcopy
 from dataclasses import field, asdict, dataclass
 from collections.abc import Callable
 from multiprocessing.pool import ApplyResult
+from typing import List
 
 import yaml
 from rich import print
@@ -100,7 +101,7 @@ class WorkflowManager:
 
     def __init__(self):
         """Initialize the workflow manager."""
-        self.workflows = []
+        self.workflows: List[Workflow] = []
         self.task_manager = TaskManager()
         self.task_manager.start()
         self.console = Console()
