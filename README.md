@@ -71,19 +71,26 @@ adev convert agent-to-service author/agent_name author/service_name
 ```
 ![asciicast](docs/assets/create_agent_service.gif)
 
-## Usage
-
-There are a number of useful command tools available.
-
-- Dev Tooling:
-    A). linting `adev lint`
-    B). formatting `adev fmt`
-    C). dependency management `adev deps update`
-
-- Scaffolding: Tooling to auto generate repositories and components.
-
 
 ### Scaffolding of Components
+
+#### Contracts
+
+We provide tools to scaffold smart contract components from existing deployed contracts. The scaffolding process includes:
+
+- Complete open-aea contract component
+- Contract class with auto-generated methods
+- Type hints and documentation
+
+```bash
+# Scaffold USDC contract from Base
+adev scaffold contract author/usdc \
+    --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 \
+    --network base
+```
+
+![asciicast](docs/assets/create_contract.gif)
+
 
 #### Protocols
 
@@ -120,43 +127,6 @@ Testing... ━━━━━━━━━━━━━━━━━━━━━━━
 Testing completed successfully! ✅
 ```
 
-#### Contracts
-
-We provide tools to scaffold smart contract components from existing deployed contracts. The scaffolding process includes:
-
-- Complete open-aea contract component
-- Contract class with auto-generated methods
-- Test suite scaffolding
-- Type hints and documentation
-
-Basic usage:
-```bash
-adev scaffold contract <NAME> --address <CONTRACT_ADDRESS> --network <NETWORK_NAME>
-```
-
-Example using Base:
-```bash
-# Scaffold USDC contract from Base
-adev scaffold contract usdc \
-    --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 \
-    --network base
-```
-
-Additional options:
-```bash
-# Scaffold from local ABI file
-adev scaffold contract my_contract \
-    --address 0xContract_Address \
-    --from-abi ./path/to/abi.json \
-    --network ethereum-mainnet
-
-# Specify read/write functions
-adev scaffold contract my_contract \
-    --address 0xContract_Address \
-    --read-functions "balanceOf,totalSupply" \
-    --write-functions "transfer,approve" \
-    --network polygon-mainnet
-```
 
 ## Dependency Management
 
@@ -169,7 +139,7 @@ are automated using as so;
 
 
 ```
-
+adev deps verify
 ```
 
 ## Release
@@ -205,6 +175,16 @@ TOTAL                              819    536    35%
 <!-- Pytest Coverage Comment:End -->
 ```
 
+## Miscillaneous
+
+There are a number of useful command tools available.
+
+- Dev Tooling:
+    A). linting `adev lint`
+    B). formatting `adev fmt`
+    C). dependency management `adev deps update`
+
+- Scaffolding: Tooling to auto generate repositories and components.
 ## Documentation
 
 ### Running Docs Locally
