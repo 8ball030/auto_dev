@@ -11,13 +11,12 @@ classifiers = [
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<=3.13"
+python = ">=3.10,<4"
 cython = "<3.0.0"
 disutils = "^1.4.32.post2"
 setuptools = "^75.8.0"
