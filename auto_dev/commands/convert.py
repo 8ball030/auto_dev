@@ -5,12 +5,13 @@ from pathlib import Path
 
 import yaml
 import rich_click as click
+from aea.helpers.yaml_utils import yaml_load_all
 from aea.configurations.base import PublicId, PackageType
 from aea.configurations.constants import PACKAGES, SERVICES, DEFAULT_SERVICE_CONFIG_FILE
 
 from auto_dev.base import build_cli
-from auto_dev.utils import get_logger, load_autonolas_yaml
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.utils import FileType, get_logger, write_to_file, load_autonolas_yaml
+from auto_dev.constants import SERVICE_VARS
 from auto_dev.exceptions import UserInputError
 from auto_dev.scaffolder import BasePackageScaffolder
 from auto_dev.services.runner.runner import DevAgentRunner
@@ -99,6 +100,29 @@ class ConvertCliTool(BasePackageScaffolder):
         self.create_service(agent_config, overrides, number_of_agents)
         return True
 
+    def update_service_overrides(self, obj):
+        """Recursively update all occurrences of service variables in a dictionary."""
+        if isinstance(obj, dict):
+            return self._update_dict_overrides(obj)
+        if isinstance(obj, list):
+            return [self.update_service_overrides(item) if isinstance(item, dict | list) else item for item in obj]
+        return obj
+
+    def _update_dict_overrides(self, dictionary):
+        """Handle dictionary updates for service variables."""
+        new_obj = {}
+        for key, value in dictionary.items():
+            if key in SERVICE_VARS:
+                new_obj[key] = SERVICE_VARS[key]
+                logger.debug(f"Updating {key} to {SERVICE_VARS[key]}")
+                continue
+
+            if isinstance(value, dict):
+                new_obj[key] = self._update_dict_overrides(value)
+            else:
+                new_obj[key] = self.update_service_overrides(value) if isinstance(value, dict | list) else value
+        return new_obj
+
     def create_service(self, agent_config, overrides, number_of_agents):
         """Create the service from a jinja template."""
         template = self.get_template(self.template_name)
@@ -112,10 +136,12 @@ class ConvertCliTool(BasePackageScaffolder):
             number_of_agents=number_of_agents,
             autoescape=False,
         )
+
+        documents = [self.update_service_overrides(doc) for doc in yaml_load_all(rendered) if doc is not None]
         code_dir = Path(PACKAGES) / self.service_public_id.author / SERVICES / self.service_public_id.name
         code_dir.mkdir(parents=True, exist_ok=True)
         code_path = code_dir / self.template_name.split(JINJA_SUFFIX)[0]
-        code_path.write_text(rendered, DEFAULT_ENCODING)
+        write_to_file(code_path, documents, file_type=FileType.YAML)
 
     def check_if_service_exists(
         self,

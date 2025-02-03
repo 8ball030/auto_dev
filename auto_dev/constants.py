@@ -98,6 +98,10 @@ OS_ENV_MAP = {
     },
 }
 
+SERVICE_VARS = {
+    "all_participants": "${ALL_PARTICIPANTS:list:[]}",
+}
+
 
 class Network(Enum):
     """Supported blockchain networks."""
