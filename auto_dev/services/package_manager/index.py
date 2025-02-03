@@ -3,13 +3,14 @@
 import json
 import shutil
 from pathlib import Path
+
+from aea.cli.eject import fingerprint_item, get_package_path
 from aea.cli.utils.context import Context
-from aea.cli.eject import get_package_path,fingerprint_item
-from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
+from aea.configurations.base import PublicId
 from aea.configurations.constants import PACKAGES, ITEM_TYPE_TO_PLURAL, DEFAULT_AEA_CONFIG_FILE
 from aea.configurations.data_types import PackageId, PackageType
 
-from auto_dev.utils import get_logger, update_author, load_autonolas_yaml
+from auto_dev.utils import change_dir, get_logger, update_author, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH
 from auto_dev.exceptions import OperationError
 from auto_dev.workflow_manager import Task
@@ -323,12 +324,16 @@ class PackageManager:
     ) -> None:
         """Publish an agent.
 
-        Args:
-        ----
+        Required Arguments:
+
             force: If True, remove existing package before publishing.
             new_public_id: Optional new public ID to publish as.
 
-        Raises:
+        Optional Arguments:
+
+            new_public_id: Optional new public ID to publish as.
+
+        Raises
         ------
             OperationError: if the command fails.
 

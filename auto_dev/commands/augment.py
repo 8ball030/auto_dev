@@ -1,6 +1,7 @@
 """Implement scaffolding tooling."""
 
 import sys
+import shutil  # added for removing behavior file using shutil
 import difflib
 from copy import deepcopy
 from pathlib import Path
@@ -15,7 +16,6 @@ from auto_dev.enums import FileType, BehaviourTypes
 from auto_dev.utils import get_logger, write_to_file, read_from_file, snake_to_camel, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.exceptions import OperationError
-from auto_dev.cli_executor import CommandExecutor
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 from auto_dev.services.package_manager.index import PackageManager
@@ -461,24 +461,16 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
         if not force:
             sys.exit(1)
         else:
-            command = CommandExecutor(
-                [
-                    "rm",
-                    "-rf",
-                    behaviour_path,
-                ]
-            )
-            logger.info(
-                f"Directory {behaviour_path} already exists. Removing with: {command.command}",
-            )
-            result = command.execute(verbose=verbose)
-            if not result:
-                msg = f"Command failed: {command.command}"
+            try:
+                if behaviour_path.is_file():
+                    behaviour_path.unlink()
+                elif behaviour_path.is_dir():
+                    shutil.rmtree(behaviour_path)
+                logger.info(f"Removed {behaviour_path} successfully.")
+            except OSError as e:
+                msg = f"Failed to remove {behaviour_path}: {e}"
                 click.secho(msg, fg="red")
-                raise OperationError(msg)
-            logger.info(
-                "Command executed successfully.",
-            )
+                raise OperationError(msg) from e
 
     logger.info("Augmenting skill with a new handler.")
     scaffolder = BehaviourScaffolder(
