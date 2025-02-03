@@ -122,13 +122,14 @@ class PackageManager:
             Path to workspace root i.e. the parent directory of the agent directory.
 
         """
-        path = Path(DEFAULT_AEA_CONFIG_FILE)
-        if not path.exists():
-            raise OperationError(INCORRECT_PATH_MSG)
-        if not (path.resolve().parent.parent / PACKAGES).exists():
-            raise OperationError(PACKAGES_NOT_FOUND)
-        return path.resolve().parent.parent
-
+        priority_paths = [
+            Path.cwd() / PACKAGES,
+            Path.cwd() / ".." / PACKAGES,
+        ]
+        for path in priority_paths:
+            if path.exists():
+                return path.parent
+        raise OperationError(PACKAGES_NOT_FOUND)
     def _run_publish_commands(self) -> None:
         """Run the AEA publish commands.
 
