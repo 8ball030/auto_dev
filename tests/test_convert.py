@@ -15,9 +15,9 @@ from auto_dev.commands.convert import CONVERSION_COMPLETE_MSG, ConvertCliTool, c
 @pytest.mark.parametrize(
     ("agent_public_id", "service_public_id"),
     [
-        (str(DEFAULT_PUBLIC_ID), str(DEFAULT_PUBLIC_ID)),
-        (str(DEFAULT_PUBLIC_ID), "author/service"),
-        (str(DEFAULT_PUBLIC_ID), "jim/jones"),
+        (DEFAULT_PUBLIC_ID, DEFAULT_PUBLIC_ID),
+        (DEFAULT_PUBLIC_ID, PublicId.from_str("author/service")),
+        (DEFAULT_PUBLIC_ID, PublicId.from_str("jim/jones"))
     ],
 )
 def test_convert_agent_to_service(dummy_agent_tim, agent_public_id, service_public_id, test_packages_filesystem):
