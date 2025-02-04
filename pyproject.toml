@@ -89,6 +89,7 @@ all = [
   "pytest",
   "pytest-cov",
   "tbump",
+  "pydoclint",
   "ruff",
   "isort",
   "setuptools",
