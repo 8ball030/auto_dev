@@ -82,7 +82,9 @@ def test_clean_filesystem():
 @pytest.fixture
 def test_packages_filesystem(test_filesystem):
     """Fixure for testing packages."""
-    task = Task(command="autonomy packages init", working_dir=Path(test_filesystem))
+    task = Task(
+        command="autonomy packages init",
+    )
     task.work()
     assert task.is_done
     assert not task.is_failed
@@ -101,7 +103,7 @@ def dummy_agent_tim(test_packages_filesystem) -> Path:
     assert Path.cwd() == Path(test_packages_filesystem)
     agent = DEFAULT_PUBLIC_ID
     task = Task(
-        command=f"adev create {agent!s} -t eightballer/base --no-clean-up", working_dir=Path(test_packages_filesystem)
+        command=f"adev create {agent!s} -t eightballer/base --no-clean-up",
     )
     task.work()
     if not task.is_done or task.is_failed:

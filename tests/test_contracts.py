@@ -106,9 +106,9 @@ def test_scaffolder_generate(scaffolder):
 
 
 @responses.activate
-def test_scaffolder_generate_openaea_contract(scaffolder, test_filesystem):
+def test_scaffolder_generate_openaea_contract(scaffolder, test_packages_filesystem):
     """Test the scaffolder."""
-    del test_filesystem
+    assert test_packages_filesystem
     responses.add(
         responses.GET,
         f"{BLOCK_EXPLORER_URL}/{KNOWN_ADDRESS}?network={NETWORK.value}",
