@@ -752,7 +752,16 @@ def bump(
 @click.pass_context
 def verify(ctx, auto_approve):
     """
-    Verify the dependencies from the pip file.
+    Verify the dependencies from the adev config file.
+
+    This allows us to specify the dependencies in the adev config file 
+    then verify them aginst the installed dependencies enforcing the version set.
+
+    Optional Parameters:
+        auto_approve: Skip confirmation prompts for updates. Default: False
+            - Automatically applies all updates
+            - No interactive prompts
+            - Use with caution in production
     """
 
     version_set_loader = VersionSetLoader(latest="latest")
@@ -770,8 +779,6 @@ def verify(ctx, auto_approve):
             click.echo(f"Error: {task.client.output}")
             sys.exit(1)
 
-
-
     command = "poetry add "
     for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
         command += f"{dependency.name}=={dependency.version} "
@@ -784,14 +791,11 @@ def verify(ctx, auto_approve):
             for plugin in dependency.plugins:
                 command += f"{plugin}=={dependency.version} "
 
-
     if not auto_approve:
         click.echo("Please run the following command to update the poetry dependencies.")
         click.echo(f"{command}\n")
         click.confirm("Do you want to update the poetry dependencies now?", abort=True)
     os.system(command)  # noqa
-
-    # We now execute our 2 tbump commands.
 
 
 
