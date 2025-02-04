@@ -169,6 +169,9 @@ function setup_autonomy() {
     if [ -f "packages/packages.json" ]; then
         echo 'Syncing packages...'
         poetry run autonomy packages sync > /dev/null || echo 'Warning: failed to sync packages as part of autonomy setup'
+    else
+        echo Creating Packages
+        poetry run autonomy packages init
     fi
 }
 
