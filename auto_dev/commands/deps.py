@@ -43,6 +43,7 @@ import requests
 import rich_click as click
 from rich import print_json
 from rich.progress import track
+from aea.configurations.constants import PACKAGES
 
 from auto_dev.base import build_cli
 from auto_dev.utils import FileType, FileLoader, get_logger, write_to_file
@@ -244,14 +245,14 @@ class GitDependency(Dependency):
             msg = f"Error: {res.status_code} {res.text}"
             raise NetworkTimeoutError(msg)
         data = res.json()
-        return data[0]["tag_name"]
+        return data[0]["tag_name"].replace("v", "")
 
     def get_all_autonomy_packages(self, tag=None):
         """Read in the autonomy packages. the are located in the remote url."""
         if tag is None:
             tag = self.get_latest_version()
         file_path = "packages/packages.json"
-        remote_url = f"{self.url}/contents/{file_path}?ref={tag}"
+        remote_url = f"{self.url}/contents/{file_path}?ref=v{tag}"
         data = requests.get(remote_url, headers=self.headers, timeout=DEFAULT_TIMEOUT)
 
         if data.status_code != 200:
@@ -427,12 +428,12 @@ class PoetryDependencies:
 
     poetry_dependencies: list[GitDependency]
 
-    def to_dict(self):
+    def to_dict(self, latest: bool = False):
         """Return a list of the poetry dependencies."""
         return [
             {
                 "name": dependency.name,
-                "version": dependency.version,
+                "version": dependency.get_latest_version() if latest else dependency.version,
                 "location": dependency.location.value,
                 "url": dependency.url,
                 "plugins": dependency.plugins,
@@ -540,11 +541,12 @@ class VersionSetLoader:
 
     def write_config(
         self,
+        use_latest: bool = True,
     ):
         """Write the config file."""
         data = {
             "autonomy_dependencies": self.autonomy_dependencies.to_dict(),
-            "poetry_dependencies": self.poetry_dependencies.to_dict(),
+            "poetry_dependencies": self.poetry_dependencies.to_dict(use_latest),
         }
         FileLoader(self.config_file, FileType.YAML).write(data)
 
@@ -585,7 +587,7 @@ class VersionSetLoader:
     ):
         """We update the autonomy packages from the config file."""
         for dependency in self.autonomy_dependencies.upstream_dependency:
-            remote_packages = dependency.get_all_autonomy_packages(tag="v" + str(dependency.version))
+            remote_packages = dependency.get_all_autonomy_packages(tag=str(dependency.version))
             local_packages = get_package_json(Path())["third_party"]
             diffs = {}
             for package_name, package_hash in remote_packages.items():
@@ -595,19 +597,6 @@ class VersionSetLoader:
                 update_package_json(repo=Path(), proposed_dependency_updates=diffs)
                 remove_old_package(repo=Path(), proposed_dependency_updates=diffs)
         return diffs
-
-
-def handle_output(issues, changes) -> None:
-    """Handle the output."""
-    if issues:
-        for _issue in issues:
-            pass
-        sys.exit(1)
-
-    if changes:
-        for _change in changes:
-            pass
-        sys.exit(1)
 
 
 def get_update_command(poetry_dependencies: Dependency, strict: bool = False, use_latest=False) -> str:
@@ -650,7 +639,7 @@ def get_update_command(poetry_dependencies: Dependency, strict: bool = False, us
     is_flag=True,
 )
 @click.option(
-    "--latest",
+    "--latest/--no-latest",
     default=True,
     help="Select the latest version releases.",
     is_flag=True,
@@ -751,7 +740,9 @@ def bump(
                 changes.append(dependency.name)
 
     click.echo("Verifying poetry dependencies... 📝")
-    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=True)
+    cmd, poetry_issues = get_update_command(
+        version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=True
+    )
     issues.extend(poetry_issues)
 
     if issues:
@@ -762,7 +753,44 @@ def bump(
         os.system(cmd)  # noqa
         changes.append("poetry dependencies")
 
-    handle_output(issues, changes)
+    if not auto_approve:
+        click.confirm("Do you want to write the changes to the config file?", abort=True)
+    version_set_loader.write_config(use_latest=latest)
+    logger = get_logger()
+    wf_manager = WorkflowManager()
+    wf = build_update_workflow(version_set_loader, strict=strict, use_latest=latest)
+    wf_manager.add_workflow(wf)
+    [logger.info(task.command) for task in wf.tasks]
+    if not auto_approve:
+        click.confirm("Do you want to execute the workflow?", abort=True)
+    wf_manager.run()
+    logger.info("Done. 😎")
+
+
+def build_update_workflow(version_set_loader, strict, use_latest) -> Workflow:
+    """Build a workflow to update the dependencies."""
+    wf = Workflow()
+
+    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
+        config_path = Path.cwd() / f"tbump_{dependency.name.replace('-', '_')}.toml"
+        if not config_path.exists():
+            continue
+        command = (
+            f"tbump --only-patch --non-interactive -c {config_path} {dependency.get_latest_version().replace('v', '')}"
+        )
+        task = Task(command=command, description=f"Verify {dependency.name} version")
+        wf.add_task(task)
+
+    if (Path(PACKAGES) / "packages.json").exists():
+        wf.add_task(Task(command="adev deps generate-gitignore", description="Generate gitignore entries"))
+        wf.add_task(Task(command="autonomy packages sync", description="Sync autonomy packages"))
+        wf.add_task(Task(command="autonomy packages lock", description="Lock autonomy packages"))
+
+    cmd, _ = get_update_command(
+        version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=use_latest
+    )
+    wf.add_task(Task(command=cmd, description="Update poetry dependencies", shell=True))
+    return wf
 
 
 # verify command reads in the adev_config.yaml file and then verifies the dependencies.
@@ -780,34 +808,14 @@ def verify(auto_approve: bool = False):
     then verify them aginst the installed dependencies enforcing the version set.
 
     """
-    logger = get_logger()
     version_set_loader = VersionSetLoader(latest="latest")
     version_set_loader.load_config()
 
-    wf = Workflow()
-
-    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
-        config_path = Path.cwd() / f"tbump_{dependency.name.replace('-', '_')}.toml"
-        if not config_path.exists():
-            continue
-        command = f"tbump --only-patch -c {config_path} {dependency.version}"
-        task = Task(command=command, description=f"Verify {dependency.name} version")
-        wf.add_task(task)
-
-    diffs = version_set_loader.update_autonomy_packages_from_config()
-    if diffs:
-        wf.add_task(Task(command="autonomy packages sync", description="Sync autonomy packages"))
-        wf.add_task(Task(command="autonomy packages lock", description="Lock autonomy packages"))
-
-    cmd, _ = get_update_command(
-        version_set_loader.poetry_dependencies.poetry_dependencies, strict=False, use_latest=False
-    )
-    wf.add_task(Task(command=cmd, description="Update poetry dependencies", shell=True))
-    wf.add_task(Task(command="adev deps generate-gitignore", description="Generate gitignore entries"))
+    wf = build_update_workflow(version_set_loader, strict=False, use_latest=True)
 
     wf_manager = WorkflowManager()
     wf_manager.add_workflow(wf)
-    [logger.info(task.command) for task in wf.tasks]
+    [click.echo(task.command) for task in wf.tasks]
     if not auto_approve:
         click.confirm("Do you want to execute the workflow?", abort=True)
     wf_manager.run()

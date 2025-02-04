@@ -5,15 +5,17 @@ from pathlib import Path
 
 import yaml
 import rich_click as click
-from aea.configurations.base import PublicId, PackageType
+from aea.configurations.base import PublicId, PackageId, PackageType
 from aea.configurations.constants import PACKAGES, SERVICES, DEFAULT_SERVICE_CONFIG_FILE
 
 from auto_dev.base import build_cli
 from auto_dev.utils import get_logger, load_autonolas_yaml
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH
 from auto_dev.exceptions import UserInputError
 from auto_dev.scaffolder import BasePackageScaffolder
-from auto_dev.services.runner.runner import DevAgentRunner
+from auto_dev.workflow_manager import Task
+from auto_dev.services.runner.runner import DEFAULT_VERSION, DevAgentRunner
+from auto_dev.services.package_manager.index import PackageManager
 
 
 JINJA_SUFFIX = ".jinja"
@@ -54,12 +56,9 @@ class ConvertCliTool(BasePackageScaffolder):
     package_type = SERVICES
 
     def __init__(self, agent_public_id: PublicId, service_public_id: PublicId):
-        self.agent_public_id = (
-            PublicId.from_str(agent_public_id) if isinstance(agent_public_id, str) else agent_public_id
-        )
-        self.service_public_id = (
-            PublicId.from_str(service_public_id) if isinstance(service_public_id, str) else service_public_id
-        )
+        self.agent_public_id = agent_public_id
+        self.service_public_id = service_public_id
+
         self.agent_runner = DevAgentRunner(self.agent_public_id, verbose=True, force=True, logger=logger)
         self.validate()
         self._post_init()
@@ -172,7 +171,36 @@ def agent_to_service(
         adev convert agent-to-service author/some_agent author/some_finished_service
 
     """
+    service_public_id = PublicId(
+        author=service_public_id.author,
+        name=service_public_id.name,
+        version=DEFAULT_VERSION,
+        package_hash=DEFAULT_IPFS_HASH,
+    )
     logger.info(f"Converting agent {agent_public_id} to service {service_public_id}.")
     converter = ConvertCliTool(agent_public_id, service_public_id)
     converter.generate(number_of_agents=number_of_agents, force=force)
     logger.info(CONVERSION_COMPLETE_MSG)
+    logger.info("Service dependencies locked successfully.")
+    package_manager = PackageManager(
+        verbose=False,
+    )
+    package_manager.add_to_packages(
+        dev_packages=[
+            PackageId(
+                package_type=PackageType.SERVICE,
+                public_id=PublicId(
+                    author=service_public_id.author,
+                    name=service_public_id.name,
+                    version=DEFAULT_VERSION,
+                    package_hash=DEFAULT_IPFS_HASH,
+                ),
+            )
+        ],
+        third_party_packages=[],
+    )
+    logger.info("Service added to package manager.")
+    if Task(command="autonomy packages lock").work().is_failed:
+        logger.warning("Service dependencies could not be locked. Please check the logs.")
+
+    logger.info("Service is ready! 🚀")
