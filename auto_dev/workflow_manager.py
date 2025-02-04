@@ -7,23 +7,25 @@ import sys
 import time
 import logging
 from copy import deepcopy
+from typing import Any
 from dataclasses import field, asdict, dataclass
 from collections.abc import Callable
 from multiprocessing.pool import ApplyResult
 from typing import List
 
-import yaml
 from rich import print
 from rich.text import Text
 from rich.panel import Panel
 from rich.table import Table
 from rich.console import Console
 from aea.skills.base import TaskManager
+from aea.configurations.base import PublicId
 
 from auto_dev.enums import FileType
 from auto_dev.utils import write_to_file
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.services.io.index import IO
 
 
 VAR_REGEX = r"\${task.\d+\.client\.stdout}"
@@ -68,7 +70,7 @@ class Task:
     def work(self):
         """Perform the task's work."""
         self.client = CommandExecutor(self.command.split(" "), cwd=self.working_dir, logger=self.logger)
-        print(f"Executing command: `{self.command}`")
+        print(f"Executing command: `{self.command}` in {self.working_dir}")
         print()
         self.is_failed = not self.client.execute(stream=self.stream, shell=self.shell)
         self.is_done = True
@@ -229,10 +231,10 @@ class WorkflowManager:
 
     def to_yaml(self):
         """Convert the workflow manager to yaml."""
-
         workflows = []
 
         for workflow in self.workflows:
+            tasks = []
             for task in workflow.tasks:
                 tasks = []
                 for task in workflow.tasks:
@@ -246,17 +248,85 @@ class WorkflowManager:
     @staticmethod
     def from_yaml(file_path: str):
         """Load the workflow manager from yaml."""
-        raw_data = WorkflowManager.load_yaml(file_path)
+        raw_data = IO.load_data(file_path)
         raw_data["tasks"] = [Task(**task) for task in raw_data["tasks"]]
         wf = WorkflowManager()
         wf.add_workflow(Workflow(**raw_data))
         return wf
 
     @staticmethod
-    def load_yaml(file_path: str):
-        """Load a yaml file."""
-        with open(file_path, encoding="utf-8") as file:
-            return yaml.safe_load(file)
+    def replace_placeholders(obj: Any, key_value_pairs: dict[str, Any]) -> Any:
+        """Replace placeholders in any data structure with provided key-value pairs.
+
+        Args:
+        ----
+            obj: The object to process (can be dict, list, str, or other types)
+            key_value_pairs: Dictionary of key-value pairs to use for replacement
+
+        Returns:
+        -------
+            The processed object with all placeholders replaced
+
+        """
+        if isinstance(obj, dict):
+            return {k: WorkflowManager.replace_placeholders(v, key_value_pairs) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [WorkflowManager.replace_placeholders(item, key_value_pairs) for item in obj]
+        if isinstance(obj, str):
+            result = obj
+            for key, value in key_value_pairs.items():
+                # Handle both ${key} and $key format
+                for placeholder_format in [f"${{{key}}}", f"${key}"]:
+                    result = result.replace(placeholder_format, str(value))
+            return result
+        return obj
+
+    @staticmethod
+    def load_custom_workflow(workflow_file: str, params: dict[str, Any]) -> "WorkflowManager":
+        """Get a workflow with custom parameters.
+
+        Args:
+        ----
+            workflow_file (str): Path to the workflow YAML file.
+            params (Union[str, Dict[str, Any]]): Parameters as a string in key=value format or a dictionary.
+
+        Returns:
+        -------
+            WorkflowManager: A WorkflowManager instance with the configured workflow.
+
+        Raises:
+        ------
+            UserInputError: If the workflow data is invalid or missing required fields.
+
+        """
+
+        # Check if publicId is in parameters and split it into author and name
+        if "public_id" in params:
+            public_id = PublicId.from_str(params["public_id"])
+            params["author"] = public_id.author
+            params["agent_name"] = public_id.name
+
+        # Load and process the workflow data
+        workflow_data = IO.load_data(workflow_file)
+
+        if "tasks" not in workflow_data:
+            msg = f"Invalid workflow file {workflow_file}: 'tasks' field is required"
+            raise UserInputError(msg)
+
+        # Replace placeholders in the loaded data
+        workflow_data = WorkflowManager.replace_placeholders(workflow_data, params)
+
+        # Create a new WorkflowManager instance
+        wf_manager = WorkflowManager()
+
+        # Convert tasks dictionary to Task objects
+        workflow_data["tasks"] = [Task(**task) for task in workflow_data["tasks"]]
+
+        # Create and add the workflow
+        workflow = Workflow(**workflow_data)
+        wf_manager.add_workflow(workflow)
+
+        return wf_manager
 
     def run_workflow(
         self, workflow_id: str, wait: bool = True, exit_on_failure: bool = True, display_process: bool = True
