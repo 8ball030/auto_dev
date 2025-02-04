@@ -464,7 +464,7 @@ open_aea_repo = GitDependency(
 
 auto_dev_repo = GitDependency(
     name="autonomy-dev",
-    version="0.2.98",
+    version="0.2.99",
     location=DependencyLocation.REMOTE,
     url="https://api.github.com/repos/8ball030/auto_dev",
     extras=["all"],
@@ -768,7 +768,11 @@ def verify(ctx, auto_approve):
     version_set_loader.load_config()
 
     for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
-        command = f"tbump --only-patch -c {Path.cwd()!s}/tbump_{dependency.name.replace('-', '_')}.toml {dependency.version}"
+
+        config_path = Path.cwd() / f"tbump_{dependency.name.replace('-', '_')}.toml"
+        if not config_path.exists():
+            continue
+        command = f"tbump --only-patch -c {config_path} {dependency.version}"
         if not auto_approve:
             click.echo("Please run the following command to update the autonomy dependencies.")
             click.echo(f"{command}\n")
