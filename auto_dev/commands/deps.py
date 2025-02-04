@@ -741,6 +741,7 @@ def bump(
 
     handle_output(issues, changes)
 
+
 # verify command reads in the adev_config.yaml file and then verifies the dependencies.
 @deps.command()
 @click.option(
@@ -749,12 +750,10 @@ def bump(
     help="Auto approve the changes.",
     is_flag=True,
 )
-@click.pass_context
-def verify(ctx, auto_approve):
-    """
-    Verify the dependencies from the adev config file.
+def verify(auto_approve):
+    """Verify the dependencies from the adev config file.
 
-    This allows us to specify the dependencies in the adev config file 
+    This allows us to specify the dependencies in the adev config file
     then verify them aginst the installed dependencies enforcing the version set.
 
     Optional Parameters:
@@ -768,7 +767,6 @@ def verify(ctx, auto_approve):
     version_set_loader.load_config()
 
     for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
-
         config_path = Path.cwd() / f"tbump_{dependency.name.replace('-', '_')}.toml"
         if not config_path.exists():
             continue
@@ -783,9 +781,9 @@ def verify(ctx, auto_approve):
             click.echo(f"Error: {task.client.output}")
             sys.exit(1)
 
-    command = "poetry add "
+    command = "poetry add --no-cache"
     for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
-        command += f"{dependency.name}=={dependency.version} "
+        command += f" {dependency.name}=={dependency.version}"
 
         if dependency.extras:
             extras = ",".join(dependency.extras)
@@ -793,15 +791,13 @@ def verify(ctx, auto_approve):
 
         if dependency.plugins:
             for plugin in dependency.plugins:
-                command += f"{plugin}=={dependency.version} "
+                command += f" {plugin}=={dependency.version} "
 
     if not auto_approve:
         click.echo("Please run the following command to update the poetry dependencies.")
         click.echo(f"{command}\n")
         click.confirm("Do you want to update the poetry dependencies now?", abort=True)
     os.system(command)  # noqa
-
-
 
 
 if __name__ == "__main__":
