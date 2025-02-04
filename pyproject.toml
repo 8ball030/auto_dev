@@ -4,7 +4,7 @@ requires = ["poetry-core>=1.0.0", "setuptools"]
 
 [tool.poetry]
 name = "autonomy_dev"
-version = "0.2.98"
+version = "0.2.99"
 homepage = "https://github.com/8ball030/auto_dev"
 description = "A collection of tooling to enable open source development of autonomy tools"
 authors = ["8Baller <8ball030@gmail.com>"]
@@ -15,10 +15,9 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
   "Natural Language :: English",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 [[tool.poetry.packages]]
 include = "auto_dev"
@@ -35,14 +34,14 @@ include = "\\.pyi?$"
 exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox\n  | \\.venv\n  | _build\n  | buck-out\n  | build\n  | dist\n)/\n"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<=3.13"
-open-autonomy = "==0.18.4"
-open-aea = "==1.60.0"
-open-aea-test-autonomy = "==0.18.4"
-open-aea-ledger-ethereum = "==1.60.0"
-open-aea-ledger-solana = "==1.60.0"
-open-aea-ledger-cosmos = "==1.60.0"
-open-aea-cli-ipfs = "==1.60.0"
+python = ">=3.10,<=3.13"
+open-autonomy = "0.19.0"
+open-aea = "1.62.0"
+open-aea-test-autonomy = "0.19.0"
+open-aea-ledger-ethereum = "1.62.0"
+open-aea-ledger-solana = "1.62.0"
+open-aea-ledger-cosmos = "1.62.0"
+open-aea-cli-ipfs = "1.62.0"
 web3 = ">=6.0.0,<7.0.0"
 ipfshttpclient = "==0.8.0a2"
 typing_extensions = ">=3.10.0.2"

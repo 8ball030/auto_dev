@@ -33,6 +33,7 @@ from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 from auto_dev.connections.scaffolder import ConnectionScaffolder
 from auto_dev.contracts.block_explorer import BlockExplorer
 from auto_dev.contracts.contract_scafolder import ContractScaffolder
+from auto_dev.workflow_manager import Task
 
 
 cli = build_cli()
@@ -204,8 +205,13 @@ def contract(ctx, public_id, address, network, read_functions, write_functions, 
     contract_path = scaffolder.generate_openaea_contract(new_contract)
     logger.info("Writing abi to file, Updating contract.yaml with build path. Parsing functions.")
     new_contract.process()
-
     _log_contract_info(new_contract, contract_path, logger)
+    task = Task(command="autonomy packages lock")
+    task.work()
+    if task.is_failed:
+        logger.error("Failed to lock packages Please run 'autonomy packages lock' manually.")
+        return
+    logger.info("Locked packages successfully.")
 
 
 def _log_contract_info(contract, contract_path, logger):

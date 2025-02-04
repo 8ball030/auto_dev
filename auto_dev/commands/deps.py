@@ -48,6 +48,7 @@ from auto_dev.base import build_cli
 from auto_dev.utils import FileType, FileLoader, write_to_file
 from auto_dev.constants import DEFAULT_TIMEOUT, DEFAULT_ENCODING
 from auto_dev.exceptions import AuthenticationError, NetworkTimeoutError
+from auto_dev.workflow_manager import Task
 
 
 PARENT = Path("repo_1")
@@ -463,7 +464,7 @@ open_aea_repo = GitDependency(
 
 auto_dev_repo = GitDependency(
     name="autonomy-dev",
-    version="0.2.98",
+    version="0.2.99",
     location=DependencyLocation.REMOTE,
     url="https://api.github.com/repos/8ball030/auto_dev",
     extras=["all"],
@@ -739,6 +740,64 @@ def bump(
         changes.append("poetry dependencies")
 
     handle_output(issues, changes)
+
+
+# verify command reads in the adev_config.yaml file and then verifies the dependencies.
+@deps.command()
+@click.option(
+    "--auto-approve",
+    default=False,
+    help="Auto approve the changes.",
+    is_flag=True,
+)
+def verify(auto_approve):
+    """Verify the dependencies from the adev config file.
+
+    This allows us to specify the dependencies in the adev config file
+    then verify them aginst the installed dependencies enforcing the version set.
+
+    Optional Parameters:
+        auto_approve: Skip confirmation prompts for updates. Default: False
+            - Automatically applies all updates
+            - No interactive prompts
+            - Use with caution in production
+    """
+
+    version_set_loader = VersionSetLoader(latest="latest")
+    version_set_loader.load_config()
+
+    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
+        config_path = Path.cwd() / f"tbump_{dependency.name.replace('-', '_')}.toml"
+        if not config_path.exists():
+            continue
+        command = f"tbump --only-patch -c {config_path} {dependency.version}"
+        if not auto_approve:
+            click.echo("Please run the following command to update the autonomy dependencies.")
+            click.echo(f"{command}\n")
+            click.confirm("Do you want to update the autonomy dependencies now?", abort=True)
+        task = Task(command=command)
+        task.work()
+        if task.is_failed:
+            click.echo(f"Error: {task.client.output}")
+            sys.exit(1)
+
+    command = "poetry add --no-cache"
+    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
+        command += f" {dependency.name}=={dependency.version}"
+
+        if dependency.extras:
+            extras = ",".join(dependency.extras)
+            command += f"[{extras}] "
+
+        if dependency.plugins:
+            for plugin in dependency.plugins:
+                command += f" {plugin}=={dependency.version} "
+
+    if not auto_approve:
+        click.echo("Please run the following command to update the poetry dependencies.")
+        click.echo(f"{command}\n")
+        click.confirm("Do you want to update the poetry dependencies now?", abort=True)
+    os.system(command)  # noqa
 
 
 if __name__ == "__main__":

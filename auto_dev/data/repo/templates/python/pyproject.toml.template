@@ -11,16 +11,13 @@ license = "Apache-2.0"
 classifiers = [
     'License :: OSI Approved :: Apache Software License',
     'Natural Language :: English',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<=3.13"
-autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.98"}}
+python = ">=3.10,<=3.13"
+autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.99"}}
 
 [tool.poetry.dev-dependencies]
 
