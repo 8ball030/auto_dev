@@ -48,6 +48,7 @@ from auto_dev.base import build_cli
 from auto_dev.utils import FileType, FileLoader, write_to_file
 from auto_dev.constants import DEFAULT_TIMEOUT, DEFAULT_ENCODING
 from auto_dev.exceptions import AuthenticationError, NetworkTimeoutError
+from auto_dev.workflow_manager import Task
 
 
 PARENT = Path("repo_1")
@@ -757,6 +758,20 @@ def verify(ctx, auto_approve):
     version_set_loader = VersionSetLoader(latest="latest")
     version_set_loader.load_config()
 
+    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
+        command = f"tbump --no-tag --no-push -c {Path.cwd()!s}/tbump_{dependency.name.replace('-', '_')}.toml {dependency.version}"
+        if not auto_approve:
+            click.echo("Please run the following command to update the autonomy dependencies.")
+            click.echo(f"{command}\n")
+            click.confirm("Do you want to update the autonomy dependencies now?", abort=True)
+        task = Task(command=command)
+        task.work()
+        if task.is_failed:
+            click.echo(f"Error: {task.client.output}")
+            sys.exit(1)
+
+
+
     command = "poetry add "
     for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
         command += f"{dependency.name}=={dependency.version} "
@@ -778,13 +793,6 @@ def verify(ctx, auto_approve):
 
     # We now execute our 2 tbump commands.
 
-    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
-        command = f"tbump --no-tag --no-push -c {Path.cwd()!s}/tbump_{dependency.name.replace('-', '_')}.toml {dependency.version}"
-        if not auto_approve:
-            click.echo("Please run the following command to update the autonomy dependencies.")
-            click.echo(f"{command}\n")
-            click.confirm("Do you want to update the autonomy dependencies now?", abort=True)
-        os.system(command)
 
 
 
