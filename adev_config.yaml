@@ -1,13 +1,13 @@
 autonomy_dependencies:
 - name: open-autonomy
-  version: 0.18.4
+  version: 0.19.0
   location: remote
   url: https://api.github.com/repos/valory-xyz/open-autonomy
   plugins: &id001
   - open-aea-test-autonomy
   extras: null
 - name: open-aea
-  version: 1.60.0
+  version: 1.62.0
   location: remote
   url: https://api.github.com/repos/valory-xyz/open-aea
   plugins: &id002
@@ -24,13 +24,13 @@ autonomy_dependencies:
   extras: null
 poetry_dependencies:
 - name: open-autonomy
-  version: 0.18.4
+  version: 0.19.0
   location: remote
   url: https://api.github.com/repos/valory-xyz/open-autonomy
   plugins: *id001
   extras: null
 - name: open-aea
-  version: 1.60.0
+  version: 1.62.0
   location: remote
   url: https://api.github.com/repos/valory-xyz/open-aea
   plugins: *id002
