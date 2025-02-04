@@ -623,6 +623,7 @@ def get_update_command(poetry_dependencies: Dependency, strict: bool = False, us
 
         if use_latest:
             expected_version = f"'{pre_fix}{dependency.get_latest_version()}'"
+            click.echo(f"   Fetched  latest version for:   {dependency.name}@{expected_version}")
         else:
             expected_version = f"'{pre_fix}{dependency.version}'"
 
@@ -750,7 +751,7 @@ def bump(
                 changes.append(dependency.name)
 
     click.echo("Verifying poetry dependencies... 📝")
-    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict)
+    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=True)
     issues.extend(poetry_issues)
 
     if issues:
@@ -790,7 +791,7 @@ def verify(auto_approve: bool = False):
         if not config_path.exists():
             continue
         command = f"tbump --only-patch -c {config_path} {dependency.version}"
-        task = Task(command=command)
+        task = Task(command=command, description=f"Verify {dependency.name} version")
         wf.add_task(task)
 
     diffs = version_set_loader.update_autonomy_packages_from_config()
