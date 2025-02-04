@@ -759,7 +759,7 @@ def verify(ctx, auto_approve):
     version_set_loader.load_config()
 
     for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
-        command = f"tbump --no-tag --no-push -c {Path.cwd()!s}/tbump_{dependency.name.replace('-', '_')}.toml {dependency.version}"
+        command = f"tbump --only-patch -c {Path.cwd()!s}/tbump_{dependency.name.replace('-', '_')}.toml {dependency.version}"
         if not auto_approve:
             click.echo("Please run the following command to update the autonomy dependencies.")
             click.echo(f"{command}\n")
