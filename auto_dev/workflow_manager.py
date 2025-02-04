@@ -83,7 +83,7 @@ class Task:
 class Workflow:
     """A class to represent a workflow."""
 
-    id: str = uuid4().hex
+    id: str = None
     name: str = None
     description: str = None
     tasks: list[Task] = field(default_factory=list)
