@@ -69,7 +69,6 @@ class Task:
         """Perform the task's work."""
         self.client = CommandExecutor(self.command.split(" "), cwd=self.working_dir, logger=self.logger)
         print(f"Executing command: `{self.command}`")
-        print()
         self.is_failed = not self.client.execute(stream=self.stream, shell=self.shell)
         self.is_done = True
         return self
@@ -97,6 +96,11 @@ class Workflow:
     def add_task(self, task: Task):
         """Add a task to the workflow."""
         self.tasks.append(task)
+
+    def __post_init__(self):
+        """Post initialization steps."""
+        if not self.id:
+            self.id = uuid4().hex
 
 
 class WorkflowManager:
