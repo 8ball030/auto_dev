@@ -69,8 +69,8 @@ def test_create_with_publish_no_packages(test_filesystem):
         command=f"adev create {DEFAULT_PUBLIC_ID!s} -t eightballer/base --no-clean-up",
     )
     task.work()
-    assert task.is_done
-    assert task.is_failed
+    assert task.is_done, task.client.output
+    assert task.is_failed, task.client.output
     assert (
         AGENT_PUBLISHED_SUCCESS_MSG not in task.client.output
     ), f"UnExpected message found in output: {task.client.output}"
