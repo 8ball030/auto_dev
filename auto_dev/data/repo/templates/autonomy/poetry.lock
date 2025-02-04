@@ -16,7 +16,7 @@ name = "aiohttp"
 version = "3.11.11"
 description = "Async http client/server framework (asyncio)"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "aiohttp-3.11.11-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:a60804bff28662cbcf340a4d61598891f12eea3a66af48ecfdc975ceec21e3c8"},
     {file = "aiohttp-3.11.11-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4b4fa1cb5f270fb3eab079536b764ad740bb749ce69a94d4ec30ceee1b5940d5"},
@@ -114,7 +114,7 @@ name = "aiosignal"
 version = "1.3.2"
 description = "aiosignal: a list of registered asynchronous callbacks"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "aiosignal-1.3.2-py2.py3-none-any.whl", hash = "sha256:45cde58e409a301715980c2b01d0c28bdde3770d8290b5eb2173759d9acb31a5"},
     {file = "aiosignal-1.3.2.tar.gz", hash = "sha256:a8c255c66fafb1e499c9351d0bf32ff2d8a0321595ebac3b93713656d2436f54"},
@@ -128,7 +128,7 @@ name = "anchorpy"
 version = "0.18.0"
 description = "The Python Anchor client."
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = ">=3.9,<4.0"
 files = [
     {file = "anchorpy-0.18.0-py3-none-any.whl", hash = "sha256:664672c2de94ed8910173fd3235d918513a927de80612db625f395bc8a0160d1"},
     {file = "anchorpy-0.18.0.tar.gz", hash = "sha256:606c49f2dba41046ba60947d19c19eb17587b490b5d1a88642722b42159aa998"},
@@ -161,7 +161,7 @@ name = "anchorpy-core"
 version = "0.1.3"
 description = "Python bindings for Anchor Rust code"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "anchorpy_core-0.1.3-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:c9af073115feaab9a7fd14bc9f0d19a87650042bd430e44e9c7714b18f5aeb3a"},
     {file = "anchorpy_core-0.1.3-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4511a3a9a0425a84305e56087b81969d2929ac642b2c1d6fb2a500c8f987d8d3"},
@@ -195,7 +195,7 @@ name = "anyio"
 version = "4.8.0"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "anyio-4.8.0-py3-none-any.whl", hash = "sha256:b5011f270ab5eb0abf13385f851315585cc37ef330dd88e27ec3d34d651fd47a"},
     {file = "anyio-4.8.0.tar.gz", hash = "sha256:1d9fe889df5212298c0c0723fa20479d1b94883a2df44bd3897aa91083316f7a"},
@@ -268,30 +268,31 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.95"
+version = "0.2.99"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
-python-versions = "<=3.13,>=3.9"
+python-versions = "<=3.13,>=3.10"
 files = [
-    {file = "autonomy_dev-0.2.95-py3-none-any.whl", hash = "sha256:f9212b3f3284c8fc63c35a83c4ff23f14e1dc8112980b037c4eb279779bc861a"},
-    {file = "autonomy_dev-0.2.95.tar.gz", hash = "sha256:aed941950b443a62701fba830c54f462ab00884eac9baeb4e81aaa45f58250e4"},
+    {file = "autonomy_dev-0.2.99-py3-none-any.whl", hash = "sha256:9bb53357560ccda5d4a216f4c001424a068d46bb1fb3832edb91a7cfe2b15df9"},
+    {file = "autonomy_dev-0.2.99.tar.gz", hash = "sha256:2076c35c5bc404b598821f4c89ca7b6a1e00ede9624bb12b984d9c36d3e112a0"},
 ]
 
 [package.dependencies]
 asn1crypto = ">=1.4.0,<1.5.0"
+disutils = ">=1.4.32.post2,<2.0.0"
 eth-abi = "5.1.0"
 eth-utils = "2.3.1"
 grpcio = "1.69.0"
 hypothesis = "6.122.3"
 ipfshttpclient = "0.8.0a2"
 isort = {version = ">=5.13.2,<6.0.0", optional = true, markers = "extra == \"all\""}
-open-aea = {version = "1.60.0", optional = true, markers = "extra == \"all\""}
-open-aea-cli-ipfs = "1.60.0"
-open-aea-ledger-cosmos = {version = "1.60.0", optional = true, markers = "extra == \"all\""}
-open-aea-ledger-ethereum = {version = "1.60.0", optional = true, markers = "extra == \"all\""}
-open-aea-ledger-solana = {version = "1.60.0", optional = true, markers = "extra == \"all\""}
-open-aea-test-autonomy = "0.18.4"
-open-autonomy = {version = "0.18.4", optional = true, markers = "extra == \"all\""}
+open-aea = {version = "1.62.0", optional = true, markers = "extra == \"all\""}
+open-aea-cli-ipfs = "1.62.0"
+open-aea-ledger-cosmos = {version = "1.62.0", optional = true, markers = "extra == \"all\""}
+open-aea-ledger-ethereum = {version = "1.62.0", optional = true, markers = "extra == \"all\""}
+open-aea-ledger-solana = {version = "1.62.0", optional = true, markers = "extra == \"all\""}
+open-aea-test-autonomy = "0.19.0"
+open-autonomy = {version = "0.19.0", optional = true, markers = "extra == \"all\""}
 openapi-spec-validator = "0.2.8"
 protobuf = ">=3.19.1,<4.25.0"
 py-eth-sig-utils = "*"
@@ -303,13 +304,14 @@ pytest-xdist = ">=3.6.1,<4.0.0"
 requests = "2.28.1"
 rich-click = ">=1.8.2,<2.0.0"
 ruff = {version = ">=0.5.7,<0.6.0", optional = true, markers = "extra == \"all\""}
+setuptools = {version = ">=75.8.0,<76.0.0", optional = true, markers = "extra == \"all\""}
 tbump = {version = ">=6.11.0,<7.0.0", optional = true, markers = "extra == \"all\" or extra == \"dev\""}
 tomte = {version = "0.2.17", extras = ["black", "cli", "ledgers", "tests"]}
 typing_extensions = ">=3.10.0.2"
 web3 = ">=6.0.0,<7.0.0"
 
 [package.extras]
-all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.60.0)", "open-aea-ledger-cosmos (==1.60.0)", "open-aea-ledger-ethereum (==1.60.0)", "open-aea-ledger-solana (==1.60.0)", "open-autonomy (==0.18.4)", "pydantic (>=2.8.2,<3.0.0)", "ruff (>=0.5.7,<0.6.0)", "tbump (>=6.11.0,<7.0.0)"]
+all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.62.0)", "open-aea-ledger-cosmos (==1.62.0)", "open-aea-ledger-ethereum (==1.62.0)", "open-aea-ledger-solana (==1.62.0)", "open-autonomy (==0.19.0)", "pydantic (>=2.8.2,<3.0.0)", "ruff (>=0.5.7,<0.6.0)", "setuptools (>=75.8.0,<76.0.0)", "tbump (>=6.11.0,<7.0.0)"]
 dev = ["tbump (>=6.11.0,<7.0.0)", "toml (==0.10.2)"]
 
 [[package]]
@@ -598,7 +600,6 @@ packaging = ">=22.0"
 pathspec = ">=0.9.0"
 platformdirs = ">=2"
 tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
-typing-extensions = {version = ">=3.10.0.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
 colorama = ["colorama (>=0.4.3)"]
@@ -936,7 +937,7 @@ name = "coverage"
 version = "7.6.10"
 description = "Code coverage measurement for Python"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "coverage-7.6.10-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:5c912978f7fbf47ef99cec50c4401340436d200d41d714c7a4766f377c5b7b78"},
     {file = "coverage-7.6.10-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:a01ec4af7dfeb96ff0078ad9a48810bb0cc8abcb0115180c6013a6b26237626c"},
@@ -1010,51 +1011,51 @@ toml = ["tomli"]
 
 [[package]]
 name = "cryptography"
-version = "43.0.3"
+version = "44.0.0"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
 optional = false
-python-versions = ">=3.7"
+python-versions = "!=3.9.0,!=3.9.1,>=3.7"
 files = [
-    {file = "cryptography-43.0.3-cp37-abi3-macosx_10_9_universal2.whl", hash = "sha256:bf7a1932ac4176486eab36a19ed4c0492da5d97123f1406cf15e41b05e787d2e"},
-    {file = "cryptography-43.0.3-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:63efa177ff54aec6e1c0aefaa1a241232dcd37413835a9b674b6e3f0ae2bfd3e"},
-    {file = "cryptography-43.0.3-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7e1ce50266f4f70bf41a2c6dc4358afadae90e2a1e5342d3c08883df1675374f"},
-    {file = "cryptography-43.0.3-cp37-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:443c4a81bb10daed9a8f334365fe52542771f25aedaf889fd323a853ce7377d6"},
-    {file = "cryptography-43.0.3-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:74f57f24754fe349223792466a709f8e0c093205ff0dca557af51072ff47ab18"},
-    {file = "cryptography-43.0.3-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:9762ea51a8fc2a88b70cf2995e5675b38d93bf36bd67d91721c309df184f49bd"},
-    {file = "cryptography-43.0.3-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:81ef806b1fef6b06dcebad789f988d3b37ccaee225695cf3e07648eee0fc6b73"},
-    {file = "cryptography-43.0.3-cp37-abi3-win32.whl", hash = "sha256:cbeb489927bd7af4aa98d4b261af9a5bc025bd87f0e3547e11584be9e9427be2"},
-    {file = "cryptography-43.0.3-cp37-abi3-win_amd64.whl", hash = "sha256:f46304d6f0c6ab8e52770addfa2fc41e6629495548862279641972b6215451cd"},
-    {file = "cryptography-43.0.3-cp39-abi3-macosx_10_9_universal2.whl", hash = "sha256:8ac43ae87929a5982f5948ceda07001ee5e83227fd69cf55b109144938d96984"},
-    {file = "cryptography-43.0.3-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:846da004a5804145a5f441b8530b4bf35afbf7da70f82409f151695b127213d5"},
-    {file = "cryptography-43.0.3-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0f996e7268af62598f2fc1204afa98a3b5712313a55c4c9d434aef49cadc91d4"},
-    {file = "cryptography-43.0.3-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:f7b178f11ed3664fd0e995a47ed2b5ff0a12d893e41dd0494f406d1cf555cab7"},
-    {file = "cryptography-43.0.3-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:c2e6fc39c4ab499049df3bdf567f768a723a5e8464816e8f009f121a5a9f4405"},
-    {file = "cryptography-43.0.3-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:e1be4655c7ef6e1bbe6b5d0403526601323420bcf414598955968c9ef3eb7d16"},
-    {file = "cryptography-43.0.3-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:df6b6c6d742395dd77a23ea3728ab62f98379eff8fb61be2744d4679ab678f73"},
-    {file = "cryptography-43.0.3-cp39-abi3-win32.whl", hash = "sha256:d56e96520b1020449bbace2b78b603442e7e378a9b3bd68de65c782db1507995"},
-    {file = "cryptography-43.0.3-cp39-abi3-win_amd64.whl", hash = "sha256:0c580952eef9bf68c4747774cde7ec1d85a6e61de97281f2dba83c7d2c806362"},
-    {file = "cryptography-43.0.3-pp310-pypy310_pp73-macosx_10_9_x86_64.whl", hash = "sha256:d03b5621a135bffecad2c73e9f4deb1a0f977b9a8ffe6f8e002bf6c9d07b918c"},
-    {file = "cryptography-43.0.3-pp310-pypy310_pp73-manylinux_2_28_aarch64.whl", hash = "sha256:a2a431ee15799d6db9fe80c82b055bae5a752bef645bba795e8e52687c69efe3"},
-    {file = "cryptography-43.0.3-pp310-pypy310_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:281c945d0e28c92ca5e5930664c1cefd85efe80e5c0d2bc58dd63383fda29f83"},
-    {file = "cryptography-43.0.3-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:f18c716be16bc1fea8e95def49edf46b82fccaa88587a45f8dc0ff6ab5d8e0a7"},
-    {file = "cryptography-43.0.3-pp39-pypy39_pp73-macosx_10_9_x86_64.whl", hash = "sha256:4a02ded6cd4f0a5562a8887df8b3bd14e822a90f97ac5e544c162899bc467664"},
-    {file = "cryptography-43.0.3-pp39-pypy39_pp73-manylinux_2_28_aarch64.whl", hash = "sha256:53a583b6637ab4c4e3591a15bc9db855b8d9dee9a669b550f311480acab6eb08"},
-    {file = "cryptography-43.0.3-pp39-pypy39_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:1ec0bcf7e17c0c5669d881b1cd38c4972fade441b27bda1051665faaa89bdcaa"},
-    {file = "cryptography-43.0.3-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:2ce6fae5bdad59577b44e4dfed356944fbf1d925269114c28be377692643b4ff"},
-    {file = "cryptography-43.0.3.tar.gz", hash = "sha256:315b9001266a492a6ff443b61238f956b214dbec9910a081ba5b6646a055a805"},
+    {file = "cryptography-44.0.0-cp37-abi3-macosx_10_9_universal2.whl", hash = "sha256:84111ad4ff3f6253820e6d3e58be2cc2a00adb29335d4cacb5ab4d4d34f2a123"},
+    {file = "cryptography-44.0.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b15492a11f9e1b62ba9d73c210e2416724633167de94607ec6069ef724fad092"},
+    {file = "cryptography-44.0.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:831c3c4d0774e488fdc83a1923b49b9957d33287de923d58ebd3cec47a0ae43f"},
+    {file = "cryptography-44.0.0-cp37-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:761817a3377ef15ac23cd7834715081791d4ec77f9297ee694ca1ee9c2c7e5eb"},
+    {file = "cryptography-44.0.0-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:3c672a53c0fb4725a29c303be906d3c1fa99c32f58abe008a82705f9ee96f40b"},
+    {file = "cryptography-44.0.0-cp37-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:4ac4c9f37eba52cb6fbeaf5b59c152ea976726b865bd4cf87883a7e7006cc543"},
+    {file = "cryptography-44.0.0-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:ed3534eb1090483c96178fcb0f8893719d96d5274dfde98aa6add34614e97c8e"},
+    {file = "cryptography-44.0.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:f3f6fdfa89ee2d9d496e2c087cebef9d4fcbb0ad63c40e821b39f74bf48d9c5e"},
+    {file = "cryptography-44.0.0-cp37-abi3-win32.whl", hash = "sha256:eb33480f1bad5b78233b0ad3e1b0be21e8ef1da745d8d2aecbb20671658b9053"},
+    {file = "cryptography-44.0.0-cp37-abi3-win_amd64.whl", hash = "sha256:abc998e0c0eee3c8a1904221d3f67dcfa76422b23620173e28c11d3e626c21bd"},
+    {file = "cryptography-44.0.0-cp39-abi3-macosx_10_9_universal2.whl", hash = "sha256:660cb7312a08bc38be15b696462fa7cc7cd85c3ed9c576e81f4dc4d8b2b31591"},
+    {file = "cryptography-44.0.0-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1923cb251c04be85eec9fda837661c67c1049063305d6be5721643c22dd4e2b7"},
+    {file = "cryptography-44.0.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:404fdc66ee5f83a1388be54300ae978b2efd538018de18556dde92575e05defc"},
+    {file = "cryptography-44.0.0-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:c5eb858beed7835e5ad1faba59e865109f3e52b3783b9ac21e7e47dc5554e289"},
+    {file = "cryptography-44.0.0-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:f53c2c87e0fb4b0c00fa9571082a057e37690a8f12233306161c8f4b819960b7"},
+    {file = "cryptography-44.0.0-cp39-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:9e6fc8a08e116fb7c7dd1f040074c9d7b51d74a8ea40d4df2fc7aa08b76b9e6c"},
+    {file = "cryptography-44.0.0-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:d2436114e46b36d00f8b72ff57e598978b37399d2786fd39793c36c6d5cb1c64"},
+    {file = "cryptography-44.0.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:a01956ddfa0a6790d594f5b34fc1bfa6098aca434696a03cfdbe469b8ed79285"},
+    {file = "cryptography-44.0.0-cp39-abi3-win32.whl", hash = "sha256:eca27345e1214d1b9f9490d200f9db5a874479be914199194e746c893788d417"},
+    {file = "cryptography-44.0.0-cp39-abi3-win_amd64.whl", hash = "sha256:708ee5f1bafe76d041b53a4f95eb28cdeb8d18da17e597d46d7833ee59b97ede"},
+    {file = "cryptography-44.0.0-pp310-pypy310_pp73-macosx_10_9_x86_64.whl", hash = "sha256:37d76e6863da3774cd9db5b409a9ecfd2c71c981c38788d3fcfaf177f447b731"},
+    {file = "cryptography-44.0.0-pp310-pypy310_pp73-manylinux_2_28_aarch64.whl", hash = "sha256:f677e1268c4e23420c3acade68fac427fffcb8d19d7df95ed7ad17cdef8404f4"},
+    {file = "cryptography-44.0.0-pp310-pypy310_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:f5e7cb1e5e56ca0933b4873c0220a78b773b24d40d186b6738080b73d3d0a756"},
+    {file = "cryptography-44.0.0-pp310-pypy310_pp73-manylinux_2_34_aarch64.whl", hash = "sha256:8b3e6eae66cf54701ee7d9c83c30ac0a1e3fa17be486033000f2a73a12ab507c"},
+    {file = "cryptography-44.0.0-pp310-pypy310_pp73-manylinux_2_34_x86_64.whl", hash = "sha256:be4ce505894d15d5c5037167ffb7f0ae90b7be6f2a98f9a5c3442395501c32fa"},
+    {file = "cryptography-44.0.0-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:62901fb618f74d7d81bf408c8719e9ec14d863086efe4185afd07c352aee1d2c"},
+    {file = "cryptography-44.0.0.tar.gz", hash = "sha256:cd4e834f340b4293430701e772ec543b0fbe6c2dea510a5286fe0acabe153a02"},
 ]
 
 [package.dependencies]
 cffi = {version = ">=1.12", markers = "platform_python_implementation != \"PyPy\""}
 
 [package.extras]
-docs = ["sphinx (>=5.3.0)", "sphinx-rtd-theme (>=1.1.1)"]
-docstest = ["pyenchant (>=1.6.11)", "readme-renderer", "sphinxcontrib-spelling (>=4.0.1)"]
-nox = ["nox"]
-pep8test = ["check-sdist", "click", "mypy", "ruff"]
-sdist = ["build"]
+docs = ["sphinx (>=5.3.0)", "sphinx-rtd-theme (>=3.0.0)"]
+docstest = ["pyenchant (>=3)", "readme-renderer (>=30.0)", "sphinxcontrib-spelling (>=7.3.1)"]
+nox = ["nox (>=2024.4.15)", "nox[uv] (>=2024.3.2)"]
+pep8test = ["check-sdist", "click (>=8.0.1)", "mypy (>=1.4)", "ruff (>=0.3.6)"]
+sdist = ["build (>=1.0.0)"]
 ssh = ["bcrypt (>=3.1.5)"]
-test = ["certifi", "cryptography-vectors (==43.0.3)", "pretend", "pytest (>=6.2.0)", "pytest-benchmark", "pytest-cov", "pytest-xdist"]
+test = ["certifi (>=2024)", "cryptography-vectors (==44.0.0)", "pretend (>=0.7)", "pytest (>=7.4.0)", "pytest-benchmark (>=4.0)", "pytest-cov (>=2.10.1)", "pytest-xdist (>=3.5.0)"]
 test-randomorder = ["pytest-randomly"]
 
 [[package]]
@@ -1539,7 +1540,7 @@ name = "filelock"
 version = "3.17.0"
 description = "A platform independent file lock."
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "filelock-3.17.0-py3-none-any.whl", hash = "sha256:533dc2f7ba78dc2f0f531fc6c4940addf7b70a481e269a5a3b93be94ffbe8338"},
     {file = "filelock-3.17.0.tar.gz", hash = "sha256:ee4e77401ef576ebb38cd7f13b9b28893194acc20a8e68e18730ba9c0e54660e"},
@@ -1563,7 +1564,6 @@ files = [
 
 [package.dependencies]
 click = ">=8.0"
-importlib-metadata = {version = ">=3.6.0", markers = "python_version < \"3.10\""}
 itsdangerous = ">=2.0"
 Jinja2 = ">=3.0"
 Werkzeug = ">=2.0"
@@ -1729,9 +1729,6 @@ files = [
     {file = "graphql_core-3.2.6.tar.gz", hash = "sha256:c08eec22f9e40f0bd61d805907e3b3b1b9a320bc606e23dc145eebca07c8fbab"},
 ]
 
-[package.dependencies]
-typing-extensions = {version = ">=4,<5", markers = "python_version < \"3.10\""}
-
 [[package]]
 name = "grpcio"
 version = "1.69.0"
@@ -1876,7 +1873,7 @@ name = "hypothesis"
 version = "6.122.3"
 description = "A library for property-based testing"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "hypothesis-6.122.3-py3-none-any.whl", hash = "sha256:f0f57036d3b95b979491602b32c95b6725c3af678cccb6165d8de330857f3c83"},
     {file = "hypothesis-6.122.3.tar.gz", hash = "sha256:f4c927ce0ec739fa6266e4572949d0b54e24a14601a2bc5fec8f78e16af57918"},
@@ -1917,29 +1914,6 @@ files = [
 
 [package.extras]
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
-
-[[package]]
-name = "importlib-metadata"
-version = "8.6.1"
-description = "Read metadata from Python packages"
-optional = false
-python-versions = ">=3.10"
-files = [
-    {file = "importlib_metadata-8.6.1-py3-none-any.whl", hash = "sha256:02a89390c1e15fdfdc0d7c6b25cb3e62650d0494005c97d6f148bf5b9787525e"},
-    {file = "importlib_metadata-8.6.1.tar.gz", hash = "sha256:310b41d755445d74569f993ccfc22838295d9fe005425094fad953d7f15c8580"},
-]
-
-[package.dependencies]
-zipp = ">=3.20"
-
-[package.extras]
-check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1)"]
-cover = ["pytest-cov"]
-doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
-enabler = ["pytest-enabler (>=2.2)"]
-perf = ["ipython"]
-test = ["flufl.flake8", "importlib_resources (>=1.3)", "jaraco.test (>=5.4)", "packaging", "pyfakefs", "pytest (>=6,!=8.1.*)", "pytest-perf (>=0.9.2)"]
-type = ["pytest-mypy"]
 
 [[package]]
 name = "iniconfig"
@@ -2175,7 +2149,7 @@ name = "markupsafe"
 version = "3.0.2"
 description = "Safely add untrusted strings to HTML/XML markup."
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "MarkupSafe-3.0.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:7e94c425039cde14257288fd61dcfb01963e658efbc0ff54f5306b06054700f8"},
     {file = "MarkupSafe-3.0.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9e2d922824181480953426608b81967de705c3cef4d1af983af849d7bd619158"},
@@ -2420,18 +2394,18 @@ nicer-shell = ["ipython"]
 
 [[package]]
 name = "open-aea"
-version = "1.60.0"
+version = "1.62.0"
 description = "Open Autonomous Economic Agent framework (without vendor lock-in)"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "open_aea-1.60.0-py3-none-any.whl", hash = "sha256:7463b95973d1594bfc6aa8bd5f561f9a683dcec2adb06c44084c896325f2f5ea"},
-    {file = "open_aea-1.60.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:bf3ca4803a61d78133e130d74e0a7c02007318ff4ec4450a980e604ee83d8941"},
-    {file = "open_aea-1.60.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:e94db427beb8f77e51cc2c8f0482fcb0b12464d62a59b3a50bd5594d21d22d6a"},
-    {file = "open_aea-1.60.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:85b7695f80c528336d3af4c052c7bcd3413101e9034c507d6246304de9d16220"},
-    {file = "open_aea-1.60.0-py3-none-win32.whl", hash = "sha256:fc3d49277f526d709340ef6d8839d7a7293ef948e01b7eaaf875ffb302d8d3aa"},
-    {file = "open_aea-1.60.0-py3-none-win_amd64.whl", hash = "sha256:ee5a2584adc9cd7508903796e9b34fd6ca54f194449ad0da2ebf003226a0144b"},
-    {file = "open_aea-1.60.0.tar.gz", hash = "sha256:531a1a985bdf385b3332232920876c9056c88b8d6d3ab37c7b5c10a15493cce6"},
+    {file = "open_aea-1.62.0-py3-none-any.whl", hash = "sha256:ae480943c04b885aa7a8f785e360983346d502cc7a79d7b08e31641ea6787046"},
+    {file = "open_aea-1.62.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:3674d2c5fa5f1fb109c3f46935589219ecd54d8acbefa9a425269993464ab3c8"},
+    {file = "open_aea-1.62.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:f4aa0bc3fb0be8e9dfd5fab58a713029a0bdffac17d5e5e1470ca6883e281cc1"},
+    {file = "open_aea-1.62.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:756e3d1c35383c1342060fa3a475cd161776469ecdda87c3f40f416435d40a6d"},
+    {file = "open_aea-1.62.0-py3-none-win32.whl", hash = "sha256:7f1a18f91d0e7435290847d6e6a4127cd05c93c93a17e80cc0342b9c0a919798"},
+    {file = "open_aea-1.62.0-py3-none-win_amd64.whl", hash = "sha256:a62618c24b10c39ccb6ac4153f0f6066cc1d06123b9cf0f733b171f08bc2d345"},
+    {file = "open_aea-1.62.0.tar.gz", hash = "sha256:afd17153847cb6a111c7abd565329ec9b1e7c1a54958802c21733589748b9e55"},
 ]
 
 [package.dependencies]
@@ -2459,13 +2433,13 @@ test-tools = ["click (>=8.1.0,<9)", "coverage (>=6.4.4,<8.0.0)", "jsonschema (>=
 
 [[package]]
 name = "open-aea-cli-ipfs"
-version = "1.60.0"
+version = "1.62.0"
 description = "CLI extension for open AEA framework wrapping IPFS functionality."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_cli_ipfs-1.60.0-py3-none-any.whl", hash = "sha256:d32493650d4d86210cfd56848748d8a3ef9eb439cd064153a3efd4a961eaf31a"},
-    {file = "open_aea_cli_ipfs-1.60.0.tar.gz", hash = "sha256:e90bc224ebc47bfd56a5f34739300ab8b8615e077072b5a202af398b92028d50"},
+    {file = "open_aea_cli_ipfs-1.62.0-py3-none-any.whl", hash = "sha256:db8201e36bbaa42e1d19a52cba9b74c64d2729b2ea60dbf4aae7450644dd601f"},
+    {file = "open_aea_cli_ipfs-1.62.0.tar.gz", hash = "sha256:2eca9e028fefa0461b904bdbbc153b90f39ae8d73ca1c1e34643aba30e064eb3"},
 ]
 
 [package.dependencies]
@@ -2475,13 +2449,13 @@ pytest = ">=7.0.0,<7.3.0"
 
 [[package]]
 name = "open-aea-ledger-cosmos"
-version = "1.60.0"
+version = "1.62.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of Cosmos."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_cosmos-1.60.0-py3-none-any.whl", hash = "sha256:53a1c8a04a12a9e18a03a7ecc1988efef6e3712cf6408ae4c46c18d8d66fba31"},
-    {file = "open_aea_ledger_cosmos-1.60.0.tar.gz", hash = "sha256:df48bf695de632b768baf968e6de66e27d7350af2edfac715a5635389d891b75"},
+    {file = "open_aea_ledger_cosmos-1.62.0-py3-none-any.whl", hash = "sha256:984d2ef68bb6a07bf45592a6240c8cf2186a717bbf633ef304fb7a78b97a2a13"},
+    {file = "open_aea_ledger_cosmos-1.62.0.tar.gz", hash = "sha256:e3ab0bb19dff285f80fdd73a59e2754515a2f42151e645be88c324be0a99a5f4"},
 ]
 
 [package.dependencies]
@@ -2493,13 +2467,13 @@ pycryptodome = ">=3.10.1,<4.0.0"
 
 [[package]]
 name = "open-aea-ledger-ethereum"
-version = "1.60.0"
+version = "1.62.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of Ethereum."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_ethereum-1.60.0-py3-none-any.whl", hash = "sha256:0026ae8faa987f651234d3d125998a445b414a65847a121fd033f49b99de0bf0"},
-    {file = "open_aea_ledger_ethereum-1.60.0.tar.gz", hash = "sha256:932219edff66500f29f17ab47d487f2995e4770456031cfbacfc0eea94571c6c"},
+    {file = "open_aea_ledger_ethereum-1.62.0-py3-none-any.whl", hash = "sha256:cd6319b30cc66bb30f85271cc7c159d4411eaff3d558461971be0b0f00b3f471"},
+    {file = "open_aea_ledger_ethereum-1.62.0.tar.gz", hash = "sha256:d0ae2d491f75f1fbfe054831ed210de340a60bff419813bf1c9ce892b3e6c162"},
 ]
 
 [package.dependencies]
@@ -2510,13 +2484,13 @@ web3 = ">=6.0.0,<7"
 
 [[package]]
 name = "open-aea-ledger-solana"
-version = "1.60.0"
+version = "1.62.0"
 description = "Python package wrapping the public and private key cryptography and ledger api of solana."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_ledger_solana-1.60.0-py3-none-any.whl", hash = "sha256:60cc967879e6044bd9c6b33e0dc4ee0199c46c32f4ee2d8de36d39920896be9a"},
-    {file = "open_aea_ledger_solana-1.60.0.tar.gz", hash = "sha256:d47688bbba4a4ff06ec0d6f4e3b7d56b21dc03270933e5b1c3a50340a97fac6f"},
+    {file = "open_aea_ledger_solana-1.62.0-py3-none-any.whl", hash = "sha256:531c184b6a708aa7e5b5b36ebbd120ce5f13ea0e41e14b1a467e8c7bbd52917a"},
+    {file = "open_aea_ledger_solana-1.62.0.tar.gz", hash = "sha256:80bb9bc0228e66fb890959b7988b8723d9fb4b4d8cd653e4d605ad6e1e7fd453"},
 ]
 
 [package.dependencies]
@@ -2529,30 +2503,30 @@ solders = ">=0.14.0"
 
 [[package]]
 name = "open-aea-test-autonomy"
-version = "0.18.4"
+version = "0.19.0"
 description = "Plugin containing test tools for open-autonomy packages."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_test_autonomy-0.18.4-py3-none-any.whl", hash = "sha256:2b1a6ac6724a9b21abc821cad664a2b672d8dabbcd28b9836f847c9451f20385"},
-    {file = "open_aea_test_autonomy-0.18.4.tar.gz", hash = "sha256:002ec20bdc7324d4cddd8f5d6fbb45981d05b119d5da44524c3d315c82e47541"},
+    {file = "open_aea_test_autonomy-0.19.0-py3-none-any.whl", hash = "sha256:93b7a80721dc4d01aaa5133f6390ceedc8323260c66484f653ea2b2c2da713f0"},
+    {file = "open_aea_test_autonomy-0.19.0.tar.gz", hash = "sha256:b0da15927c70c10e09cefb82af95df794d7e80e71add4a650cf25c4a10ef8a53"},
 ]
 
 [package.dependencies]
 docker = "6.1.2"
-open-aea = {version = ">=1.60.0,<2.0.0", extras = ["all"]}
-open-aea-ledger-ethereum = ">=1.60.0,<2.0.0"
+open-aea = {version = ">=1.62.0,<2.0.0", extras = ["all"]}
+open-aea-ledger-ethereum = ">=1.62.0,<2.0.0"
 pytest = "7.2.1"
 
 [[package]]
 name = "open-autonomy"
-version = "0.18.4"
+version = "0.19.0"
 description = "A framework for the creation of autonomous agent services."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "open_autonomy-0.18.4-py3-none-any.whl", hash = "sha256:5233c37b85d921f13c37140cfe9e4ec7fe1a269d998014e962b5d0e9af62f18d"},
-    {file = "open_autonomy-0.18.4.tar.gz", hash = "sha256:d6f99376d2a09807ff711e90bf46c71cbd07e3d88910356802f5fc8ff41d1c2a"},
+    {file = "open_autonomy-0.19.0-py3-none-any.whl", hash = "sha256:77d34dae21389af933ebbeaa17dcbe3e01e9d7cf811e1e6e68a82c0113801805"},
+    {file = "open_autonomy-0.19.0.tar.gz", hash = "sha256:4566178c1096b24c3c679458b666dd81364d93bc4516584b288d461c7d74d2f8"},
 ]
 
 [package.dependencies]
@@ -2564,8 +2538,8 @@ Flask = ">=2.0.2,<3.0.0"
 gql = "3.5.0"
 hexbytes = "*"
 jsonschema = ">=4.3.0,<4.4.0"
-open-aea = {version = "1.60.0", extras = ["all"]}
-open-aea-cli-ipfs = "1.60.0"
+open-aea = {version = "1.62.0", extras = ["all"]}
+open-aea-cli-ipfs = "1.62.0"
 protobuf = ">=4.21.6,<4.25.0"
 pytest = "7.2.1"
 python-dotenv = ">=0.14.5,<0.22.0"
@@ -2578,8 +2552,8 @@ watchdog = ">=2.1.6"
 werkzeug = "2.0.3"
 
 [package.extras]
-all = ["click (>=8.1.0,<9)", "coverage (>=6.4.4,<8.0.0)", "open-aea-cli-ipfs (==1.60.0)", "pytest (>=7.0.0,<7.3.0)", "python-dotenv (>=0.14.5,<0.22.0)", "texttable (==1.6.7)"]
-cli = ["click (>=8.1.0,<9)", "coverage (>=6.4.4,<8.0.0)", "open-aea-cli-ipfs (==1.60.0)", "pytest (>=7.0.0,<7.3.0)", "python-dotenv (>=0.14.5,<0.22.0)", "texttable (==1.6.7)"]
+all = ["click (>=8.1.0,<9)", "coverage (>=6.4.4,<8.0.0)", "open-aea-cli-ipfs (==1.62.0)", "pytest (>=7.0.0,<7.3.0)", "python-dotenv (>=0.14.5,<0.22.0)", "texttable (==1.6.7)"]
+cli = ["click (>=8.1.0,<9)", "coverage (>=6.4.4,<8.0.0)", "open-aea-cli-ipfs (==1.62.0)", "pytest (>=7.0.0,<7.3.0)", "python-dotenv (>=0.14.5,<0.22.0)", "texttable (==1.6.7)"]
 
 [[package]]
 name = "openapi-spec-validator"
@@ -2611,13 +2585,13 @@ files = [
 
 [[package]]
 name = "paramiko"
-version = "3.5.0"
+version = "3.5.1"
 description = "SSH2 protocol library"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "paramiko-3.5.0-py3-none-any.whl", hash = "sha256:1fedf06b085359051cd7d0d270cebe19e755a8a921cc2ddbfa647fb0cd7d68f9"},
-    {file = "paramiko-3.5.0.tar.gz", hash = "sha256:ad11e540da4f55cedda52931f1a3f812a8238a7af7f62a60de538cd80bb28124"},
+    {file = "paramiko-3.5.1-py3-none-any.whl", hash = "sha256:43b9a0501fc2b5e70680388d9346cf252cfb7d00b0667c39e80eb43a408b8f61"},
+    {file = "paramiko-3.5.1.tar.gz", hash = "sha256:b2c665bc45b2b215bd7d7f039901b14b067da00f3a11e6640995fd58f2664822"},
 ]
 
 [package.dependencies]
@@ -2691,7 +2665,7 @@ name = "propcache"
 version = "0.2.1"
 description = "Accelerated property cache"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "propcache-0.2.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:6b3f39a85d671436ee3d12c017f8fdea38509e4f25b28eb25877293c98c243f6"},
     {file = "propcache-0.2.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:39d51fbe4285d5db5d92a929e3e21536ea3dd43732c5b177c7ef03f918dff9f2"},
@@ -3286,7 +3260,6 @@ files = [
 ]
 
 [package.dependencies]
-importlib-metadata = {version = ">=3.6.0", markers = "python_version < \"3.10\""}
 pytest = "*"
 
 [[package]]
@@ -3744,7 +3717,7 @@ name = "setuptools"
 version = "75.8.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "setuptools-75.8.0-py3-none-any.whl", hash = "sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3"},
     {file = "setuptools-75.8.0.tar.gz", hash = "sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6"},
@@ -4139,7 +4112,7 @@ name = "watchdog"
 version = "6.0.0"
 description = "Filesystem events monitoring"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "watchdog-6.0.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d1cdb490583ebd691c012b3d6dae011000fe42edb7a82ece80965b42abd61f26"},
     {file = "watchdog-6.0.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:bc64ab3bdb6a04d69d4023b29422170b74681784ffb9463ed4870cf2f3e66112"},
@@ -4322,7 +4295,7 @@ name = "yarl"
 version = "1.18.3"
 description = "Yet another URL library"
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 files = [
     {file = "yarl-1.18.3-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:7df647e8edd71f000a5208fe6ff8c382a1de8edfbccdbbfe649d263de07d8c34"},
     {file = "yarl-1.18.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:c69697d3adff5aa4f874b19c0e4ed65180ceed6318ec856ebc423aa5850d84f7"},
@@ -4414,25 +4387,6 @@ multidict = ">=4.0"
 propcache = ">=0.2.0"
 
 [[package]]
-name = "zipp"
-version = "3.21.0"
-description = "Backport of pathlib-compatible object wrapper for zip files"
-optional = false
-python-versions = ">=3.10"
-files = [
-    {file = "zipp-3.21.0-py3-none-any.whl", hash = "sha256:ac1bbe05fd2991f160ebce24ffbac5f6d11d83dc90891255885223d42b3cd931"},
-    {file = "zipp-3.21.0.tar.gz", hash = "sha256:2c9958f6430a2040341a52eb608ed6dd93ef4392e02ffe219417c1b28b5dd1f4"},
-]
-
-[package.extras]
-check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1)"]
-cover = ["pytest-cov"]
-doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
-enabler = ["pytest-enabler (>=2.2)"]
-test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more-itertools", "pytest (>=6,!=8.1.*)", "pytest-ignore-flaky"]
-type = ["pytest-mypy"]
-
-[[package]]
 name = "zstandard"
 version = "0.18.0"
 description = "Zstandard bindings for Python"
@@ -4498,4 +4452,4 @@ doc = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<=3.13"
-content-hash = "48950f7b5a4df26658f9063e44ce92e0d95b29801470d002cbb1a2e5336948e3"
+content-hash = "bdfb232c7f7330906ef43ae307eacf35c7976f1503b206ecd83ab21623ed5689"
