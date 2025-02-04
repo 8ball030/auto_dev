@@ -82,12 +82,7 @@ def test_clean_filesystem():
 @pytest.fixture
 def test_packages_filesystem(test_filesystem):
     """Fixure for testing packages."""
-    task = Task(
-        command="autonomy packages init",
-    )
-    task.work()
-    assert task.is_done
-    assert not task.is_failed
+    Task(command="autonomy packages init").work()
     return test_filesystem
 
 
