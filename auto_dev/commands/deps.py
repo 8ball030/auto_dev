@@ -740,6 +740,53 @@ def bump(
 
     handle_output(issues, changes)
 
+# verify command reads in the adev_config.yaml file and then verifies the dependencies.
+@deps.command()
+@click.option(
+    "--auto-approve",
+    default=False,
+    help="Auto approve the changes.",
+    is_flag=True,
+)
+@click.pass_context
+def verify(ctx, auto_approve):
+    """
+    Verify the dependencies from the pip file.
+    """
+
+    version_set_loader = VersionSetLoader(latest="latest")
+    version_set_loader.load_config()
+
+    command = "poetry add "
+    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
+        command += f"{dependency.name}=={dependency.version} "
+
+        if dependency.extras:
+            extras = ",".join(dependency.extras)
+            command += f"[{extras}] "
+
+        if dependency.plugins:
+            for plugin in dependency.plugins:
+                command += f"{plugin}=={dependency.version} "
+
+
+    if not auto_approve:
+        click.echo("Please run the following command to update the poetry dependencies.")
+        click.echo(f"{command}\n")
+        click.confirm("Do you want to update the poetry dependencies now?", abort=True)
+    os.system(command)  # noqa
+
+    # We now execute our 2 tbump commands.
+
+    for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
+        command = f"tbump --no-tag --no-push -c tbump_{dependency.name.replace('-', '_')}.toml {dependency.version}"
+        if not auto_approve:
+            click.echo("Please run the following command to update the autonomy dependencies.")
+            click.echo(f"{command}\n")
+            click.confirm("Do you want to update the autonomy dependencies now?", abort=True)
+        os.system(command)
+
+
 
 if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
