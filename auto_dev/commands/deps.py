@@ -783,7 +783,7 @@ def verify(auto_approve):
 
     command = "poetry add --no-cache"
     for dependency in version_set_loader.poetry_dependencies.poetry_dependencies:
-        command += f" {dependency.name}=={dependency.version}"
+        command += f" {dependency.name}@{dependency.version}"
 
         if dependency.extras:
             extras = ",".join(dependency.extras)
@@ -791,7 +791,7 @@ def verify(auto_approve):
 
         if dependency.plugins:
             for plugin in dependency.plugins:
-                command += f" {plugin}=={dependency.version} "
+                command += f" {plugin}@{dependency.version} "
 
     if not auto_approve:
         click.echo("Please run the following command to update the poetry dependencies.")
