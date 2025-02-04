@@ -2499,13 +2499,13 @@ cache = ["platformdirs"]
 
 [[package]]
 name = "mkdocs-material"
-version = "9.6.1"
+version = "9.6.2"
 description = "Documentation that simply works"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "mkdocs_material-9.6.1-py3-none-any.whl", hash = "sha256:c1742d410be29811a9b7e863cb25a578b9e255fe6f04c69f8c6838863a58e141"},
-    {file = "mkdocs_material-9.6.1.tar.gz", hash = "sha256:da37dba220d9fbfc5f1fc567fafc4028e3c3d7d828f2779ed09ab726ceca77dc"},
+    {file = "mkdocs_material-9.6.2-py3-none-any.whl", hash = "sha256:71d90dbd63b393ad11a4d90151dfe3dcbfcd802c0f29ce80bebd9bbac6abc753"},
+    {file = "mkdocs_material-9.6.2.tar.gz", hash = "sha256:a3de1c5d4c745f10afa78b1a02f917b9dce0808fb206adc0f5bb48b58c1ca21f"},
 ]
 
 [package.dependencies]
@@ -3010,13 +3010,13 @@ lint = ["black"]
 
 [[package]]
 name = "paramiko"
-version = "3.5.0"
+version = "3.5.1"
 description = "SSH2 protocol library"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "paramiko-3.5.0-py3-none-any.whl", hash = "sha256:1fedf06b085359051cd7d0d270cebe19e755a8a921cc2ddbfa647fb0cd7d68f9"},
-    {file = "paramiko-3.5.0.tar.gz", hash = "sha256:ad11e540da4f55cedda52931f1a3f812a8238a7af7f62a60de538cd80bb28124"},
+    {file = "paramiko-3.5.1-py3-none-any.whl", hash = "sha256:43b9a0501fc2b5e70680388d9346cf252cfb7d00b0667c39e80eb43a408b8f61"},
+    {file = "paramiko-3.5.1.tar.gz", hash = "sha256:b2c665bc45b2b215bd7d7f039901b14b067da00f3a11e6640995fd58f2664822"},
 ]
 
 [package.dependencies]
@@ -5084,5 +5084,5 @@ doc = []
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.10,<4"
-content-hash = "351223ebdc5a0787215b2bf244c4ba961ecb393277d27b5e82577c1d1af63332"
+python-versions = ">=3.10,<=3.13"
+content-hash = "b98ea3247199ac79cff62b253b237e64f98dfafd9101f18ce865ba67db3572df"
