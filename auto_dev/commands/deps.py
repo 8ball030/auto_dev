@@ -540,11 +540,12 @@ class VersionSetLoader:
 
     def write_config(
         self,
+        use_latest: bool = True,
     ):
         """Write the config file."""
         data = {
             "autonomy_dependencies": self.autonomy_dependencies.to_dict(),
-            "poetry_dependencies": self.poetry_dependencies.to_dict(),
+            "poetry_dependencies": self.poetry_dependencies.to_dict(use_latest),
         }
         FileLoader(self.config_file, FileType.YAML).write(data)
 
@@ -650,7 +651,7 @@ def get_update_command(poetry_dependencies: Dependency, strict: bool = False, us
     is_flag=True,
 )
 @click.option(
-    "--latest",
+    "--latest/--no-latest",
     default=True,
     help="Select the latest version releases.",
     is_flag=True,
@@ -751,7 +752,9 @@ def bump(
                 changes.append(dependency.name)
 
     click.echo("Verifying poetry dependencies... 📝")
-    cmd, poetry_issues = get_update_command(version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=True)
+    cmd, poetry_issues = get_update_command(
+        version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=True
+    )
     issues.extend(poetry_issues)
 
     if issues:
