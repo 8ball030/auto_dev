@@ -7,10 +7,10 @@ import sys
 import time
 import logging
 from copy import deepcopy
+from uuid import uuid4
 from dataclasses import field, asdict, dataclass
 from collections.abc import Callable
 from multiprocessing.pool import ApplyResult
-from typing import List
 
 import yaml
 from rich import print
@@ -74,12 +74,17 @@ class Task:
         self.is_done = True
         return self
 
+    def __post_init__(self):
+        """Post initialization steps."""
+        if not self.id:
+            self.id = uuid4().hex
+
 
 @dataclass
 class Workflow:
     """A class to represent a workflow."""
 
-    id: str = None
+    id: str = uuid4().hex
     name: str = None
     description: str = None
     tasks: list[Task] = field(default_factory=list)
@@ -101,7 +106,7 @@ class WorkflowManager:
 
     def __init__(self):
         """Initialize the workflow manager."""
-        self.workflows: List[Workflow] = []
+        self.workflows: list[Workflow] = []
         self.task_manager = TaskManager()
         self.task_manager.start()
         self.console = Console()
