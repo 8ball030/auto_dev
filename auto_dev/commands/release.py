@@ -53,16 +53,18 @@ class Releaser:
             sys.exit(1)
         return result
 
-    def release(self) -> bool:
+    def release(self, auto_approve=False) -> bool:
         """We run the release."""
         self.logger.info("Running the release... 🚀")
         self.logger.info(f"Current version is {self.current_version()}. 🚀")
         self.logger.info(f"New version will be {self.get_new_version()}. 🚀")
         new_version = self.get_new_version()
-        confirmation = input(f"Are you sure you want to release {new_version}? [y/N]")
-        if confirmation.lower() != "y":
-            self.logger.info("Release aborted. 😎")
-            return False
+
+        if not auto_approve:
+            confirmation = input(f"Are you sure you want to release {new_version}? [y/N]")
+            if confirmation.lower() != "y":
+                self.logger.info("Release aborted. 😎")
+                return False
         if not self.pre_release():
             self.logger.error("Pre release failed. 😭")
             return False
@@ -140,7 +142,7 @@ def release(
     logger = ctx.obj["LOGGER"]
     logger.info("Releasing the package... 🚀")
     releaser = Releaser(dep_path=dep_path, verbose=verbose, logger=logger)
-    if not releaser.release():
+    if not releaser.release(auto_approve=True):
         logger.error("Release failed. 😭")
         raise click.Abort
     logger.info("Done. 😎")
