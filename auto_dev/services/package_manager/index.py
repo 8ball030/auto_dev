@@ -130,7 +130,6 @@ class PackageManager:
             if path.exists():
                 return path.parent
         raise OperationError(PACKAGES_NOT_FOUND)
-
     def _run_publish_commands(self) -> None:
         """Run the AEA publish commands.
 
