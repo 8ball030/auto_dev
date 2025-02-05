@@ -205,7 +205,7 @@ class ProdAgentRunner(AgentRunner):
             env_vars=env_vars,
         )
 
-        # Note: autonomy deploy build doesn't write the env vars to the agent env files. So we do it manually here.
+        # Note: autonomy deploy build doesn't write the env vars to the agent env files, even with --aev. So we do it manually here.
         for agent_id in range(self.number_of_agents):
             agent_env_path = Path(f"abci_build/agent_{agent_id}.env")
             if agent_env_path.exists():
