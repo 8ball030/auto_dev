@@ -4,7 +4,7 @@ requires = ["poetry-core>=1.0.0", "setuptools"]
 
 [tool.poetry]
 name = "autonomy_dev"
-version = "0.2.99"
+version = "0.2.110"
 homepage = "https://github.com/8ball030/auto_dev"
 description = "A collection of tooling to enable open source development of autonomy tools"
 authors = ["8Baller <8ball030@gmail.com>"]
@@ -34,14 +34,14 @@ include = "\\.pyi?$"
 exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox\n  | \\.venv\n  | _build\n  | buck-out\n  | build\n  | dist\n)/\n"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<=3.13"
-open-autonomy = "0.19.0"
-open-aea = "1.62.0"
-open-aea-test-autonomy = "0.19.0"
-open-aea-ledger-ethereum = "1.62.0"
-open-aea-ledger-solana = "1.62.0"
-open-aea-ledger-cosmos = "1.62.0"
-open-aea-cli-ipfs = "1.62.0"
+python = ">=3.10,<=3.12"
+open-autonomy = "==0.19.1"
+open-aea = "==1.63.0"
+open-aea-test-autonomy = "==0.19.1"
+open-aea-ledger-ethereum = "==1.63.0"
+open-aea-ledger-solana = "==1.63.0"
+open-aea-ledger-cosmos = "==1.63.0"
+open-aea-cli-ipfs = "==1.63.0"
 web3 = ">=6.0.0,<7.0.0"
 ipfshttpclient = "==0.8.0a2"
 typing_extensions = ">=3.10.0.2"
@@ -65,6 +65,7 @@ tbump = "^6.11.0"
 requests = "2.28.1"
 pytest-xdist = "^3.6.1"
 ruff = "^0.5.7"
+pydoclint = {extras = ["all"], version = "^0.6.0"}
 pydantic = "^2.8.2"
 isort = "^5.13.2"
 openapi-spec-validator = "0.2.8"
@@ -80,7 +81,6 @@ mkdocs-mermaid2-plugin = "^1.1.1"
 mkdocs-material = "^9.5.47"
 mkdocs-material-extensions = "^1.3.1"
 mkdocstrings = {extras = ["python"], version = ">=0.25.2,<0.28.0"}
-pydoclint = {extras = ["all"], version = "^0.6.0"}
 twine = "^5.1.1"
 mkdocs-autorefs = "^1.0.1"
 
@@ -89,6 +89,7 @@ all = [
   "pytest",
   "pytest-cov",
   "tbump",
+  "pydoclint",
   "ruff",
   "isort",
   "setuptools",
@@ -98,15 +99,6 @@ all = [
   "open-aea-ledger-ethereum",
   "open-aea-ledger-solana",
   "open-aea-ledger-cosmos",
-]
-dev = ["tox", "pre-commit", "virtualenv", "pip", "twine", "toml", "tbump"]
-doc = [
-  "mkdocs",
-  "mkdocs-include-markdown-plugin",
-  "mkdocs-material",
-  "mkdocstrings",
-  "mkdocs-material-extensions",
-  "mkdocs-autorefs",
 ]
 
 [tool.poetry.scripts]
@@ -123,5 +115,3 @@ filterwarnings = [
 
 addopts = "--cov=auto_dev --cov-report html"
 
-[tool.poetry-post-install]
-post-install = "pre-commit install"

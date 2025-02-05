@@ -19,7 +19,7 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
 ## Requirements
 
 - Python >= 3.10
-- Poetry <= 2.0.0
+- Poetry >= 1.8.3
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ## Features

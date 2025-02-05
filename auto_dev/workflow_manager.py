@@ -7,11 +7,10 @@ import sys
 import time
 import logging
 from copy import deepcopy
-from typing import Any
+from uuid import uuid4
 from dataclasses import field, asdict, dataclass
 from collections.abc import Callable
 from multiprocessing.pool import ApplyResult
-from typing import List
 
 from rich import print
 from rich.text import Text
@@ -70,11 +69,15 @@ class Task:
     def work(self):
         """Perform the task's work."""
         self.client = CommandExecutor(self.command.split(" "), cwd=self.working_dir, logger=self.logger)
-        print(f"Executing command: `{self.command}` in {self.working_dir}")
-        print()
+        print(f"Executing command: `{self.command}`")
         self.is_failed = not self.client.execute(stream=self.stream, shell=self.shell)
         self.is_done = True
         return self
+
+    def __post_init__(self):
+        """Post initialization steps."""
+        if not self.id:
+            self.id = uuid4().hex
 
 
 @dataclass
@@ -95,6 +98,11 @@ class Workflow:
         """Add a task to the workflow."""
         self.tasks.append(task)
 
+    def __post_init__(self):
+        """Post initialization steps."""
+        if not self.id:
+            self.id = uuid4().hex
+
 
 class WorkflowManager:
     """A class to manage workflows constructed.
@@ -103,7 +111,7 @@ class WorkflowManager:
 
     def __init__(self):
         """Initialize the workflow manager."""
-        self.workflows: List[Workflow] = []
+        self.workflows: list[Workflow] = []
         self.task_manager = TaskManager()
         self.task_manager.start()
         self.console = Console()

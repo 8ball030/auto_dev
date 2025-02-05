@@ -21,6 +21,7 @@ from auto_dev.utils import change_dir, load_autonolas_yaml
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.services.runner.base import AgentRunner
+from auto_dev.workflow_manager import Task
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -216,17 +217,10 @@ class ProdAgentRunner(AgentRunner):
         - args: background (bool): Run the agent in the background.
         """
         self.logger.info("Starting agent execution...")
-        try:
-            result = self.execute_command(
-                "docker compose -f abci_build/docker-compose.yaml up -d --force-recreate --remove-orphans", verbose=True
-            )
-            if result:
-                self.logger.info("Agent execution completed successfully. 😎")
-            else:
-                self.logger.error("Agent execution failed.")
-                sys.exit(1)
-        except RuntimeError as error:
-            self.logger.exception(f"Agent ended with error: {error}")
+
+        task = Task(command="docker compose up -d --remove-orphans", working_dir="abci_build").work()
+        if task.is_failed:
+            raise RuntimeError(f"Agent execution failed. {task.client.output}")
         self.logger.info("Agent execution complete. 😎")
 
     def execute_command(self, command: str, verbose=None, env_vars=None, spinner=False) -> None:

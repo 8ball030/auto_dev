@@ -138,7 +138,7 @@ function install_poetry_deps() {
     echo "Installing package dependencies via poetry..."
     echo "Using poetry executable: $poetry_executable"
     export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
-    poetry install > /dev/null || exit 1
+    poetry install --all-extras > /dev/null || exit 1
     echo "Checking if aea is installed"
     poetry run aea --version
     echo "Done installing dependencies"
