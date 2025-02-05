@@ -15,10 +15,7 @@ cli = build_cli()
     type=click.Path(exists=True, file_okay=True),
     default=None,
 )
-@click.option(
-    "--params", type=str, help="Parameters for the workflow in key=value format, separated by commas.", default=""
-)
-def wf(path, params) -> None:
+def wf(path) -> None:
     """Run Workflow commands.
 
     Required Parameters:
@@ -27,11 +24,8 @@ def wf(path, params) -> None:
 
     Usage:
 
-        adev wf my_workflow.yaml --params key1=value1,key2=value2
-
+        adev wf run my_workflow.yaml
     """
 
-    params = dict(param.split("=") for param in params.split(",") if param)
-
-    workflow_manager = WorkflowManager.load_custom_workflow(path, params)
-    workflow_manager.run()
+    wf_manager = WorkflowManager.from_yaml(path)
+    wf_manager.run()

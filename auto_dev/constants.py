@@ -8,7 +8,6 @@ from aea.cli.utils.config import get_or_create_cli_config
 from aea.configurations.data_types import PublicId
 
 
-FSM_END_CLASS_NAME = "FsmBehaviour"
 DEFAULT_ENCODING = "utf-8"
 DEFAULT_TZ = "UTC"
 DEFAULT_TIMEOUT = 10
@@ -70,10 +69,6 @@ BASE_FSM_SKILLS = {
     "termination_abci": "bafybeieb3gnvjxxsh73g67m7rivzknwb63xu4qeagpkv7f4mqz33ecikem",
 }
 AGENT_PUBLISHED_SUCCESS_MSG = "Agent published successfully."
-
-# Workflow related paths
-WORKFLOWS_FOLDER = os.path.join(AUTO_DEV_FOLDER, "data", "workflows")
-CREATE_AGENT_WORKFLOW_PATH = os.path.join(WORKFLOWS_FOLDER, "create_new_agent_from_fsm.yaml")
 
 
 class CheckResult(Enum):
