@@ -1,7 +1,5 @@
 """Implement scaffolding tooling."""
 
-import sys
-import shutil  # added for removing behavior file using shutil
 import difflib
 from copy import deepcopy
 from pathlib import Path
@@ -440,37 +438,38 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
     """
 
     if not Path(spec_file).exists():
-        logger.error(f"Specification file for FSM not found: {spec_file}")
-        sys.exit(1)
+        msg = f"Specification file for FSM not found: {spec_file}"
+        logger.error(msg)
+        raise OperationError(msg)
     if not Path(AEA_CONFIG).exists():
-        logger.error(f"File {AEA_CONFIG} not found")
-        sys.exit(1)
+        msg = f"File {AEA_CONFIG} not found"
+        logger.error(msg)
+        raise OperationError(msg)
     if not skill_public_id:
-        logger.error("Skill public id not provided. Unsure which skill to augment.")
+        msg = "Skill public id not provided. Unsure which skill to augment."
+        logger.error(msg)
+        raise OperationError(msg)
 
     skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
     behaviour_path = skill_dir / "behaviours.py"
     config, *_overrides = load_autonolas_yaml(PackageType.SKILL, skill_dir)
 
     if config.get("author") != skill_public_id.author or config.get("name") != skill_public_id.name:
-        logger.error(f"Skill {skill_public_id} not found in the current project.")
-        sys.exit(1)
+        msg = f"Skill {skill_public_id} not found in the current project."
+        logger.error(msg)
+        raise OperationError(msg)
 
     if behaviour_path.exists():
         logger.error(f"Behaviours file already exists for skill {skill_public_id}.")
         if not force:
-            sys.exit(1)
-        else:
-            try:
-                if behaviour_path.is_file():
-                    behaviour_path.unlink()
-                elif behaviour_path.is_dir():
-                    shutil.rmtree(behaviour_path)
-                logger.info(f"Removed {behaviour_path} successfully.")
-            except OSError as e:
-                msg = f"Failed to remove {behaviour_path}: {e}"
-                click.secho(msg, fg="red")
-                raise OperationError(msg) from e
+            raise OperationError(msg)
+        try:
+            behaviour_path.unlink()
+            logger.info(f"Removed {behaviour_path} successfully.")
+        except OSError as e:
+            msg = f"Failed to remove {behaviour_path}: {e}"
+            logger.exception(msg)
+            raise OperationError(msg) from e
 
     logger.info("Augmenting skill with a new handler.")
     scaffolder = BehaviourScaffolder(
