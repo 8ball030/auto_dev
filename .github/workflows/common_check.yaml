@@ -105,5 +105,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh auth login --with-token <<< $GITHUB_TOKEN
           poetry run adev release --auto-approve
