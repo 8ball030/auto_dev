@@ -201,7 +201,7 @@ class ProdAgentRunner(AgentRunner):
         env_vars = self.generate_env_vars()
 
         self.execute_command(
-            f"autonomy deploy build {self.keysfile} --aev --o abci_build",
+            f"autonomy deploy build {self.keysfile} --o abci_build",
             env_vars=env_vars,
         )
 
