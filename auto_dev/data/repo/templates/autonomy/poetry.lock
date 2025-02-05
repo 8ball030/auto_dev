@@ -268,13 +268,13 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.105"
+version = "0.2.107"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
 python-versions = "<=3.12,>=3.10"
 files = [
-    {file = "autonomy_dev-0.2.105-py3-none-any.whl", hash = "sha256:a28597c65cbe69cb2559d26e86a08e3a6e7388e07c441242759656b7be1602a3"},
-    {file = "autonomy_dev-0.2.105.tar.gz", hash = "sha256:9601f68e41008ee091fbc7c856e3e82eb0e34612695ad31f27f873ee3d3a991f"},
+    {file = "autonomy_dev-0.2.107-py3-none-any.whl", hash = "sha256:5c6d6bd7094ba2e5b6edd097acb3fe2919b3a4dd6d7885ec831a336963c9bad1"},
+    {file = "autonomy_dev-0.2.107.tar.gz", hash = "sha256:d25d7abc9fcc9756b5636dacd84feed790f4379015ddef75e4df453b410e4316"},
 ]
 
 [package.dependencies]
@@ -306,14 +306,14 @@ requests = "2.28.1"
 rich-click = ">=1.8.2,<2.0.0"
 ruff = {version = ">=0.5.7,<0.6.0", optional = true, markers = "extra == \"all\""}
 setuptools = {version = ">=75.8.0,<76.0.0", optional = true, markers = "extra == \"all\""}
-tbump = {version = ">=6.11.0,<7.0.0", optional = true, markers = "extra == \"all\" or extra == \"dev\""}
+tbump = {version = ">=6.11.0,<7.0.0", optional = true, markers = "extra == \"all\""}
+toml = "0.10.2"
 tomte = {version = "0.2.17", extras = ["black", "cli", "ledgers", "tests"]}
 typing_extensions = ">=3.10.0.2"
 web3 = ">=6.0.0,<7.0.0"
 
 [package.extras]
 all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.63.0)", "open-aea-ledger-cosmos (==1.63.0)", "open-aea-ledger-ethereum (==1.63.0)", "open-aea-ledger-solana (==1.63.0)", "open-autonomy (==0.19.1)", "pydantic (>=2.8.2,<3.0.0)", "pydoclint[all] (>=0.6.0,<0.7.0)", "ruff (>=0.5.7,<0.6.0)", "setuptools (>=75.8.0,<76.0.0)", "tbump (>=6.11.0,<7.0.0)"]
-dev = ["tbump (>=6.11.0,<7.0.0)", "toml (==0.10.2)"]
 
 [[package]]
 name = "backoff"
@@ -4479,4 +4479,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<=3.12"
-content-hash = "03eb13619d0891745ff2768ecc0910f8832ca2047755fd8eaf87c7a4076aa2ea"
+content-hash = "73934fb66e232030533895da390322cbc505a17649e0f2fab20e0144cc4ccf4a"
