@@ -100,15 +100,6 @@ all = [
   "open-aea-ledger-solana",
   "open-aea-ledger-cosmos",
 ]
-dev = ["tox", "pre-commit", "virtualenv", "pip", "twine", "toml", "tbump"]
-doc = [
-  "mkdocs",
-  "mkdocs-include-markdown-plugin",
-  "mkdocs-material",
-  "mkdocstrings",
-  "mkdocs-material-extensions",
-  "mkdocs-autorefs",
-]
 
 [tool.poetry.scripts]
 adev = "auto_dev.cli:cli"
