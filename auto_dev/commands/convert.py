@@ -1,5 +1,6 @@
 """Command."""
 
+import sys
 import shutil
 from pathlib import Path
 
@@ -76,11 +77,13 @@ class ConvertCliTool(BasePackageScaffolder):
         if not self.service_public_id:
             msg = "Service public id is required."
             raise UserInputError(msg)
-        if not self.agent_runner.agent_dir.exists():
-            msg = f"Agent directory {self.agent_runner.agent_dir} does not exist."
+        if not self.agent_runner.agent_package_path.exists():
+            msg = f"Agent directory {self.agent_runner.agent_package_path} does not exist."
             raise UserInputError(msg)
 
-        agent_config, *_ = load_autonolas_yaml(package_type=PackageType.AGENT, directory=self.agent_runner.agent_dir)
+        agent_config, *_ = load_autonolas_yaml(
+            package_type=PackageType.AGENT, directory=self.agent_runner.agent_package_path
+        )
         if self.agent_public_id.author != agent_config["author"]:
             msg = (
                 f"Author {self.agent_public_id.author} does not match the author in the agent: {agent_config['author']}"
@@ -93,7 +96,7 @@ class ConvertCliTool(BasePackageScaffolder):
             force,
         )
         agent_config, *overrides = load_autonolas_yaml(
-            package_type=PackageType.AGENT, directory=self.agent_runner.agent_dir
+            package_type=PackageType.AGENT, directory=self.agent_runner.agent_package_path
         )
         self.create_service(agent_config, overrides, number_of_agents)
         return True
@@ -171,6 +174,10 @@ def agent_to_service(
         adev convert agent-to-service author/some_agent author/some_finished_service
 
     """
+    for public_id in [agent_public_id, service_public_id]:
+        if Path(public_id.name).exists() and not force:
+            logger.error(f"Conversion directory `{public_id.name}` already exists. Please remove it before converting.")
+            sys.exit(1)
     service_public_id = PublicId(
         author=service_public_id.author,
         name=service_public_id.name,
