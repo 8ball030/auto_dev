@@ -24,10 +24,7 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
 
 ## Features
 
-- Scaffolding of new repositories
-- Scaffolding of new agents
-- Scaffolding of new protocols
-- Scaffolding of new contracts
+- Scaffolding of new repositories, agent, protocols, contracts, connections, skills.
 - Linting and formatting tools
 - Dependency management tools
 - Test suite scaffolding
