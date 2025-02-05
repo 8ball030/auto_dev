@@ -5,7 +5,7 @@ auto_dev/base.py                      60     48    20%   3-48, 65-83, 89-90, 95-
 auto_dev/check_dependencies.py       229    229     0%   26-457
 auto_dev/cli.py                        4      4     0%   3-9
 auto_dev/cli_executor.py              71     71     0%   8-112
-auto_dev/constants.py                 58     58     0%   3-166
+auto_dev/constants.py                 58     58     0%   3-126
 auto_dev/enums.py                     40     40     0%   3-62
 auto_dev/exceptions.py                10     10     0%   4-40
 auto_dev/fmt.py                       62     62     0%   3-115
@@ -13,8 +13,8 @@ auto_dev/lint.py                      15     15     0%   3-82
 auto_dev/local_fork.py                52     52     0%   3-95
 auto_dev/scaffolder.py                19     19     0%   3-53
 auto_dev/test.py                      15     15     0%   3-63
-auto_dev/utils.py                    286    255    11%   3-41, 54-57, 72, 76, 101, 113-114, 118, 122-321, 325-329, 336-368, 374-496
-auto_dev/workflow_manager.py         260    260     0%   5-408
+auto_dev/utils.py                    286    267     7%   3-41, 54-57, 72, 76, 101-343, 348, 353-496
+auto_dev/workflow_manager.py         266    266     0%   5-418
 docs/__init__.py                       0      0   100%
 docs/hooks.py                         35     35     0%   3-75
 scripts/__init__.py                    0      0   100%
@@ -22,4 +22,4 @@ scripts/generate_command_docs.py     113    113     0%   8-267
 site/__init__.py                       0      0   100%
 site/hooks.py                         35     35     0%   3-75
 ----------------------------------------------------------------
-TOTAL                               1364   1321     3%
+TOTAL                               1370   1339     2%
