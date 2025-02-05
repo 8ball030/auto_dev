@@ -13,8 +13,8 @@ from aea.configurations.constants import DEFAULT_SKILL_CONFIG_FILE
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
-from auto_dev.utils import get_logger, write_to_file, read_from_file, load_autonolas_yaml
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.utils import get_logger, write_to_file, read_from_file, snake_to_camel, load_autonolas_yaml
+from auto_dev.constants import DEFAULT_ENCODING, FSM_END_CLASS_NAME
 from auto_dev.exceptions import OperationError
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.behaviours.scaffolder import BehaviourScaffolder
@@ -484,10 +484,20 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
     output = scaffolder.scaffold()
     logger.info(f"Skill scaffolded: {output}")
     write_to_file(behaviour_path, output, FileType.PYTHON)
+    class_name = f"{snake_to_camel(scaffolder.fsm_spec.label).capitalize()}{FSM_END_CLASS_NAME}"
+    skill_yaml = read_from_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, FileType.YAML)
+    if "behaviours" not in skill_yaml:
+        skill_yaml["behaviours"] = {}
+    skill_yaml["behaviours"]["main"] = {
+        "args": {},
+        "class_name": class_name,
+    }
+    write_to_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, skill_yaml, FileType.YAML)
     logger.info(f"Skill.yaml updated: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
     package_manager = PackageManager(verbose=verbose)
     package_manager.fingerprint_component(PackageType.SKILL, skill_public_id)
     package_manager.publish_agent(force=True)
+    logger.info(f"Skill successfully augmented: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
 
 
 if __name__ == "__main__":
