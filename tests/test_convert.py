@@ -3,13 +3,13 @@
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 from aea.configurations.base import PublicId
 from aea.configurations.constants import PACKAGES, SERVICES
 
 from auto_dev.constants import DEFAULT_AUTHOR, DEFAULT_PUBLIC_ID, DEFAULT_AGENT_NAME
 from auto_dev.exceptions import UserInputError
-from auto_dev.commands.convert import CONVERSION_COMPLETE_MSG, ConvertCliTool, convert
+from auto_dev.commands.convert import CONVERSION_COMPLETE_MSG, ConvertCliTool
+from auto_dev.workflow_manager import Task
 
 
 @pytest.mark.parametrize(
@@ -17,7 +17,7 @@ from auto_dev.commands.convert import CONVERSION_COMPLETE_MSG, ConvertCliTool, c
     [
         (DEFAULT_PUBLIC_ID, DEFAULT_PUBLIC_ID),
         (DEFAULT_PUBLIC_ID, PublicId.from_str("author/service")),
-        (DEFAULT_PUBLIC_ID, PublicId.from_str("jim/jones"))
+        (DEFAULT_PUBLIC_ID, PublicId.from_str("jim/jones")),
     ],
 )
 def test_convert_agent_to_service(dummy_agent_tim, agent_public_id, service_public_id, test_packages_filesystem):
@@ -26,15 +26,14 @@ def test_convert_agent_to_service(dummy_agent_tim, agent_public_id, service_publ
     assert test_packages_filesystem, "Test packages filesystem not created."
     convert = ConvertCliTool(agent_public_id, service_public_id)
     result = convert.generate()
-    output_public_id = PublicId.from_str(service_public_id)
-    assert (Path(PACKAGES) / output_public_id.author / SERVICES / output_public_id.name).exists()
+    assert (Path(PACKAGES) / service_public_id.author / SERVICES / service_public_id.name).exists()
     assert result
 
 
 @pytest.mark.parametrize(
     ("agent_public_id", "service_public_id"),
     [
-        (str(DEFAULT_PUBLIC_ID), str(DEFAULT_PUBLIC_ID)),
+        (DEFAULT_PUBLIC_ID, DEFAULT_PUBLIC_ID),
     ],
 )
 def test_force(dummy_agent_tim, agent_public_id, service_public_id, test_packages_filesystem):
@@ -43,8 +42,7 @@ def test_force(dummy_agent_tim, agent_public_id, service_public_id, test_package
     assert test_packages_filesystem, "Test packages filesystem not created."
     convert = ConvertCliTool(agent_public_id, service_public_id)
     result = convert.generate()
-    output_public_id = PublicId.from_str(service_public_id)
-    assert (Path(PACKAGES) / output_public_id.author / SERVICES / output_public_id.name).exists()
+    assert (Path(PACKAGES) / service_public_id.author / SERVICES / service_public_id.name).exists()
     assert result
     # Test force
     convert = ConvertCliTool(agent_public_id, service_public_id)
@@ -56,9 +54,9 @@ def test_force(dummy_agent_tim, agent_public_id, service_public_id, test_package
 @pytest.mark.parametrize(
     ("agent_public_id", "service_public_id"),
     [
-        (None, str(DEFAULT_PUBLIC_ID)),
-        (str(DEFAULT_PUBLIC_ID), None),
-        ("a1" + str(DEFAULT_PUBLIC_ID), str(DEFAULT_PUBLIC_ID)),
+        (None, DEFAULT_PUBLIC_ID),
+        (DEFAULT_PUBLIC_ID, None),
+        (PublicId.from_str("a1" + str(DEFAULT_PUBLIC_ID)), DEFAULT_PUBLIC_ID),
     ],
 )
 def test_convert_agent_to_service_fails(dummy_agent_tim, agent_public_id, service_public_id, test_packages_filesystem):
@@ -72,7 +70,7 @@ def test_convert_agent_to_service_fails(dummy_agent_tim, agent_public_id, servic
 @pytest.mark.parametrize(
     ("agent_public_id", "service_public_id", "number_of_agents", "force"),
     [
-        (str(DEFAULT_PUBLIC_ID), str(DEFAULT_PUBLIC_ID), 1, False),
+        (DEFAULT_PUBLIC_ID, DEFAULT_PUBLIC_ID, 1, False),
     ],
 )
 def test_agent_to_service(
@@ -83,15 +81,17 @@ def test_agent_to_service(
     assert test_packages_filesystem, "Test packages filesystem not created."
 
     cmd = [
+        "adev",
+        "convert",
         "agent-to-service",
-        agent_public_id,
-        service_public_id,
+        str(agent_public_id),
+        str(service_public_id),
         f"--number_of_agents={number_of_agents}",
     ]
     if force:
         cmd.append("--force")
-    runner = CliRunner()
-    result = runner.invoke(convert, cmd)
-    assert result.exit_code == 0, f"Command failed': {result.output}"
-    assert CONVERSION_COMPLETE_MSG in result.output
+
+    task = Task(command=" ".join(cmd)).work()
+    assert not task.is_failed, task.client.output
+    assert CONVERSION_COMPLETE_MSG in task.client.output, task.client.output
     assert (Path(PACKAGES) / DEFAULT_AUTHOR / SERVICES / DEFAULT_AGENT_NAME).exists()
