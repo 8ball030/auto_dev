@@ -56,11 +56,10 @@ jobs:
           poetry install
           poetry run make docs
 
-#     - name: publish documentation
-#       uses: peaceiris/actions-gh-pages@v3
-#       with:
-#         personal_token: ${{ secrets.PERSONAL_TOKEN }}
-#         publish_dir: ./site
+      # - name: Upload artifact
+      #   uses: actions/upload-pages-artifact@v3
+      #   with:
+      #     path: site
 
       - name: Build wheels and source tarball
         run: >-
