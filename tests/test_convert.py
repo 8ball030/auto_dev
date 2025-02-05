@@ -6,7 +6,7 @@ import pytest
 from aea.configurations.base import PublicId
 from aea.configurations.constants import PACKAGES, SERVICES
 
-from auto_dev.constants import DEFAULT_AUTHOR, DEFAULT_PUBLIC_ID, DEFAULT_AGENT_NAME
+from auto_dev.constants import DEFAULT_AUTHOR, DEFAULT_PUBLIC_ID
 from auto_dev.exceptions import UserInputError
 from auto_dev.commands.convert import CONVERSION_COMPLETE_MSG, ConvertCliTool
 from auto_dev.workflow_manager import Task
@@ -91,7 +91,7 @@ def test_agent_to_service(
     if force:
         cmd.append("--force")
 
-    task = Task(command=" ".join(cmd)).work()
+    task = Task(command=" ".join(cmd), working_dir=Path(test_packages_filesystem).resolve()).work()
     assert not task.is_failed, task.client.output
     assert CONVERSION_COMPLETE_MSG in task.client.output, task.client.output
-    assert (Path(PACKAGES) / DEFAULT_AUTHOR / SERVICES / DEFAULT_AGENT_NAME).exists()
+    assert (Path(test_packages_filesystem) / PACKAGES / DEFAULT_AUTHOR / SERVICES / service_public_id.name).exists()
