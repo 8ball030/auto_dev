@@ -117,6 +117,12 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local service package", default=True)
 @click.option("--keysfile", help="Path to the private keys file.", type=click.File(), default="keys.json")
 @click.option("--number_of_agents", "-n", help="Number of agents to run.", type=int, default=1)
+@click.option(
+    "--env_file",
+    help="Path to the environment file.",
+    type=click.File(),
+    default=".env" if Path(".env").exists() else None,
+)
 @click.pass_context
 def prod(
     ctx,
@@ -126,6 +132,7 @@ def prod(
     fetch: bool,
     keysfile: click.File,
     number_of_agents: int,
+    env_file: click.File,
 ) -> None:
     """Run an agent in production mode.
 
@@ -154,6 +161,9 @@ def prod(
     if not Path(keysfile.name).exists():
         logger.error(f"Keys file not found at {keysfile.name}")
         sys.exit(1)
+    if not Path(env_file.name).exists():
+        logger.error(f"Environment file not found at {env_file.name}")
+        sys.exit(1)
 
     runner = ProdAgentRunner(
         service_public_id=service_public_id,
@@ -163,6 +173,7 @@ def prod(
         fetch=fetch,
         keysfile=Path(keysfile.name).absolute(),
         number_of_agents=number_of_agents,
+        env_file=Path(env_file.name).absolute(),
     )
     runner.run()
     logger.info("Agent run complete. 😎")
