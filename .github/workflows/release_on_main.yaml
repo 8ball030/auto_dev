@@ -16,8 +16,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'Bump to 0.2.110') # Optional condition to skip some commits
 
     permissions:
-      contents: write   # Allows modifying repository content (including workflows)
-      workflows: create # Allows creating and modifying workflows
+      contents: write   # Allows modifying repository content (including workflows
 
     steps:
       - uses: actions/checkout@v4
