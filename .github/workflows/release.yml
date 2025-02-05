@@ -53,8 +53,8 @@ jobs:
 
       - name: build documentation
         run: |
-          poetry install -E doc
-          poetry run mkdocs build
+          poetry install
+          poetry run make docs
 
 #     - name: publish documentation
 #       uses: peaceiris/actions-gh-pages@v3
