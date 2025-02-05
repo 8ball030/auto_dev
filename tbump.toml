@@ -2,7 +2,7 @@
 # github_url = "https://github.com/<user or organization>/<project>/"
 
 [version]
-current = "0.2.102"
+current = "0.2.105"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before
@@ -41,11 +41,8 @@ src = "auto_dev/data/repo/templates/autonomy/adev_config.yaml"
 [[before_commit]]
 name = "Ensure lock of generated repo"
 cmd = "bash scripts/check_generated.sh"
+[[after_push]]
+name = "Ensure lock of generated repo"
+cmd = "bash scripts/check_generated.sh"
 
   
-
-# Or run some commands after the git tag and the branch
-# have been pushed:
-#  [[after_push]]
-#  name = "publish"
-#  cmd = "./publish.sh"
