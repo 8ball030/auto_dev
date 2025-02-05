@@ -76,37 +76,3 @@ jobs:
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./coverage-report.txt
-
-  # Seperate job to run the release but not in the matrix, and only if the checks pass
-
-
-  release_on_main:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    needs: check
-    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'Bump to 0.2.110')
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 2.0.1
-          virtualenvs-create: true
-          installer-parallel: true
-
-      - name: Install Adev
-        run: |
-          make install
-
-      - name: Run release if on main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@station.codes"
-          poetry run adev release --auto-approve
