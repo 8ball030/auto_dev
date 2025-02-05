@@ -3,10 +3,11 @@ from pathlib import Path
 import sys
 import re
 import argparse
+from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 
 from auto_dev import cli
-from auto_dev.services.mech.constants.prompts import COMMENTS, COMPONENT_YAML_CONTENT, GENERATE_MECH_TOOL, INIT_CONTENT
+from auto_dev.services.mech.constants.prompts import COMMENTS, GENERATE_MECH_TOOL, INIT_CONTENT
 from auto_dev.utils import get_logger, write_to_file
 
 logger = get_logger()
@@ -73,12 +74,25 @@ def create_tool_folder(customs_path, tool_name):
     return tool_folder_path
 
 def create_component_yaml(tools_folder_path, tool_name, author_name):
-    yaml_path = os.path.join(tools_folder_path, 'component.yaml')
-    if os.path.exists(yaml_path):
+    yaml_path = tools_folder_path / "component.yaml"
+    if yaml_path.exists():
         logger.info(f"component.yaml already exists at {yaml_path}. Skipping creation.")
         return
+    
+    script_dir = Path(__file__).resolve().parent
 
-    write_to_file(os.path.join(tools_folder_path, 'component.yaml'), COMPONENT_YAML_CONTENT)
+    templates_path = script_dir / "templates"
+
+    # Load the Jinja environment and template
+    env = Environment(loader=FileSystemLoader(str(templates_path)))
+    template = env.get_template("component.yaml.j2")
+
+    # Render the template with collected variables
+    component_yaml_content = template.render(tool_name=tool_name, author_name=author_name)
+
+    # Write output to component.yaml
+    write_to_file(yaml_path, component_yaml_content)
+    logger.info(f"component.yaml created at {yaml_path}")
 
 
 def generate_and_write_tool_file(tool_folder_path, tool_name, api_file, gpt_api_key):
@@ -107,12 +121,20 @@ def generate_and_write_tool_file(tool_folder_path, tool_name, api_file, gpt_api_
         logger.error(f"Error reading the API file: {e}")
         sys.exit(1)
     # Call GPT to generate the content
+
+        # Use Jinja to load and render the template
+    templates_path = Path(__file__).resolve().parent / "templates"
+    env = Environment(loader=FileSystemLoader(str(templates_path)))
+    template = env.get_template("generate_mech_tool.py.j2")
+
+    # Render the template with collected variables
+    generated_code_prompt = template.render(tool_name=tool_name, api_logic_content=api_logic_content)
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "user", "content": GENERATE_MECH_TOOL}
+                {"role": "user", "content": generated_code_prompt}
             ]
         )
 
