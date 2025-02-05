@@ -175,7 +175,7 @@ def agent_to_service(
 
     """
     for public_id in [agent_public_id, service_public_id]:
-        if Path(public_id.name).exists():
+        if Path(public_id.name).exists() and not force:
             logger.error(f"Conversion directory `{public_id.name}` already exists. Please remove it before converting.")
             sys.exit(1)
     service_public_id = PublicId(

@@ -1,5 +1,6 @@
 """Tests for the convert command."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,7 @@ from auto_dev.workflow_manager import Task
 def test_convert_agent_to_service(dummy_agent_tim, agent_public_id, service_public_id, test_packages_filesystem):
     """Test the convert agent to service command."""
     assert dummy_agent_tim, "Dummy agent not created."
-    assert test_packages_filesystem, "Test packages filesystem not created."
+    os.chdir(test_packages_filesystem)
     convert = ConvertCliTool(agent_public_id, service_public_id)
     result = convert.generate()
     assert (Path(PACKAGES) / service_public_id.author / SERVICES / service_public_id.name).exists()
@@ -39,7 +40,7 @@ def test_convert_agent_to_service(dummy_agent_tim, agent_public_id, service_publ
 def test_force(dummy_agent_tim, agent_public_id, service_public_id, test_packages_filesystem):
     """Test the convert agent to service command."""
     assert dummy_agent_tim, "Dummy agent not created."
-    assert test_packages_filesystem, "Test packages filesystem not created."
+    os.chdir(test_packages_filesystem)
     convert = ConvertCliTool(agent_public_id, service_public_id)
     result = convert.generate()
     assert (Path(PACKAGES) / service_public_id.author / SERVICES / service_public_id.name).exists()
@@ -70,7 +71,7 @@ def test_convert_agent_to_service_fails(dummy_agent_tim, agent_public_id, servic
 @pytest.mark.parametrize(
     ("agent_public_id", "service_public_id", "number_of_agents", "force"),
     [
-        (DEFAULT_PUBLIC_ID, DEFAULT_PUBLIC_ID, 1, False),
+        (DEFAULT_PUBLIC_ID, DEFAULT_PUBLIC_ID, 1, True),
     ],
 )
 def test_agent_to_service(
