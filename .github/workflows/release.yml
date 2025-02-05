@@ -23,7 +23,7 @@ jobs:
       matrix:
         python-versions: [3.11]
         poetry-version:
-        - 1.8.4
+        - 2.0.1
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
