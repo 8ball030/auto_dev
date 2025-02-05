@@ -80,5 +80,5 @@ jobs:
       - name: Run release if on main
         if: github.ref == 'refs/heads/main'
         run: |
-          poetry run adev release
+          poetry run adev release --auto-approve
 

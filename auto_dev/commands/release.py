@@ -106,10 +106,17 @@ cli = build_cli()
     default=False,
     help="Verbose mode.",
 )
+@click.option(
+    "--auto-approve",
+    default=False,
+    is_flag=True,
+    help="Auto approve.",
+)
 @click.pass_context
 def release(
     ctx: click.Context,
     dep_path: Path,
+    auto_approve: bool = False,
     verbose: bool = False,
 ) -> None:
     r"""Release a new version of the package.
@@ -142,7 +149,7 @@ def release(
     logger = ctx.obj["LOGGER"]
     logger.info("Releasing the package... 🚀")
     releaser = Releaser(dep_path=dep_path, verbose=verbose, logger=logger)
-    if not releaser.release(auto_approve=True):
+    if not releaser.release(auto_approve=auto_approve):
         logger.error("Release failed. 😭")
         raise click.Abort
     logger.info("Done. 😎")
