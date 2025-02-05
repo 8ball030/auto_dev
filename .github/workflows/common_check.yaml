@@ -78,7 +78,7 @@ jobs:
           pytest-coverage-path: ./coverage-report.txt
 
       - name: Run release if on main
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'Bump to 0.2.110')
         run: |
           poetry run adev release --auto-approve
 

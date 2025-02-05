@@ -32,7 +32,8 @@ src = "auto_dev/data/repo/templates/autonomy/pyproject.toml.template"
 src = "auto_dev/data/repo/templates/python/pyproject.toml.template"
 [[file]]
 src = "auto_dev/data/repo/templates/autonomy/adev_config.yaml"
-
+[[file]]
+src = ".github/workflows/common_check.yaml"
 
 # You can specify a list of commands to
 # run after the files have been patched
