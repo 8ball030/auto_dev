@@ -8,13 +8,13 @@ from pathlib import Path
 
 import yaml
 import rich_click as click
-from aea.configurations.base import SKILLS, PublicId, PackageType
+from aea.configurations.base import SKILLS, PublicId, PackageId, PackageType
 from aea.configurations.constants import DEFAULT_SKILL_CONFIG_FILE
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
 from auto_dev.utils import get_logger, write_to_file, read_from_file, snake_to_camel, load_autonolas_yaml
-from auto_dev.constants import DEFAULT_ENCODING, FSM_END_CLASS_NAME
+from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH, FSM_END_CLASS_NAME
 from auto_dev.exceptions import OperationError
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.behaviours.scaffolder import BehaviourScaffolder
@@ -495,7 +495,19 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
     write_to_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, skill_yaml, FileType.YAML)
     logger.info(f"Skill.yaml updated: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
     package_manager = PackageManager(verbose=verbose)
-    package_manager.fingerprint_component(PackageType.SKILL, skill_public_id)
+    package_manager.add_to_packages(
+        dev_packages=[
+            PackageId(
+                package_type=PackageType.SKILL,
+                public_id=PublicId(
+                    author=skill_public_id.author,
+                    name=skill_public_id.name,
+                    package_hash=DEFAULT_IPFS_HASH,
+                ),
+            )
+        ],
+        third_party_packages=[],
+    )
     package_manager.publish_agent(force=True)
     logger.info(f"Skill successfully augmented: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
 

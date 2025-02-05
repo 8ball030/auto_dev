@@ -4,13 +4,12 @@ import json
 import shutil
 from pathlib import Path
 
-from aea.cli.eject import fingerprint_item, get_package_path
-from aea.cli.utils.context import Context
-from aea.configurations.base import PublicId
+from aea.cli.eject import get_package_path
+from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
 from aea.configurations.constants import PACKAGES, ITEM_TYPE_TO_PLURAL, DEFAULT_AEA_CONFIG_FILE
 from aea.configurations.data_types import PackageId, PackageType
 
-from auto_dev.utils import change_dir, get_logger, update_author, load_autonolas_yaml
+from auto_dev.utils import get_logger, update_author, load_autonolas_yaml
 from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH
 from auto_dev.exceptions import OperationError
 from auto_dev.workflow_manager import Task
@@ -131,6 +130,7 @@ class PackageManager:
             if path.exists():
                 return path.parent
         raise OperationError(PACKAGES_NOT_FOUND)
+
     def _run_publish_commands(self) -> None:
         """Run the AEA publish commands.
 
@@ -325,16 +325,12 @@ class PackageManager:
     ) -> None:
         """Publish an agent.
 
-        Required Arguments:
-
+        Args:
+        ----
             force: If True, remove existing package before publishing.
             new_public_id: Optional new public ID to publish as.
 
-        Optional Arguments:
-
-            new_public_id: Optional new public ID to publish as.
-
-        Raises
+        Raises:
         ------
             OperationError: if the command fails.
 
@@ -344,50 +340,3 @@ class PackageManager:
             raise OperationError(msg)
         # Publish from agent directory (we're already there)
         self._publish_internal(force, new_public_id=new_public_id)
-
-        logger.debug("Agent published!")
-
-    def fingerprint_component(self, component_type: str, new_public_id: PublicId) -> None:
-        """Fingerprint a component.
-
-        Args:
-        ----
-            component_type: Type of component to fingerprint.
-            new_public_id: Public ID of the component to fingerprint.
-
-        """
-        ctx = Context(
-            cwd=Path.cwd(),
-            verbosity="info",
-            registry_path=Path.cwd() / "vendor",
-        )
-        fingerprint_item(ctx, str(component_type), new_public_id)
-
-    def publish_component(
-        self,
-        component_type: str,
-        force: bool = False,
-        new_public_id: PublicId | None = None,
-    ) -> None:
-        """Publish a component.
-
-        Args:
-        ----
-            component_type: Type of component to publish (e.g., 'skill', 'connection', etc.)
-            force: If True, remove existing package before publishing.
-            new_public_id: Optional new public ID to publish as.
-
-        Raises:
-        ------
-            OperationError: if the command fails.
-
-        """
-        # Initialize registry in workspace root
-        workspace_root = self._get_workspace_root()
-        with change_dir(workspace_root):
-            self.ensure_local_registry()
-
-        # Publish from component directory
-        self._publish_internal(force, new_public_id=new_public_id, component_type=component_type)
-
-        logger.debug(f"Component {component_type} published!")
