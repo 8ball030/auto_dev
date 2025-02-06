@@ -84,7 +84,7 @@ jobs:
 
     permissions:
       contents: write   # Allows modifying repository content (including workflows
-
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
