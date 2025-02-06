@@ -85,7 +85,6 @@ jobs:
     permissions:
       contents: write   # Allows modifying repository content (including workflows
       actions: write
-      attestations: write
       checks: write
     steps:
       - uses: actions/checkout@v4
@@ -107,8 +106,6 @@ jobs:
       - name: Run release if on main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "CI"
           git config --global user.email "ci@station.codes"
