@@ -86,6 +86,7 @@ jobs:
       contents: write   # Allows modifying repository content (including workflows
       actions: write
       attestations: write
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
