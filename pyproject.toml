@@ -73,7 +73,7 @@ disutils = "^1.4.32.post2"
 setuptools = "^75.8.0"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 responses = "^0.23.1"
 mkdocs = "^1.6.0"
 mkdocs-include-markdown-plugin = "^7.0.0"

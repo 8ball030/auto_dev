@@ -80,7 +80,7 @@ jobs:
   release_on_main:
     runs-on: ubuntu-latest
     # needs: check   # Ensures this job only runs after the "check" job is completed successfully
-    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'Bump to 0.2.110') # Optional condition to skip some commits
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'Bump to ') # Optional condition to skip some commits
 
     permissions:
       contents: write   # Allows modifying repository content (including workflows

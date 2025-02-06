@@ -27,7 +27,7 @@ open-aea-test-autonomy = "==0.19.1"
 open-autonomy = "==0.19.1"
 autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.110"}}
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
