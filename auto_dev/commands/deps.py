@@ -239,7 +239,7 @@ class GitDependency(Dependency):
         res = requests.get(tag_url, headers=self.headers, timeout=DEFAULT_TIMEOUT)
         if res.status_code != 200:
             if res.status_code == 403:
-                msg = "Error: Rate limit exceeded. Please add a github token."
+                msg = "Error: Rate limit exceeded. Please add a github token.", res.content
                 raise AuthenticationError(msg)
             msg = f"Error: {res.status_code} {res.text}"
             raise NetworkTimeoutError(msg)
