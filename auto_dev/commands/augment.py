@@ -8,11 +8,14 @@ from pathlib import Path
 import yaml
 import rich_click as click
 from aea.configurations.base import SKILLS, PublicId, PackageType
+from aea.configurations.constants import DEFAULT_SKILL_CONFIG_FILE
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
-from auto_dev.utils import get_logger, write_to_file, read_from_file, load_autonolas_yaml
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.utils import get_logger, write_to_file, read_from_file, snake_to_camel, load_autonolas_yaml
+from auto_dev.constants import DEFAULT_ENCODING, FSM_END_CLASS_NAME
+from auto_dev.exceptions import OperationError
+from auto_dev.workflow_manager import Task
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 
@@ -413,7 +416,11 @@ def customs(ctx, component_type, auto_confirm, use_daos):
 @click.argument("skill_public_id", type=PublicId.from_str, required=True)
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
 @click.option("--verbose", is_flag=True, default=False, help="Verbose output")
-def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool):
+@click.option("--force", is_flag=True, default=False, help="Force the augmentation")
+@click.option("--publish/--no-publish", is_flag=True, default=False, help="Publish the skill to the registry")
+def skill_from_fsm(
+    spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool, force: bool, publish: bool
+):
     """Augment a skill with a new handler.
 
     Required Parameters:
@@ -427,33 +434,33 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
         auto_confirm (--auto-confirm): Auto confirm the augmentation
 
         verbose (--verbose): Verbose output
-
+        force (--force): Force the augmentation
     Usage:
 
         adev augment skill_from_fsm fsm_spec.yaml author/skill_name:0.1.0
 
     """
 
-    if not Path(spec_file).exists():
-        logger.error(f"Specification file for FSM not found: {spec_file}")
-        sys.exit(1)
     if not Path(AEA_CONFIG).exists():
-        logger.error(f"File {AEA_CONFIG} not found")
+        msg = f"File {AEA_CONFIG} not found. Please run this command from an agent."
+        logger.error(msg)
         sys.exit(1)
-    if not skill_public_id:
-        logger.error("Skill public id not provided. Unsure which skill to augment.")
 
     skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
+    behaviour_path = skill_dir / "behaviours.py"
     config, *_overrides = load_autonolas_yaml(PackageType.SKILL, skill_dir)
 
     if config.get("author") != skill_public_id.author or config.get("name") != skill_public_id.name:
-        logger.error(f"Skill {skill_public_id} not found in the current project.")
-        sys.exit(1)
+        msg = f"Skill {skill_public_id} not found in the current project."
+        logger.error(msg)
+        raise OperationError(msg)
 
-    behaviour_path = skill_dir / "behaviours.py"
     if behaviour_path.exists():
         logger.error(f"Behaviours file already exists for skill {skill_public_id}.")
-        sys.exit(1)
+        if not force:
+            logger.error("Use --force to overwrite.")
+            sys.exit(1)
+        behaviour_path.unlink()
 
     logger.info("Augmenting skill with a new handler.")
     scaffolder = BehaviourScaffolder(
@@ -465,9 +472,30 @@ def skill_from_fsm(spec_file: str, skill_public_id: PublicId, auto_confirm: bool
     )
 
     output = scaffolder.scaffold()
-    logger.info(f"Skill scaffolded: {output}")
+    write_to_file(behaviour_path, output, FileType.PYTHON)
+    class_name = f"{snake_to_camel(scaffolder.fsm_spec.label).capitalize()}{FSM_END_CLASS_NAME}"
+    skill_yaml = read_from_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, FileType.YAML)
+    if "behaviours" not in skill_yaml:
+        skill_yaml["behaviours"] = {}
+    skill_yaml["behaviours"]["main"] = {
+        "args": {},
+        "class_name": class_name,
+    }
+    write_to_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, skill_yaml, FileType.YAML)
+    logger.info(f"Skill.yaml updated: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
+    logger.info(f"Skill successfully augmented: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
 
-    # We now need to update the behvaiours.py file with the new handler
+    if publish:
+        logger.info("Publishing agent and skill to the registry.")
+        config, *_overrides = load_autonolas_yaml(PackageType.AGENT, Path())
+        agent_public_id = PublicId.from_str(f"{config['author']}/{config['agent_name']}:{config['version']}")
+        task = Task(command=f"adev publish {agent_public_id}").work()
+
+        if task.is_failed:
+            logger.error(f"Error publishing skill: {task.output}")
+            sys.exit(1)
+        logger.info(f"Skill published successfully! : {skill_public_id}")
+        logger.info(f"Agent published successfully! : {agent_public_id}")
 
 
 if __name__ == "__main__":

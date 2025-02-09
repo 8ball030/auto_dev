@@ -9,6 +9,7 @@ import yaml
 
 from auto_dev.utils import camel_to_snake
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.exceptions import UserInputError
 
 
 # we define our base template
@@ -135,12 +136,15 @@ class FsmSpec:
                 states.append(items[0])
             else:
                 if len(items) != 3:
-                    msg = f"Invalid line {line}"
+                    msg = f"Invalid line {line} in graph! We expect 3 items. however, we got {len(items)}"
                     raise ValueError(msg)
                 start_state, _transition, end_state = items
-
                 states.extend((start_state, end_state))
-                transition = _transition.split("|")[1]
+                try:
+                    transition = _transition.split("|")[1]
+                except IndexError as error:
+                    msg = f"Invalid line {line}"
+                    raise UserInputError(msg) from error
                 transitions.append(((start_state, transition), end_state))
         # we need to create the alphabet_in
         alphabet_in = sorted({transition[1].upper() for transition, _ in transitions})  # pylint: disable=R1718

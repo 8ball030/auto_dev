@@ -14,6 +14,7 @@ DEFAULT_TIMEOUT = 10
 DEFAULT_AUTHOR = "author"
 DEFAULT_AGENT_NAME = "agent"
 DEFAULT_PUBLIC_ID = PublicId.from_str(f"{DEFAULT_AUTHOR}/{DEFAULT_AGENT_NAME}")
+FSM_END_CLASS_NAME = "FsmBehaviour"
 # package directory
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_RUFF_CONFIG = Path(PACKAGE_DIR) / "data" / "ruff.toml"
