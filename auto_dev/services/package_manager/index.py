@@ -130,6 +130,7 @@ class PackageManager:
             if path.exists():
                 return path.parent
         raise OperationError(PACKAGES_NOT_FOUND)
+
     def _run_publish_commands(self) -> None:
         """Run the AEA publish commands.
 
@@ -254,7 +255,12 @@ class PackageManager:
             if key in data["dev"] and not overwrite:
                 logger.warning(f"Package already exists in dev packages: {key} skipping.")
                 continue
-            data["dev"][key] = package_id.package_hash
+            try:
+                data["dev"][key] = package_id.package_hash
+            except ValueError as e:
+                logger.exception(f"Error adding package: {e}")
+                msg = f"Error adding package {key} to registry. {package_id}"
+                raise OperationError(msg) from e
         for package_id in third_party_packages:
             key = package_id.to_uri_path
             if key in data["third_party"] and not overwrite:
