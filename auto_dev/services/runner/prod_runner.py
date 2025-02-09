@@ -10,6 +10,7 @@ from contextlib import contextmanager, redirect_stdout
 from dataclasses import dataclass
 
 import rich
+from dotenv import dotenv_values
 from aea.skills.base import PublicId
 from aea.cli.push_all import push_all_packages
 from aea.configurations.base import PackageType
@@ -17,11 +18,11 @@ from aea.cli.registry.settings import REGISTRY_REMOTE
 from aea.configurations.constants import PACKAGES, SERVICES, DEFAULT_SERVICE_CONFIG_FILE
 from autonomy.configurations.base import PACKAGE_TYPE_TO_CONFIG_CLASS
 
-from auto_dev.utils import change_dir, load_autonolas_yaml
+from auto_dev.utils import FileType, change_dir, write_to_file, load_autonolas_yaml
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
-from auto_dev.services.runner.base import AgentRunner
 from auto_dev.workflow_manager import Task
+from auto_dev.services.runner.base import AgentRunner
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -48,6 +49,7 @@ class ProdAgentRunner(AgentRunner):
     fetch: bool = False
     keysfile: Path = "keys.json"
     number_of_agents: int = 1
+    env_file: Path = ".env"
 
     def run(self) -> None:
         """Run the agent."""
@@ -145,6 +147,12 @@ class ProdAgentRunner(AgentRunner):
         if not self.keysfile.is_file():
             self.logger.error(f"Keys file {self.keysfile} is not a file.")
             sys.exit(1)
+        if not self.env_file.exists():
+            self.logger.error(f"Environment file {self.env_file} not found.")
+            sys.exit(1)
+        if not self.env_file.is_file():
+            self.logger.error(f"Environment file {self.env_file} is not a file.")
+            sys.exit(1)
 
         available_keys = json.loads(self.keysfile.read_text())
         if len(available_keys) < 1:
@@ -191,10 +199,21 @@ class ProdAgentRunner(AgentRunner):
         """Build the deployment."""
         self.logger.info("Building the deployment...")
         env_vars = self.generate_env_vars()
+
         self.execute_command(
             f"autonomy deploy build {self.keysfile} --o abci_build",
             env_vars=env_vars,
         )
+
+        # Note: autonomy deploy build doesn't write the env vars to the agent env files, even with --aev.
+        # So we do it manually here.
+        for agent_id in range(self.number_of_agents):
+            agent_env_path = Path(f"abci_build/agent_{agent_id}.env")
+            if agent_env_path.exists():
+                existing_env = dotenv_values(agent_env_path)
+                agent_env_vars = {**env_vars, **existing_env}
+                write_to_file(agent_env_path, agent_env_vars, file_type=FileType.ENV)
+
         self.logger.info("Deployment built successfully. 🎉")
 
     def manage_keys(
@@ -206,8 +225,10 @@ class ProdAgentRunner(AgentRunner):
 
     def generate_env_vars(self) -> dict:
         """Generate the environment variables for the deployment."""
+        env_vars = dotenv_values(self.env_file)
         return {
             "ALL_PARTICIPANTS": json.dumps(self.all_participants),
+            **env_vars,
         }
 
     def execute_agent(
@@ -220,7 +241,8 @@ class ProdAgentRunner(AgentRunner):
 
         task = Task(command="docker compose up -d --remove-orphans", working_dir="abci_build").work()
         if task.is_failed:
-            raise RuntimeError(f"Agent execution failed. {task.client.output}")
+            msg = f"Agent execution failed. {task.client.output}"
+            raise RuntimeError(msg)
         self.logger.info("Agent execution complete. 😎")
 
     def execute_command(self, command: str, verbose=None, env_vars=None, spinner=False) -> None:

@@ -10,6 +10,7 @@ class FileType(Enum):
     JSON = "json"
     TEXT = "txt"
     PYTHON = "py"
+    ENV = "env"
 
 
 class FileOperation(Enum):

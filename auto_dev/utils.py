@@ -357,6 +357,9 @@ def write_to_file(file_path: str, content: Any, file_type: FileType = FileType.T
                 json.dump(content, f, **json_kwargs)
             elif file_type is FileType.PYTHON:
                 f.write(content)
+            elif file_type is FileType.ENV:
+                for key, value in content.items():
+                    f.write(f"{key}={value}\n")
             else:
                 msg = f"Invalid file_type {file_type}, must be one of {list(FileType)}."
                 raise ValueError(msg)
