@@ -14,6 +14,7 @@ nav:
   - augment: commands/augment.md
   - convert: commands/convert.md
   - create: commands/create.md
+  - create_from_fsm: commands/create_from_fsm.md
   - deps: commands/deps.md
   - eject: commands/eject.md
   - fmt: commands/fmt.md

@@ -27,6 +27,11 @@ JINJA_TEMPLATE_FOLDER = os.path.join(
     "data",
     "templates",
 )
+WORKFLOWS_FOLDER = os.path.join(
+    AUTO_DEV_FOLDER,
+    "data",
+    "workflows",
+)
 
 DOCKERCOMPOSE_TEMPLATE_FOLDER = os.path.join(
     AUTO_DEV_FOLDER,

@@ -27,6 +27,7 @@ from auto_dev.cli_executor import CommandExecutor
 
 
 VAR_REGEX = r"\${task.\d+\.client\.stdout}"
+KWARG_REGEX = r"\${kwargs.(?P<key>\w+)}"
 
 
 def get_logger(name: str = "workflow_manager", log_level: str = "INFO"):
@@ -61,6 +62,7 @@ class Task:
     logger = None
     pause_after: int = 0
     shell: bool = False
+    continue_on_error: bool = False
 
     is_done: bool = False
     is_failed: bool = False
@@ -87,6 +89,7 @@ class Workflow:
     name: str = None
     description: str = None
     tasks: list[Task] = field(default_factory=list)
+    kwargs: dict = field(default_factory=dict)
 
     is_done: bool = False
     is_running: bool = False
@@ -101,6 +104,14 @@ class Workflow:
         """Post initialization steps."""
         if not self.id:
             self.id = uuid4().hex
+
+    @staticmethod
+    def from_file(file_path: str):
+        """Load the workflow from yaml."""
+        with open(file_path, encoding="utf-8") as file:
+            raw_data = yaml.safe_load(file)
+        raw_data["tasks"] = [Task(**task) for task in raw_data["tasks"]]
+        return Workflow(**raw_data)
 
 
 class WorkflowManager:
@@ -180,20 +191,44 @@ class WorkflowManager:
 
         self.logger.clear()
         task.logger = self.logger
-        task.command = self.check_if_command_has_vars(task, workflow_id)
+
+        for attr in ["command", "working_dir"]:
+            if not getattr(task, attr):
+                continue
+            current_value = getattr(task, attr)
+            new_value = self.check_if_command_has_kwarg_vars(current_value, workflow_id)
+            new_value = self.check_if_command_has_ref_vars(new_value, workflow_id)
+            setattr(task, attr, new_value)
+
         task.process_id = self.task_manager.enqueue_task(task.work)
         return task.process_id
 
-    def check_if_command_has_vars(self, task: Task, workflow_id: str) -> str:
+    def check_if_command_has_ref_vars(self, string: str, workflow_id: str) -> str:
         """Check if a command has variables."""
-        matches = re.findall(VAR_REGEX, task.command)
-        command = task.command
+        matches = re.findall(VAR_REGEX, string)
         if matches and len(matches) > 0:
             for match in matches:
                 task_id = str(match.split(".")[1])
                 referenced_task = self.get_task_from_workflow(workflow_id, task_id)
-                command = task.command.replace(match, "\n".join(referenced_task.client.stdout))
-        return command
+                string = string.replace(match, "\n".join(referenced_task.client.stdout))
+        return string
+
+    def check_if_command_has_kwarg_vars(self, string: str, workflow_id: str) -> str:
+        """Check if a command has variables."""
+        wf = self.get_workflow(workflow_id)
+        wf_kwargs = getattr(wf, "kwargs", {})
+        # Find all matches
+        matches = re.findall(KWARG_REGEX, string)
+
+        if matches and len(matches) > 0:
+            for match in matches:
+                key = match
+                if key not in wf_kwargs:
+                    msg = f"Key {key} not found in kwargs provided to wf"
+                    raise UserInputError(msg)
+                match_pattern = "${kwargs." + key + "}"  # Form the full match string
+                string = string.replace(match_pattern, str(wf_kwargs[key]))
+        return string
 
     def get_task(self, task_id: str) -> ApplyResult:
         """Get a task by its id."""
@@ -301,7 +336,7 @@ class WorkflowManager:
                 if status == "Failed":
                     self.logger.error(f"Task {task.id} failed.")
                     self.logger.error(f"Task {task.client.output}")
-                    if exit_on_failure:
+                    if exit_on_failure and not task.continue_on_error:
                         sys.exit(1)
 
         return True
