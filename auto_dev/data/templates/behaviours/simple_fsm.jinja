@@ -76,7 +76,7 @@ class {{class_name}}FsmBehaviour(FSMBehaviour):
         super().__init__(**kwargs)
         self.register_state({{class_name}}States.{{default_start_state.upper()}}.value, {{default_start_state}}(**kwargs), True)
         {% for state in final_states%}
-        self.register_state({{class_name}}States({{state.lower()}}.value), {{state}}(**kwargs)){% endfor %}
+        self.register_state({{class_name}}States.{{state.upper()}}.value, {{state}}(**kwargs)){% endfor %}
         {% if remaining_states %}
         {% for state in remaining_states%}
         self.register_state({{class_name}}States.{{state.upper()}}.value, {{state}}(**kwargs)) {% endfor %}{% endif %}

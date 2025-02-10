@@ -1,22 +1,45 @@
 id: '1'
 name: workflow_create_new_agent_from_fsm
 description: A workflow to create a new agent from a finite state machine
+kwargs:
+  new_author: author_2
+  new_agent: agent_2
+  new_skill: simple_fsm_2
+  fsm_spec_path: auto_dev/data/fsm/samples/fsm_specification.yaml
 tasks:
+
+  - id: '0'
+    name: Verify packages
+    description: Check that the packages registry is up to date.
+    command: autonomy packages init
+    continue_on_error: true
 
   - id: '1'
     name: create_new_agent
     description: Use Adev to make a new agent.
-    command: adev create author/agent -t eightballer/base --no-publish --no-clean-up --force
+    command: adev create ${kwargs.new_author}/${kwargs.new_agent} -t eightballer/base --no-publish --no-clean-up --force
 
   - id: '2'
     name: Eject Metrics Skill
     description: Ejct the metrics skill from the agent to be used in the FSM.
-    command: adev eject skill eightballer/metrics author/simple_fsm
-    working_dir: agent
+    command: adev eject skill eightballer/metrics ${kwargs.new_author}/${kwargs.new_skill}
+    working_dir: agent_2
   
   - id: '3'
     name: Add FSM to Agent
-    description: Lint 
-    command: adev augment skill --behaviour-type simple_fsm ../auto_dev/data/fsm/samples/fsm_specification.yaml
-    working_dir: agent
+    description: Add fsm to the agent.
+    command: adev augment skill-from-fsm ../${kwargs.fsm_spec_path} ${kwargs.new_author}/${kwargs.new_skill}
+    working_dir: agent_2
+
+  - id: '4'
+    name: Publish Agent
+    description: Publish the agent to the registry.
+    command: adev publish ${kwargs.new_author}/${kwargs.new_agent}
+    working_dir: agent_2
+
+  - id: '5'
+    name: Run the agent
+    description: Run the agent.
+    command: adev run dev ${kwargs.new_author}/${kwargs.new_agent} --force
+
 
