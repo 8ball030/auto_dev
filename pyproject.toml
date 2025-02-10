@@ -37,7 +37,7 @@ exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox
 python = ">=3.10,<=3.12"
 open-autonomy = "==0.19.1"
 open-aea = "==1.63.0"
-open-aea-test-autonomy = "==0.19.1"
+open-aea-test-autonomy = "==0.19.2"
 open-aea-ledger-ethereum = "==1.63.0"
 open-aea-ledger-solana = "==1.63.0"
 open-aea-ledger-cosmos = "==1.63.0"
