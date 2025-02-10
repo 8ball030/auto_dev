@@ -191,29 +191,34 @@ class WorkflowManager:
 
         self.logger.clear()
         task.logger = self.logger
-        task.command = self.check_if_command_has_ref_vars(task, workflow_id)
-        task.command = self.check_if_command_has_kwarg_vars(task, workflow_id)
+
+        for attr in ["command", "working_dir"]:
+            if not getattr(task, attr):
+                continue
+            current_value = getattr(task, attr)
+            new_value = self.check_if_command_has_kwarg_vars(current_value, workflow_id)
+            new_value = self.check_if_command_has_ref_vars(new_value, workflow_id)
+            setattr(task, attr, new_value)
+
         task.process_id = self.task_manager.enqueue_task(task.work)
         return task.process_id
 
-    def check_if_command_has_ref_vars(self, task: Task, workflow_id: str) -> str:
+    def check_if_command_has_ref_vars(self, string: str, workflow_id: str) -> str:
         """Check if a command has variables."""
-        matches = re.findall(VAR_REGEX, task.command)
-        command = task.command
+        matches = re.findall(VAR_REGEX, string)
         if matches and len(matches) > 0:
             for match in matches:
                 task_id = str(match.split(".")[1])
                 referenced_task = self.get_task_from_workflow(workflow_id, task_id)
-                command = task.command.replace(match, "\n".join(referenced_task.client.stdout))
-        return command
+                string = string.replace(match, "\n".join(referenced_task.client.stdout))
+        return string
 
-    def check_if_command_has_kwarg_vars(self, task: Task, workflow_id: str) -> str:
+    def check_if_command_has_kwarg_vars(self, string: str, workflow_id: str) -> str:
         """Check if a command has variables."""
-        command = task.command
         wf = self.get_workflow(workflow_id)
         wf_kwargs = getattr(wf, "kwargs", {})
         # Find all matches
-        matches = re.findall(KWARG_REGEX, task.command)
+        matches = re.findall(KWARG_REGEX, string)
 
         if matches and len(matches) > 0:
             for match in matches:
@@ -222,8 +227,8 @@ class WorkflowManager:
                     msg = f"Key {key} not found in kwargs provided to wf"
                     raise UserInputError(msg)
                 match_pattern = "${kwargs." + key + "}"  # Form the full match string
-                command = command.replace(match_pattern, str(wf_kwargs[key]))
-        return command
+                string = string.replace(match_pattern, str(wf_kwargs[key]))
+        return string
 
     def get_task(self, task_id: str) -> ApplyResult:
         """Get a task by its id."""
