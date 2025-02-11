@@ -45,7 +45,7 @@ export LC_ALL=en_US.UTF-8
 
 # Record the session using asciinema
 echo "Recording demo to $OUTPUT_FILE..."
-stty cols 72 rows 20
+stty cols 92 rows 25
 asciinema rec -c "$DEMO_SCRIPT" tmp.cast --overwrite
 stty sane
 
