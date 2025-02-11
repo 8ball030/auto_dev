@@ -98,5 +98,3 @@ adev publish author/whale_watcher --force
 cd ..
 adev run dev author/whale_watcher --force
 ```
-
-For detailed implementation of each component, refer to the code examples in the previous sections.
