@@ -4,11 +4,6 @@ This guide walks you through creating a whale watcher agent that monitors blockc
 
 **Note**: Replace `author` in the commands below with your author name (e.g., alice, bob, etc.)
 
-**Tip**: To see the complete implementation, you can fetch the finished agent:
-
-```bash
-aea fetch bafybeia3yyss6j3ac2hbhmhg7o7mbytspe4cgqfrpg6y5eskowln2rlqxe
-```
 ## 1. Create the FSM Definition
 
 Create `whale_watcher_fsm.yaml`:
@@ -97,4 +92,23 @@ adev publish author/whale_watcher --force
 ```bash
 cd ..
 adev run dev author/whale_watcher --force
+```
+
+## 8. (optional) convert the agent to a service
+
+```bash
+adev convert author/whale_watcher author/finished_whale_watcher
+```
+and then run it
+
+```bash
+autonomy generate-key ethereum -n 1 
+
+adev run prod author_finished_whale_watcher
+```
+
+To see the complete implementation, you can fetch the finished agent:
+
+```bash
+aea fetch bafybeia3yyss6j3ac2hbhmhg7o7mbytspe4cgqfrpg6y5eskowln2rlqxe
 ```
