@@ -18,7 +18,7 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
 
 ## Requirements
 
-- Python >= 3.10
+- Python >= 3.10,<3.12
 - Poetry >= 1.8.3
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
@@ -77,6 +77,7 @@ We provide tools to scaffold smart contract components from existing deployed co
 
 - Complete open-aea contract component
 - Contract class with auto-generated methods
+- Events, Read and Write methods extracted from the contract ABI.
 - Type hints and documentation
 
 ```bash
@@ -91,38 +92,19 @@ adev scaffold contract author/usdc \
 
 #### Protocols
 
-We provide tools to generate protocols components from specs.
+Protocols components can be fully scaffolded from a yaml file. The scaffolding process includes:
+- Protocol class with auto-generated methods
+- Linted and formatted code
+- Type hints and documentation
+- Test Suite
+- Pydantic models for custom types.
+
 
 ```bash
-adev create author/tmp_agent_name -t eightballer/base --force
-cd tmp_agent_name
-adev scaffold protocol ../specs/protocols/balances.yaml 
-aea -s publish --push-missing
-...
-Starting Auto Dev v0.2.75 ...
-Using 32 processes for processing
-Setting log level to INFO
-Creating agent tmp_agent_name from template eightballer/base
-Executing command: ['poetry', 'run', 'autonomy', 'fetch', 'bafybeidohldv57m3jkc33zpgbxukaushmcibmt4ncnsnomd3pvpocxs3ui', '--alias', 'tmp_agent_name']
-Command executed successfully.
-Agent tmp_agent_name created successfully.
-Starting Auto Dev v0.2.75 ...
-Using 32 processes for processing
-Setting log level to INFO
-Read protocol specification: ../specs/protocols/balances.yaml
-protolint version 0.50.0(d6a3250)
-protolint version 0.50.0(d6a3250)
-Updated: /home/eight/Projects/StationsStation/repos/capitalisation_station/tmp_agent_name/protocols/balances/custom_types.py
-New protocol scaffolded at /home/eight/Projects/StationsStation/repos/capitalisation_station/tmp_agent_name/protocols/balances
-
-...
-# Tests can be run as well;
-adev test -p packages/eightballer/protocols/balances
-Testing path: `packages/eightballer/protocols/balances/` ⌛
-Testing... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   0% -:--:--👌 - packages/eightballer/protocols/balances/
-Testing... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:02
-Testing completed successfully! ✅
+adev scaffold protocol auto_dev/data/protocols/examples/balances.yaml
 ```
+
+![asciicast](docs/assets/create_protocol.gif)
 
 
 ## Dependency Management
@@ -133,7 +115,6 @@ For projects created with adev, updates to both:
 - upstream python packages
 
 are automated using as so;
-
 
 ```
 adev deps verify
