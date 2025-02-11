@@ -741,7 +741,7 @@ def bump(
 
     click.echo("Verifying poetry dependencies... 📝")
     cmd, poetry_issues = get_update_command(
-        version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=True
+        version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=latest
     )
     issues.extend(poetry_issues)
 
@@ -808,7 +808,7 @@ def verify(auto_approve: bool = False):
     then verify them aginst the installed dependencies enforcing the version set.
 
     """
-    version_set_loader = VersionSetLoader(latest="latest")
+    version_set_loader = VersionSetLoader(latest=False)
     version_set_loader.load_config()
 
     wf = build_update_workflow(version_set_loader, strict=False, use_latest=True)

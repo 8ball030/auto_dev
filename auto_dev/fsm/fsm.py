@@ -4,6 +4,7 @@ from string import Template
 from pathlib import Path
 from collections import Counter
 from dataclasses import dataclass
+from textwrap import dedent
 
 import yaml
 
@@ -61,6 +62,30 @@ class FsmSpec:
     states: list[str]
     transition_func: dict[tuple[str, str], str]
 
+
+
+    def validate(self):
+        """
+        Validate a fsm to ensure that simple properties are met.
+        """
+        to_states = {state for state in self.transition_func.values()}
+        from_states = {self.from_transition_func_key_to_state_event(transition)[0] for transition in self.transition_func}
+
+        fails = []
+        for state in to_states:
+            if state not in self.states:
+                fails.append(state)
+        for state in from_states:
+            if state not in self.states:
+                fails.append(state)
+        if fails:
+            raise UserInputError(f"Invalid states in transition function. {fails} not in {self.states}")
+        
+    def from_transition_func_key_to_state_event(self, key: str) -> tuple[str, str]:
+        """We convert a key to a state and event."""
+        return key[1:-1].split(", ")
+
+
     @classmethod
     def from_yaml(cls, yaml_str: str, label: str | None = None):
         """We create a FsmSpec from a yaml string."""
@@ -69,7 +94,9 @@ class FsmSpec:
             fsm_spec["label"] = label
         label = fsm_spec["label"]
         validate_name(label)
-        return cls(**fsm_spec)
+        result = cls(**fsm_spec)
+        result.validate()
+        return result
 
     @classmethod
     def from_path(cls, path: Path, label: str | None = None):
