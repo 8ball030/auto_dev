@@ -407,12 +407,12 @@ class AutonomyDependencies:
 
     upstream_dependency: list[GitDependency]
 
-    def to_dict(self):
+    def to_dict(self, latest: bool = False):
         """Return a list of the upstream dependencies."""
         return [
             {
                 "name": dependency.name,
-                "version": dependency.version,
+                "version": dependency.version if not latest else dependency.get_latest_version(),
                 "location": dependency.location.value,
                 "url": dependency.url,
                 "plugins": dependency.plugins,
@@ -545,7 +545,7 @@ class VersionSetLoader:
     ):
         """Write the config file."""
         data = {
-            "autonomy_dependencies": self.autonomy_dependencies.to_dict(),
+            "autonomy_dependencies": self.autonomy_dependencies.to_dict(use_latest),
             "poetry_dependencies": self.poetry_dependencies.to_dict(use_latest),
         }
         FileLoader(self.config_file, FileType.YAML).write(data)
