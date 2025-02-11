@@ -103,10 +103,10 @@ jobs:
         run: |
           make install
 
-      - name: Run release if on main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@station.codes"
-          poetry run adev release --auto-approve
+      # - name: Run release if on main
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      #   run: |
+      #     git config --global user.name "CI"
+      #     git config --global user.email "ci@station.codes"
+      #     poetry run adev release --auto-approve
