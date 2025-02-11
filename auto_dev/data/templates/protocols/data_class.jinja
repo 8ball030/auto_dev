@@ -4,7 +4,7 @@ class BaseCustomEncoder(BaseModel):
     """
 
     @staticmethod
-    def encode(ps_response_protobuf_object, ps_response_object) -> None:
+    def encode(ps_response_protobuf_object: Any, ps_response_object: Any) -> None:
         """
         Encode an instance of this class into the protocol buffer object.
 
@@ -29,7 +29,7 @@ class BaseCustomEncoder(BaseModel):
 
 
     @classmethod
-    def decode(cls, ps_response_protobuf_object) -> "Any":
+    def decode(cls, ps_response_protobuf_object: Any) -> "Any":
         """
         Decode a protocol buffer object that corresponds with this class into an instance of this class.
 

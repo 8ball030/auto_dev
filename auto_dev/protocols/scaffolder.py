@@ -21,7 +21,11 @@ from auto_dev.data.connections.template import HEADER
 
 
 ProtocolSpecification = namedtuple("ProtocolSpecification", ["metadata", "custom_types", "speech_acts"])
-
+NEW_DOCSTRING = textwrap.dedent("""
+{text}
+{args}
+{returns}
+""")
 
 README_TEMPLATE = """
 # {name} Protocol
@@ -120,10 +124,12 @@ def get_raise_statement(stmt) -> ast.stmt:
 
 class EnumModifier:
     """Class for modifying and augmenting enum definitions in protocol files.
-    
+
     Args:
+    ----
         protocol_path: Path to the protocol directory.
         logger: Logger instance for output and debugging.
+
     """
 
     def __init__(self, protocol_path: Path, logger):
@@ -328,12 +334,14 @@ def parse_protobuf_type(protobuf_type, required_type_imports=None):
 
 class ProtocolScaffolder:
     """Class for scaffolding protocol components.
-    
+
     Args:
+    ----
         protocol_specification_path: Path to the protocol specification file.
         language: Target language for the protocol.
         logger: Logger instance for output and debugging.
         verbose: Whether to enable verbose logging.
+
     """
 
     def __init__(self, protocol_specification_path: str, language, logger, verbose: bool = True):
@@ -410,6 +418,7 @@ class ProtocolScaffolder:
             HEADER.format(
                 author=protocol_author,
                 year=datetime.datetime.now(tz=currenttz()).year,
+                docstring='"""\nTests for the protocol.\n"""\n',
             ),
             encoding=DEFAULT_ENCODING,
         )
@@ -417,22 +426,34 @@ class ProtocolScaffolder:
         protocol_spec = protocol_path / "protocol_spec.yaml"
         protocol_spec.write_text(protocol_definition, encoding=DEFAULT_ENCODING)
 
-        # We remove from the following lines from the *_pb2.py file
-        regexs = [
-            "_runtime_version",
-        ]
         pb2_file = protocol_path / f"{protocol_name}_pb2.py"
-        content = pb2_file.read_text(encoding=DEFAULT_ENCODING)
-        new_content = ""
-        for line in content.splitlines():
-            for regex in regexs:
-                if regex in line:
-                    break
-            else:
-                new_content += line + "\n"
-        pb2_file.write_text(new_content, encoding=DEFAULT_ENCODING)
 
-        # We split long lines in the protocol_spec.yaml file
+        content = pb2_file.read_text(encoding=DEFAULT_ENCODING)
+        content_ast = ast.parse(content)
+
+        # we remve the import of the `_runtime_version` google protobuf module
+        new_body = []
+        for node in content_ast.body:
+            if all(
+                [
+                    isinstance(node, ast.ImportFrom),
+                ]
+            ):
+                if node.names[0].name == "runtime_version":
+                    continue
+            elif all(
+                [
+                    isinstance(node, ast.Expr),
+                    isinstance(getattr(node, "value", None), ast.Call),
+                ]
+            ) and node.value.func.value.id == "_runtime_version":
+                continue
+            new_body.append(node)
+
+        content_ast.body = new_body
+
+        updated_content = ast.unparse(content_ast)
+        pb2_file.write_text(updated_content, encoding=DEFAULT_ENCODING)
 
         if protocol.custom_types:
             custom_types = protocol_path / "custom_types.py"
@@ -442,7 +463,6 @@ class ProtocolScaffolder:
 
     def generate_base_models(self, protocol_path, protocol_name, protocol):
         """Generate base models."""
-        _raw_classes, _all_dummy_data, _enums = self._get_definition_of_custom_types(protocol)
         custom_types = protocol_path / "dialogues.py"
         content = custom_types.read_text(encoding=DEFAULT_ENCODING)
         # We want to add to the imports
@@ -465,17 +485,6 @@ class ProtocolScaffolder:
             "role_from_first_message: Callable[[Message, Address], Dialogue.Role] = _role_from_first_message,",
         )
 
-        content_lines = content.split("\n")
-        import_end_line = 0
-        for i, line in enumerate(content_lines):
-            if line.startswith("from"):
-                new_imports.append(line)
-            if line.startswith("class"):
-                break
-            import_end_line = i
-
-        # We also want to replace the base class with the correct one.
-
         dialogues_class_str = textwrap.dedent(f"""
         def _role_from_first_message(message: Message, sender: Address) -> Dialogue.Role:
             '''Infer the role of the agent from an incoming/outgoing first message'''
@@ -483,14 +492,30 @@ class ProtocolScaffolder:
             return {snake_to_camel(protocol_name.capitalize())}Dialogue.Role.{role.upper()}
         """)
         dialogues_class_ast = ast.parse(dialogues_class_str)
-        dialogues_class_str = ast.unparse(dialogues_class_ast)
 
-        content_lines = (
-            content_lines[:import_end_line]
-            + new_imports
-            + dialogues_class_str.split("\n")
-            + content_lines[import_end_line:]
-        )
+        content_ast = ast.parse(content)
+
+        final_import, initial_class = 0, 0
+        for ix, node in enumerate(content_ast.body):
+            if isinstance(node, ast.Import):
+                final_import = ix
+            if isinstance(node, ast.ClassDef):
+                initial_class = ix
+                break
+
+        for import_line in new_imports:
+            import_ast = ast.parse(import_line)
+            content_ast.body.insert(final_import + 1, import_ast)
+
+        # We insert the dialogues class after the imports
+        dialogues_class_ast = ast.parse(dialogues_class_str)
+
+        content_ast.body.insert(initial_class + len(new_imports), dialogues_class_ast)
+        content_ast = self.update_doc_strings(content_ast)
+
+        updated_content = ast.unparse(content_ast)
+
+        content_lines = updated_content.split("\n")
 
         base_cls_name = f"Base{snake_to_camel(protocol_name.capitalize())}"
 
@@ -501,12 +526,15 @@ class ProtocolScaffolder:
                 '''Initialize dialogues.'''
                 Model.__init__(self, keep_terminal_state_dialogues=False, **kwargs)
                 Base{snake_to_camel(protocol_name.capitalize())}Dialogues.__init__(self,
-                self_address=str(self.context.skill_id))
+                self_address=str(self.context.skill_id),
+                role_from_first_message=_role_from_first_message,)
 
         """)
 
         dialogues_class_ast = ast.parse(dialogues_class_str)
         dialogues_class_str = ast.unparse(dialogues_class_ast)
+
+        content_ast.body.append(dialogues_class_ast)
 
         updated_content = content_lines + dialogues_class_str.split("\n")
         custom_types.write_text("\n".join(updated_content), encoding=DEFAULT_ENCODING)
@@ -547,11 +575,56 @@ class ProtocolScaffolder:
             all_dummy_data[class_data["name"]] = dummy_data
         return raw_classes, all_dummy_data, enums
 
+    def update_doc_strings(self, content_ast: ast.AST) -> None:
+        """Function to update all docstrings to conform to the pydoclint format.
+
+        Args:
+        ----
+            content_ast: the ast of the content to update.
+
+        Returns:
+        -------
+            content_ast: the updated ast.
+
+        """
+
+        def convert_param_to_args(docstring: str) -> str:
+            """Convert the param to args."""
+            args = []  # list of tuples (name, type, description)
+            text = []
+            returns = []
+            for ix, line in enumerate(docstring.split("\n")):
+                if ":param" in line:
+                    name, description = line.split(":param")[1].split(":")
+                    args.append((name, description))
+                elif ":return:" in line:
+                    name, description = f"return{ix}", line.split(":return:")[1]
+                else:
+                    text.append(line)
+
+            text = "\n".join(text)
+            args = "\n".join([f"      {arg[0]}: {arg[1]}" for arg in args])
+            returns = "\n".join([f"      {name}: {description}" for name, description in returns])
+
+            args = f"\n\nArgs:\n{args}" if args else ""
+            if returns:
+                returns = f"\n\nReturns:\n{returns}"
+
+            return NEW_DOCSTRING.format(text=text, args=args, returns=returns)
+
+        for node in content_ast.body:
+            # we only want to execute for function definitions
+            if isinstance(node, ast.ClassDef):
+                for n in [n for n in node.body if isinstance(n, ast.FunctionDef)]:
+                    docstring = ast.get_docstring(n)
+                    if docstring:
+                        new_docstring = convert_param_to_args(docstring)
+                        n.body[0].value = ast.Str(s=new_docstring)
+
+        return content_ast
+
     def generate_pydantic_models(self, protocol_path, protocol_name, protocol):
         """Generate data classes."""
-        # We check if there are any custom types
-        # We assume the enums are handled correctly,
-        # and we only need to generate the data classes
         env = Environment(loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER) / "protocols"), autoescape=True)
 
         required_type_imports = ["Any"]
@@ -638,6 +711,7 @@ class ProtocolScaffolder:
 
         root.body = new_body
 
+        root = self.update_doc_strings(root)
         # We now write the updated content to the custom_types.py file
         updated_content = ast.unparse(root)
         # We add in the imports
@@ -748,6 +822,7 @@ class ProtocolScaffolder:
             HEADER.format(
                 author=protocol.metadata["author"],
                 year=datetime.datetime.now(tz=currenttz()).year,
+                docstring='"""\nTests for the protocol.\n"""\n',
             ),
             encoding=DEFAULT_ENCODING,
         )
