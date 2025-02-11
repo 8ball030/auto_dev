@@ -280,14 +280,14 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.108"
+version = "0.2.119"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
 python-versions = "<=3.12,>=3.10"
 groups = ["main"]
 files = [
-    {file = "autonomy_dev-0.2.108-py3-none-any.whl", hash = "sha256:e37b1648e7c719b8d08d928ee3920a4536d9e6867210b133f21b5a2d6a8c2640"},
-    {file = "autonomy_dev-0.2.108.tar.gz", hash = "sha256:3462ea7fe64392b29550a8fbc98e99a5813b287bb02be89c7120d9ca2ab68fb0"},
+    {file = "autonomy_dev-0.2.119-py3-none-any.whl", hash = "sha256:6eb716f7d550f25e20b73b802eaf3967d6c983caec30925593c51efafbb98e8c"},
+    {file = "autonomy_dev-0.2.119.tar.gz", hash = "sha256:e6a1623940c8474c3121a5340bc3768f107d939d31fe9497fd8eab40f3982d31"},
 ]
 
 [package.dependencies]
@@ -299,13 +299,13 @@ grpcio = "1.69.0"
 hypothesis = "6.122.3"
 ipfshttpclient = "0.8.0a2"
 isort = {version = ">=5.13.2,<6.0.0", optional = true, markers = "extra == \"all\""}
-open-aea = {version = "1.63.0", optional = true, markers = "extra == \"all\""}
-open-aea-cli-ipfs = "1.63.0"
-open-aea-ledger-cosmos = {version = "1.63.0", optional = true, markers = "extra == \"all\""}
-open-aea-ledger-ethereum = {version = "1.63.0", optional = true, markers = "extra == \"all\""}
-open-aea-ledger-solana = {version = "1.63.0", optional = true, markers = "extra == \"all\""}
-open-aea-test-autonomy = "0.19.1"
-open-autonomy = {version = "0.19.1", optional = true, markers = "extra == \"all\""}
+open-aea = {version = "v1.63.0", optional = true, markers = "extra == \"all\""}
+open-aea-cli-ipfs = "v1.63.0"
+open-aea-ledger-cosmos = {version = "v1.63.0", optional = true, markers = "extra == \"all\""}
+open-aea-ledger-ethereum = {version = "v1.63.0", optional = true, markers = "extra == \"all\""}
+open-aea-ledger-solana = {version = "v1.63.0", optional = true, markers = "extra == \"all\""}
+open-aea-test-autonomy = "v0.19.2"
+open-autonomy = {version = "v0.19.2", optional = true, markers = "extra == \"all\""}
 openapi-spec-validator = "0.2.8"
 protobuf = ">=3.19.1,<4.25.0"
 py-eth-sig-utils = "*"
@@ -326,7 +326,7 @@ typing_extensions = ">=3.10.0.2"
 web3 = ">=6.0.0,<7.0.0"
 
 [package.extras]
-all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.63.0)", "open-aea-ledger-cosmos (==1.63.0)", "open-aea-ledger-ethereum (==1.63.0)", "open-aea-ledger-solana (==1.63.0)", "open-autonomy (==0.19.1)", "pydantic (>=2.8.2,<3.0.0)", "pydoclint[all] (>=0.6.0,<0.7.0)", "ruff (>=0.5.7,<0.6.0)", "setuptools (>=75.8.0,<76.0.0)", "tbump (>=6.11.0,<7.0.0)"]
+all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==v1.63.0)", "open-aea-ledger-cosmos (==v1.63.0)", "open-aea-ledger-ethereum (==v1.63.0)", "open-aea-ledger-solana (==v1.63.0)", "open-autonomy (==v0.19.2)", "pydantic (>=2.8.2,<3.0.0)", "pydoclint[all] (>=0.6.0,<0.7.0)", "ruff (>=0.5.7,<0.6.0)", "setuptools (>=75.8.0,<76.0.0)", "tbump (>=6.11.0,<7.0.0)"]
 
 [[package]]
 name = "backoff"
@@ -2611,14 +2611,14 @@ solders = ">=0.14.0"
 
 [[package]]
 name = "open-aea-test-autonomy"
-version = "0.19.1"
+version = "0.19.2"
 description = "Plugin containing test tools for open-autonomy packages."
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "open_aea_test_autonomy-0.19.1-py3-none-any.whl", hash = "sha256:a3930c0dd76202450d11afb20bcfd1b9137ccf14e542011f56e9313c18af9d5b"},
-    {file = "open_aea_test_autonomy-0.19.1.tar.gz", hash = "sha256:04931a09387f92fad0ac0f9825db9fecdecafaaad8b881c0a31777cab9c9e870"},
+    {file = "open_aea_test_autonomy-0.19.2-py3-none-any.whl", hash = "sha256:40521437d41b88102501d468c0386cf8e025af803dec459a54fee2565f1266b9"},
+    {file = "open_aea_test_autonomy-0.19.2.tar.gz", hash = "sha256:f25093ad98d881345f95ad5ac0be7f77059754e6b8498864d323f8cd2c9b44f6"},
 ]
 
 [package.dependencies]
@@ -2629,14 +2629,14 @@ pytest = "7.2.1"
 
 [[package]]
 name = "open-autonomy"
-version = "0.19.1"
+version = "0.19.2"
 description = "A framework for the creation of autonomous agent services."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "open_autonomy-0.19.1-py3-none-any.whl", hash = "sha256:d69f432269be722755b5d6a2513b848fcfde28e74563bef6e189329a90bcf7c0"},
-    {file = "open_autonomy-0.19.1.tar.gz", hash = "sha256:34f88a8b23982fd560dc41219afbeb872a871f487d9010eb16191ff9011328a3"},
+    {file = "open_autonomy-0.19.2-py3-none-any.whl", hash = "sha256:2ce08e72ebe141dc60b6e81497618c47f6db945fe574c450c6c6f617fb2d1687"},
+    {file = "open_autonomy-0.19.2.tar.gz", hash = "sha256:be282f2b9fd22a8d9e26ef56656c22d21126f0dc2c3b822df02dec571ab595dd"},
 ]
 
 [package.dependencies]
@@ -4656,5 +4656,5 @@ cffi = ["cffi (>=1.11)"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.10,<=3.12"
-content-hash = "f260fc4b3d741df903f75bfde0f651cb8b345dbbe72cf806cea403779f311278"
+python-versions = ">=3.10,<3.12"
+content-hash = "12d1b5842494d5806b835d592fb5548dc4bcd0d1891c2f83f15ed9ca91d27f7c"
