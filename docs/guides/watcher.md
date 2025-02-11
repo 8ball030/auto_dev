@@ -104,7 +104,7 @@ and then run it
 ```bash
 autonomy generate-key ethereum -n 1 
 
-adev run prod author_finished_whale_watcher
+adev run prod author/finished_whale_watcher
 ```
 
 To see the complete implementation, you can fetch the finished agent:
