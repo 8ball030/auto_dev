@@ -25,6 +25,7 @@ HEADER = """
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+{docstring}
 """
 
 DOCSTRING = """\"\"\"{proper_name} connection and channel.\"\"\""""
