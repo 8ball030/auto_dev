@@ -1,0 +1,34 @@
+alphabet_in:
+  - BLOCK_RECEIVED        
+  - TX_OVER_THRESHOLD     
+  - TX_UNDER_THRESHOLD    
+  - DONE                  
+  - TIMEOUT
+  - LOOP
+default_start_state: SetupRound
+final_states:
+  - ErrorRound
+  - DoneRound
+label: WhaleWatcherAbciApp
+start_states:
+  - SetupRound
+states:
+  - SetupRound
+  - BlockReceivedRound
+  - AlertRound
+  - DoneRound
+  - ErrorRound
+  - DataCollectionRound
+  - IdleRound
+
+transition_func:
+  (SetupRound, DONE): DataCollectionRound
+  (DataCollectionRound, DONE): IdleRound
+  (DataCollectionRound, BLOCK_RECEIVED): BlockReceivedRound
+  (DataCollectionRound, TIMEOUT): ErrorRound
+  (BlockReceivedRound, TX_OVER_THRESHOLD): AlertRound
+  (BlockReceivedRound, TX_UNDER_THRESHOLD): BlockReceivedRound
+  (BlockReceivedRound, DONE): DoneRound
+  (AlertRound, DONE): DoneRound
+  (IdleRound, DONE): DoneRound
+  (IdleRound, LOOP): DataCollectionRound

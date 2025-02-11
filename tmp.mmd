@@ -1,0 +1,24 @@
+graph TD
+    A[Set environment (euo)] --> B[Generate output file with python]
+    B --> C[Extract HTTP links from generated.txt]
+    C --> D{Is there an HTTP link?}
+    D -->|Yes| E[Download link with wget]
+    E --> F[Process output with CLEAN_OUTPUT.py]
+    F --> G[Remove temporary agent folder]
+    G --> H[Create agent tmp_agent]
+    H --> I[Scaffold protocol]
+    I --> J{Was scaffolding successful?}
+    J -->|Yes| K[Publish agent]
+    J -->|No| H
+    K --> L[Remove tmp_agent folder]
+    L --> M[Done]
+
+    %% Retry loop
+    F -->|Failed| C
+    E -->|Failed| C
+    C -->|Failed| B
+    D -->|No HTTP link| L
+
+    %% Retry scaffold and publish
+    I -->|Failed| H
+    K -->|Failed| H
