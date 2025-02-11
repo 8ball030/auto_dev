@@ -110,30 +110,3 @@ jobs:
           git config --global user.name "CI"
           git config --global user.email "ci@station.codes"
           poetry run adev release --auto-approve
-
-      - name: build documentation
-        run: |
-          poetry install
-          poetry run make docs
-
-      - name: Build wheels and source tarball
-        run: >-
-          poetry build
-
-      - name: create github release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          body: ${{ steps.changelog_reader.outputs.changes }}
-          files: dist/*.whl
-          draft: false
-          prerelease: false
-
-      - name: publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          skip_existing: true
