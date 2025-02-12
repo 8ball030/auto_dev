@@ -24,7 +24,7 @@ def wf(path) -> None:
 
     Usage:
 
-        adev wf run my_workflow.yaml
+        adev wf my_workflow.yaml
     """
 
     wf_manager = WorkflowManager.from_yaml(path)
