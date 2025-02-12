@@ -6,7 +6,7 @@ from pathlib import Path
 
 from aea.cli.eject import get_package_path
 from aea.configurations.base import PublicId, _get_default_configuration_file_name_from_type  # noqa
-from aea.configurations.constants import PACKAGES, ITEM_TYPE_TO_PLURAL, DEFAULT_AEA_CONFIG_FILE
+from aea.configurations.constants import AGENTS, PACKAGES, ITEM_TYPE_TO_PLURAL, DEFAULT_AEA_CONFIG_FILE
 from aea.configurations.data_types import PackageId, PackageType
 
 from auto_dev.utils import get_logger, update_author, load_autonolas_yaml
@@ -213,6 +213,22 @@ class PackageManager:
         if force:
             self.clear_if_force(dev, third_party)
         self._run_publish_commands()
+        self._copy_test_files(agent_package_id)
+
+    def _copy_test_files(self, agent_package_id) -> None:
+        """Copy test files to the packages directory.
+
+        Raises
+        ------
+            OSError: If file operations fail
+
+        """
+        test_files = Path.cwd() / "tests"
+        expected_agent_path = (
+            self.packages_path / agent_package_id.public_id.author / AGENTS / agent_package_id.public_id.name
+        )
+        test_files_dest = Path(expected_agent_path, "tests")
+        shutil.copytree(test_files, test_files_dest)
 
     @property
     def packages_path(self) -> Path:

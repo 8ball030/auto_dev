@@ -80,30 +80,6 @@ Once we have a new agent, we can first scaffold the skill using the CORE autonom
 
 This reduces the amount of code we need to write to get a skill up and means that we have no need to write any code to re-implement the wheel.
 
-```bash
-adev scaffold fsm --spec ../auto_dev/data/fsm/samples/fsm_specification.yaml
+```shell
+adev create_from_fsm author/new_agent whale_watcher_fsm.yaml
 ```
-
-We now have an agent with a new skill, HOWEVER
-The agent will not run.
-
-One of the main reasons for this is that the agent is not configured to use the `aea_ledger_ethereum` package.
-
-Additionally,
-
-A number of connections need to be updated such that when deploying a service, the environment variables are set correctly.
-
-
-# setup the agent
-
-```bash
-aea generate-key ethereum
-```
-```bash
-aea add-key ethereum
-```
-
-```bash
-echo run the agent with `aea run`
-```
-
