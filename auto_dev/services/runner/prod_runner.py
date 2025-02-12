@@ -20,8 +20,8 @@ from autonomy.configurations.base import PACKAGE_TYPE_TO_CONFIG_CLASS
 from auto_dev.utils import change_dir, load_autonolas_yaml
 from auto_dev.exceptions import UserInputError
 from auto_dev.cli_executor import CommandExecutor
-from auto_dev.services.runner.base import AgentRunner
 from auto_dev.workflow_manager import Task
+from auto_dev.services.runner.base import AgentRunner
 
 
 TENDERMINT_RESET_TIMEOUT = 10
@@ -183,6 +183,7 @@ class ProdAgentRunner(AgentRunner):
         """Push all packages to the registry."""
         self.logger.info("Pushing all packages to the registry...")
         # We silence all output from click
+        Task(command="make clean").work()
         with open(os.devnull, "w", encoding="utf-8") as f, redirect_stdout(f):
             push_all_packages(REGISTRY_REMOTE, retries=3, package_type_config_class=PACKAGE_TYPE_TO_CONFIG_CLASS)
         self.logger.info("All packages pushed successfully. 🎉")
@@ -192,9 +193,11 @@ class ProdAgentRunner(AgentRunner):
         self.logger.info("Building the deployment...")
         env_vars = self.generate_env_vars()
         self.execute_command(
-            f"autonomy deploy build {self.keysfile} --o abci_build",
+            f"autonomy deploy build {self.keysfile} --o abci_build -ltm",
             env_vars=env_vars,
         )
+        current_user = os.environ.get("USER")
+        self.execute_command(f"sudo chown -R {current_user}: abci_build", shell=False)
         self.logger.info("Deployment built successfully. 🎉")
 
     def manage_keys(
@@ -220,10 +223,11 @@ class ProdAgentRunner(AgentRunner):
 
         task = Task(command="docker compose up -d --remove-orphans", working_dir="abci_build").work()
         if task.is_failed:
-            raise RuntimeError(f"Agent execution failed. {task.client.output}")
+            msg = f"Agent execution failed. {task.client.output}"
+            raise RuntimeError(msg)
         self.logger.info("Agent execution complete. 😎")
 
-    def execute_command(self, command: str, verbose=None, env_vars=None, spinner=False) -> None:
+    def execute_command(self, command: str, verbose=None, env_vars=None, spinner=False, shell=False) -> None:
         """Execute a shell command."""
         current_vars = deepcopy(os.environ)
         if env_vars:
@@ -231,9 +235,9 @@ class ProdAgentRunner(AgentRunner):
         cli_executor = CommandExecutor(command=command.split(" "))
         if spinner:
             with with_spinner():
-                result = cli_executor.execute(stream=True, verbose=verbose, env_vars=current_vars)
+                result = cli_executor.execute(stream=True, verbose=verbose, env_vars=current_vars, shell=shell)
         else:
-            result = cli_executor.execute(stream=True, verbose=verbose, env_vars=current_vars)
+            result = cli_executor.execute(stream=True, verbose=verbose, env_vars=current_vars, shell=shell)
         if not result:
             self.logger.error(f"Command failed: {command}")
             self.logger.error(f"Error: {cli_executor.stderr}")

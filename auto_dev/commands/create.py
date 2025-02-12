@@ -1,5 +1,6 @@
 """This module contains the logic for the fmt command."""
 
+import ast
 import sys
 import shutil
 from pathlib import Path
@@ -17,6 +18,20 @@ from auto_dev.services.package_manager.index import PackageManager
 
 
 cli = build_cli()
+
+
+def update_tests(public_id: str, agent_runner: DevAgentRunner) -> None:
+    """We read in the test files and update the agent name in the test files."""
+    for test_file in agent_runner.agent_dir.rglob("tests/test_*.py"):
+        test_file = Path(test_file)
+        test_file_content = test_file.read_text()
+        test_file_ast = ast.parse(test_file_content)
+        for node in test_file_ast.body:
+            if isinstance(node, ast.Assign) and node.targets[0].id == "AGENT_NAME":
+                node.value.s = public_id.name
+            if isinstance(node, ast.Assign) and node.targets[0].id == "AUTHOR":
+                node.value.s = public_id.author
+        test_file.write_text(ast.unparse(test_file_ast))
 
 
 def get_available_agents() -> list[str]:
@@ -111,6 +126,7 @@ def create(ctx, public_id: str, template: str, force: bool, publish: bool, clean
 
     with change_dir(agent_runner.agent_dir):
         update_author(public_id=public_id)
+        update_tests(public_id=public_id, agent_runner=agent_runner)
         if publish:
             try:
                 package_manager = PackageManager(verbose=verbose, agent_runner=agent_runner)
