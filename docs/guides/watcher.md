@@ -6,46 +6,44 @@ This guide walks you through creating a whale watcher agent that monitors blockc
 
 ## 1. Create the FSM Definition
 
-Create `whale_watcher_fsm.yaml`:
+First, create a Mermaid diagram to visualize the FSM. Create `whale_watcher_diagram.mmd`:
 
-```yaml
-alphabet_in:
-  - BLOCK_RECEIVED        # A new Ethereum block is detected
-  - TX_OVER_THRESHOLD     # A transaction exceeds the whale threshold
-  - TX_UNDER_THRESHOLD    # A transaction is under the whale threshold
-  - DONE                  # All transactions for this block are processed
-  - TIMEOUT              # A timeout or other error occurs
-
-default_start_state: SetupRound
-label: WhaleWatcherAbciApp
-
-states:
-  - SetupRound
-  - IdleRound
-  - BlockReceivedRound
-  - AlertRound
-  - DoneRound
-  - ErrorRound
-
-start_states:
-  - SetupRound
-
-final_states:
-  - ErrorRound
-  - DoneRound
-
-transition_func:
-  (SetupRound, DONE): IdleRound
-  (IdleRound, BLOCK_RECEIVED): BlockReceivedRound
-  (BlockReceivedRound, TX_OVER_THRESHOLD): AlertRound
-  (BlockReceivedRound, TX_UNDER_THRESHOLD): BlockReceivedRound
-  (BlockReceivedRound, DONE): DoneRound
-  (AlertRound, DONE): DoneRound
-  (DoneRound, DONE): SetupRound
-  (IdleRound, DONE): SetupRound
-  (BlockReceivedRound, TIMEOUT): ErrorRound
-  (AlertRound, TIMEOUT): ErrorRound
+```mermaid
+stateDiagram-v2
+    [*] --> SetupRound: Start
+    SetupRound --> IdleRound: DONE
+    IdleRound --> BlockReceivedRound: BLOCK_RECEIVED
+    BlockReceivedRound --> AlertRound: TX_OVER_THRESHOLD
+    BlockReceivedRound --> BlockReceivedRound: TX_UNDER_THRESHOLD
+    BlockReceivedRound --> DoneRound: DONE
+    AlertRound --> DoneRound: DONE
+    DoneRound --> SetupRound: DONE
+    IdleRound --> SetupRound: DONE
+    BlockReceivedRound --> ErrorRound: TIMEOUT
+    AlertRound --> ErrorRound: TIMEOUT
+    ErrorRound --> [*]: DONE
+    DoneRound --> [*]: DONE
 ```
+
+This diagram represents the following states and transitions:
+- `SetupRound`: Initial setup and configuration
+- `IdleRound`: Waiting for new blocks
+- `BlockReceivedRound`: Processing a new block's transactions
+- `AlertRound`: Handling whale transactions
+- `DoneRound`: Completed processing
+- `ErrorRound`: Error handling state
+
+Now convert the Mermaid diagram to FSM specification:
+
+```bash
+adev fsm from-file whale_watcher_diagram.mmd WhaleWatcherAbciApp --in-type mermaid --output fsm_spec > whale_watcher_fsm.yaml
+```
+
+This will create `whale_watcher_fsm.yaml` with the FSM specification that includes:
+- Input alphabet (events like BLOCK_RECEIVED, TX_OVER_THRESHOLD)
+- States and transitions
+- Start and final states
+- Complete transition function
 
 ## 2. Create Agent from FSM
 
@@ -110,5 +108,5 @@ adev run prod author/finished_whale_watcher
 To see the complete implementation, you can fetch the finished agent:
 
 ```bash
-aea fetch bafybeia3yyss6j3ac2hbhmhg7o7mbytspe4cgqfrpg6y5eskowln2rlqxe
+aea fetch bafybeicr5wi5r4f272rxybgb4jcpksnylktm5qnzi3ldltbdxnjk4yq24e
 ```
