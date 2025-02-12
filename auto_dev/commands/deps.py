@@ -46,7 +46,7 @@ from rich.progress import track
 from aea.configurations.constants import PACKAGES
 
 from auto_dev.base import build_cli
-from auto_dev.utils import FileType, FileLoader, get_logger, write_to_file
+from auto_dev.utils import FileType, FileLoader, write_to_file
 from auto_dev.constants import DEFAULT_TIMEOUT, DEFAULT_ENCODING
 from auto_dev.exceptions import AuthenticationError, NetworkTimeoutError
 from auto_dev.workflow_manager import Task, Workflow, WorkflowManager
@@ -727,7 +727,6 @@ def bump(
     issues = []
     changes = []
     click.echo("Verifying autonomy dependencies... 📝")
-
     version_set_loader = VersionSetLoader(latest=latest, packages_dir=packages_dir)
     version_set_loader.load_config()
     if (Path(packages_dir) / "packages.json").exists():
@@ -758,8 +757,7 @@ def bump(
     issues.extend(poetry_issues)
 
     if issues:
-        click.echo("Please run the following command to update the poetry dependencies.")
-        click.echo(f"{cmd}\n")
+        click.echo(f"Please run the following command to update the poetry dependencies.\n\t`{cmd}`\n")
         if not auto_approve:
             click.confirm("Do you want to update the poetry dependencies now?", abort=True)
         os.system(cmd)  # noqa
@@ -768,15 +766,14 @@ def bump(
     if not auto_approve:
         click.confirm("Do you want to write the changes to the config file?", abort=True)
     version_set_loader.write_config(use_latest=latest)
-    logger = get_logger()
     wf_manager = WorkflowManager()
     wf = build_update_workflow(version_set_loader, strict=strict, use_latest=latest)
     wf_manager.add_workflow(wf)
-    [logger.info(task.command) for task in wf.tasks]
+    [click.echo(task.command) for task in wf.tasks]
     if not auto_approve:
         click.confirm("Do you want to execute the workflow?", abort=True)
     wf_manager.run()
-    logger.info("Done. 😎")
+    click.echo("Done. 😎")
 
 
 def build_update_workflow(version_set_loader, strict, use_latest) -> Workflow:
