@@ -83,27 +83,3 @@ This reduces the amount of code we need to write to get a skill up and means tha
 ```shell
 adev create_from_fsm author/new_agent whale_watcher_fsm.yaml
 ```
-
-We now have an agent with a new skill, HOWEVER
-The agent will not run.
-
-One of the main reasons for this is that the agent is not configured to use the `aea_ledger_ethereum` package.
-
-Additionally,
-
-A number of connections need to be updated such that when deploying a service, the environment variables are set correctly.
-
-
-# setup the agent
-
-```bash
-aea generate-key ethereum
-```
-```bash
-aea add-key ethereum
-```
-
-```bash
-echo run the agent with `aea run`
-```
-
