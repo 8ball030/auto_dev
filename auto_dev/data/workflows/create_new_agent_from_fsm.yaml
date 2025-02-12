@@ -42,4 +42,7 @@ tasks:
     description: Run the agent.
     command: adev run dev ${kwargs.new_author}/${kwargs.new_agent} --force
 
-
+  - id: '6'
+    name: Cleanup
+    description: Clean up the agent.
+    command: rm -rf ${kwargs.new_agent}
