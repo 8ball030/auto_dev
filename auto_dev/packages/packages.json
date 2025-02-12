@@ -1,8 +1,7 @@
 {
-    "dev": {
-    },
+    "dev": {},
     "third_party": {
-        "agent/eightballer/base/0.1.0": "bafybeic43n3przbi2iens2rlbdfgwu4oa6yvmzwfxkbkfbm2sqrgzgi4om",
+        "agent/eightballer/base/0.1.0": "bafybeifo4w76mbqq3dpdrwdemtbeeqzljok5b6ajc6b5ty4uqvven337bm",
         "agent/eightballer/frontend_agent/0.1.0": "bafybeigvt6z3pcub3klzetwpmjxgzpf2hg6uq3vcoe6g7n4cdqz3jr3fqu"
     }
 }

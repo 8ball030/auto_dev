@@ -46,7 +46,7 @@ from rich.progress import track
 from aea.configurations.constants import PACKAGES
 
 from auto_dev.base import build_cli
-from auto_dev.utils import FileType, FileLoader, get_logger, write_to_file
+from auto_dev.utils import FileType, FileLoader, write_to_file
 from auto_dev.constants import DEFAULT_TIMEOUT, DEFAULT_ENCODING
 from auto_dev.exceptions import AuthenticationError, NetworkTimeoutError
 from auto_dev.workflow_manager import Task, Workflow, WorkflowManager
@@ -58,14 +58,14 @@ CHILD = Path("repo_2")
 
 def get_package_json(repo: Path) -> dict[str, dict[str, str]]:
     """We get the package json."""
-    package_json = repo / "packages" / "packages.json"
+    package_json = repo / "packages.json"
     with open(package_json, encoding=DEFAULT_ENCODING) as file_pointer:
         return yaml.safe_load(file_pointer)
 
 
 def write_package_json(repo: Path, package_dict: dict[str, dict[str, str]]) -> None:
     """We write the package json."""
-    package_json = repo / "packages" / "packages.json"
+    package_json = repo / "packages.json"
     write_to_file(str(package_json), package_dict, FileType.JSON, indent=4)
 
 
@@ -538,6 +538,7 @@ class VersionSetLoader:
     def __init__(self, config_file: Path = DEFAULT_ADEV_CONFIG_FILE, **kwargs):
         self.config_file = config_file
         self.latest = kwargs.get("latest", True)
+        self.packages_dir = kwargs.get("packages_dir", "packages")
 
     def write_config(
         self,
@@ -588,14 +589,14 @@ class VersionSetLoader:
         """We update the autonomy packages from the config file."""
         for dependency in self.autonomy_dependencies.upstream_dependency:
             remote_packages = dependency.get_all_autonomy_packages(tag=str(dependency.version))
-            local_packages = get_package_json(Path())["third_party"]
+            local_packages = get_package_json(self.packages_dir)["third_party"]
             diffs = {}
             for package_name, package_hash in remote_packages.items():
                 if package_name in local_packages and package_hash != local_packages[package_name]:
                     diffs[package_name] = package_hash
             if diffs:
-                update_package_json(repo=Path(), proposed_dependency_updates=diffs)
-                remove_old_package(repo=Path(), proposed_dependency_updates=diffs)
+                update_package_json(repo=self.packages_dir, proposed_dependency_updates=diffs)
+                remove_old_package(repo=self.packages_dir, proposed_dependency_updates=diffs)
         return diffs
 
 
@@ -650,12 +651,19 @@ def get_update_command(poetry_dependencies: Dependency, strict: bool = False, us
     help="Enforce strict versioning.",
     is_flag=True,
 )
+@click.option(
+    "--packages-dir",
+    default="packages",
+    help="The packages directory.",
+    type=click.Path(exists=True),
+)
 @click.pass_context
 def bump(
     ctx: click.Context,
     auto_approve: bool = False,
     latest: bool = True,
     strict: bool = False,
+    packages_dir: Path = Path("packages"),
 ) -> None:
     r"""Verify and optionally update package dependencies.
 
@@ -707,6 +715,7 @@ def bump(
             - Version pinning enforcement
 
     """
+    packages_dir = Path(packages_dir)
 
     if not os.getenv("GITHUB_TOKEN"):
         ctx.obj["LOGGER"].error("Error: GITHUB_TOKEN environment variable is not set.")
@@ -718,14 +727,13 @@ def bump(
     issues = []
     changes = []
     click.echo("Verifying autonomy dependencies... 📝")
-
-    version_set_loader = VersionSetLoader(latest=latest)
+    version_set_loader = VersionSetLoader(latest=latest, packages_dir=packages_dir)
     version_set_loader.load_config()
-    if (Path("packages") / "packages.json").exists():
+    if (Path(packages_dir) / "packages.json").exists():
         for dependency in track(version_set_loader.autonomy_dependencies.upstream_dependency):
             click.echo(f"   Verifying:   {dependency.name}")
             remote_packages = dependency.get_all_autonomy_packages()
-            local_packages = get_package_json(Path())["third_party"]
+            local_packages = get_package_json(packages_dir)["third_party"]
             diffs = {}
             for package_name, package_hash in remote_packages.items():
                 if package_name in local_packages and package_hash != local_packages[package_name]:
@@ -735,9 +743,12 @@ def bump(
                 print_json(data=diffs)
                 if not auto_approve:
                     click.confirm("Do you want to update all the packages?\n", abort=True)
-                update_package_json(repo=Path(), proposed_dependency_updates=diffs)
-                remove_old_package(repo=Path(), proposed_dependency_updates=diffs)
+                update_package_json(repo=packages_dir, proposed_dependency_updates=diffs)
+                remove_old_package(repo=packages_dir, proposed_dependency_updates=diffs)
                 changes.append(dependency.name)
+    else:
+        click.echo("No packages.json file found. Skipping autonomy packages verification.")
+        sys.exit(1)
 
     click.echo("Verifying poetry dependencies... 📝")
     cmd, poetry_issues = get_update_command(
@@ -746,8 +757,7 @@ def bump(
     issues.extend(poetry_issues)
 
     if issues:
-        click.echo("Please run the following command to update the poetry dependencies.")
-        click.echo(f"{cmd}\n")
+        click.echo(f"Please run the following command to update the poetry dependencies.\n\t`{cmd}`\n")
         if not auto_approve:
             click.confirm("Do you want to update the poetry dependencies now?", abort=True)
         os.system(cmd)  # noqa
@@ -756,15 +766,14 @@ def bump(
     if not auto_approve:
         click.confirm("Do you want to write the changes to the config file?", abort=True)
     version_set_loader.write_config(use_latest=latest)
-    logger = get_logger()
     wf_manager = WorkflowManager()
     wf = build_update_workflow(version_set_loader, strict=strict, use_latest=latest)
     wf_manager.add_workflow(wf)
-    [logger.info(task.command) for task in wf.tasks]
+    [click.echo(task.command) for task in wf.tasks]
     if not auto_approve:
         click.confirm("Do you want to execute the workflow?", abort=True)
     wf_manager.run()
-    logger.info("Done. 😎")
+    click.echo("Done. 😎")
 
 
 def build_update_workflow(version_set_loader, strict, use_latest) -> Workflow:
