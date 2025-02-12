@@ -7,7 +7,7 @@ autonomy_dependencies:
   - open-aea-test-autonomy
   extras: null
 - name: stations-station
-  version: 0.1.10
+  version: 0.1.14
   location: remote
   url: https://api.github.com/repos/StationsStation/stations_station
   plugins: null
