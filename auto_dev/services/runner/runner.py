@@ -221,7 +221,12 @@ class DevAgentRunner(AgentRunner):
             sys.exit(1)
         for ledger in required_ledgers:
             self.logger.info(f"Processing ledger: {ledger}")
-            self.setup_ledger_key(ledger, generate_keys)
+            # We check if a key already exists for the ledger
+            key_file = Path("..") / f"{ledger}_private_key.txt"
+            if key_file.exists():
+                self.setup_ledger_key(ledger, generate_keys=False, existing_key_file=key_file)
+            else:
+                self.setup_ledger_key(ledger, generate_keys)
 
     def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Path | None = None) -> None:
         """Setup the agent with the ledger key."""
@@ -230,13 +235,12 @@ class DevAgentRunner(AgentRunner):
         if existing_key_file:
             self.logger.info(f"Copying existing key file {existing_key_file} to {key_file}")
             shutil.copy(existing_key_file, key_file)
-        if key_file.exists():
+        elif key_file.exists():
             self.logger.error(f"Key file {key_file} already exists.")
-        else:
-            if generate_keys:
-                self.logger.info(f"Generating key for {ledger}...")
-                commands_to_errors.append([f"aea -s generate-key {ledger}", f"Key generation failed for {ledger}"])
-            commands_to_errors.append([f"aea -s add-key {ledger}", f"Key addition failed for {ledger}"])
+        elif generate_keys:
+            self.logger.info(f"Generating key for {ledger}...")
+            commands_to_errors.append([f"aea -s generate-key {ledger}", f"Key generation failed for {ledger}"])
+        commands_to_errors.append([f"aea -s add-key {ledger}", f"Key addition failed for {ledger}"])
 
         for command, error in commands_to_errors:
             result = self.execute_command(command)
