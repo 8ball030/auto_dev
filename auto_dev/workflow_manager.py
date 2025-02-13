@@ -63,7 +63,7 @@ class Task:
     pause_after: int = 0
     shell: bool = False
     continue_on_error: bool = False
-    env_vars: dict = field(default_factory=dict)
+    env_vars: dict = None
     verbose: bool = False
 
     is_done: bool = False
