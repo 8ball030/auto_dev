@@ -22,7 +22,7 @@ from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 from auto_dev.utils import change_dir, map_os_to_env_vars, load_autonolas_yaml
 from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
-from auto_dev.cli_executor import CommandExecutor
+from auto_dev.workflow_manager import Task
 from auto_dev.services.runner.base import AgentRunner
 
 
@@ -43,6 +43,8 @@ class DevAgentRunner(AgentRunner):
     logger: Any
     fetch: bool = False
     ipfs_hash: str | None = None
+    use_tendermint: bool = True
+    install_deps: bool = True
 
     def __post_init__(
         self,
@@ -66,10 +68,10 @@ class DevAgentRunner(AgentRunner):
             sys.exit(1)
         self.logger.info(f"Changing to directory: {agent_path}")
         with change_dir(agent_path):
-            self.check_tendermint()
+            self.check_tendermint() if self.use_tendermint else None
             self.setup()
             self.execute_agent()
-        self.stop_tendermint()
+        self.stop_tendermint() if self.use_tendermint else None
 
     def check_exists(self, locally=False, in_packages=True) -> bool:
         """Check if the agent exists."""
@@ -201,7 +203,7 @@ class DevAgentRunner(AgentRunner):
         self.manage_keys()
 
         self.logger.info("Installing dependencies...")
-        self.install_dependencies()
+        self.install_dependencies() if self.install_deps else None
 
         self.logger.info("Setting up certificates...")
         self.issue_certificates()
@@ -294,7 +296,7 @@ class DevAgentRunner(AgentRunner):
         """
         self.logger.info("Starting agent execution...")
         try:
-            result = self.execute_command("aea -s run", verbose=True)
+            result = self.execute_command("aea -s run --env ../.env", verbose=True)
             if result:
                 self.logger.info("Agent execution completed successfully. 😎")
             else:
@@ -302,21 +304,28 @@ class DevAgentRunner(AgentRunner):
                 sys.exit(1)
         except RuntimeError as error:
             self.logger.exception(f"Agent ended with error: {error}")
+        except KeyboardInterrupt:
+            self.logger.info("Agent execution interrupted.")
         self.logger.info("Agent execution complete. 😎")
 
-    def execute_command(self, command: str, verbose=None, env_vars=None) -> None:
+    def execute_command(self, command: str, verbose=False, env_vars=None) -> None:
         """Execute a shell command."""
         current_vars = deepcopy(os.environ)
         if env_vars:
             current_vars.update(env_vars)
-        cli_executor = CommandExecutor(command=command.split(" "))
-        result = cli_executor.execute(stream=True, verbose=verbose, env_vars=current_vars)
-        if not result:
-            self.logger.error(f"Command failed: {command}")
-            self.logger.error(f"Error: {cli_executor.stderr}")
+        task = Task(
+            command=command,
+            env_vars=current_vars,
+            stream=verbose,
+            verbose=verbose,
+        ).work()
+        if task.is_failed:
+            self.logger.error(f"Command failed: {task.client.output}")
             msg = f"Command failed: {command}"
+            if "KeyboardInterrupt" in str(task.client.exception):
+                raise KeyboardInterrupt(msg)
             raise RuntimeError(msg)
-        return result
+        return task
 
     def get_version(self) -> str:
         """Get the version of the agent."""
