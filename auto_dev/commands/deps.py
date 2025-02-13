@@ -388,7 +388,7 @@ def generate_gitignore(
         - Appends entries to existing .gitignore file
 
     """
-    package_dict = get_package_json(repo=Path())
+    package_dict = get_package_json(repo=Path(PACKAGES))
     third_party_packages = package_dict.get("third_party", {})
     third_party_paths = [from_key_to_path(key) for key in third_party_packages]
     current_gitignore = Path(".gitignore").read_text(encoding=DEFAULT_ENCODING)
@@ -791,7 +791,6 @@ def build_update_workflow(version_set_loader, strict, use_latest) -> Workflow:
         wf.add_task(task)
 
     if (Path(PACKAGES) / "packages.json").exists():
-        wf.add_task(Task(command="adev deps generate-gitignore", description="Generate gitignore entries"))
         wf.add_task(Task(command="autonomy packages sync", description="Sync autonomy packages"))
         wf.add_task(Task(command="autonomy packages lock", description="Lock autonomy packages"))
 
