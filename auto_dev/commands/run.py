@@ -33,8 +33,12 @@ def run() -> None:
 @click.option("-v", "--verbose", is_flag=True, help="Verbose mode.", default=False)
 @click.option("--force", is_flag=True, help="Force overwrite of existing agent", default=False)
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
+@click.option("--use-tendermint/--no-use-tendermint", help="Use Tendermint for blockchain network", default=True)
+@click.option("--install-deps/--no-install-deps", help="Install dependencies", default=True)
 @click.pass_context
-def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
+def dev(
+    ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool, use_tendermint: bool, install_deps: bool
+) -> None:
     """Run an agent from the local packages registry or a local path.
 
     Required Parameters:
@@ -51,6 +55,9 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         fetch (--fetch/--no-fetch): Whether to fetch agent from registry or use local package. (Default: True)
             - If True: Fetches agent from local registry
             - If False: Uses agent from current directory or packages
+
+        use-tendermint (--use-tendermint/--no-use-tendermint): Use Tendermint for blockchain network. (Default: True)
+        install-deps (--install-deps/--no-install-deps): Install dependencies. (Default: True)
 
     Example usage:
 
@@ -101,6 +108,8 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         force=force,
         logger=logger,
         fetch=fetch,
+        use_tendermint=use_tendermint,
+        install_deps=install_deps,
     )
     runner.run()
     logger.info("Agent run complete. 😎")

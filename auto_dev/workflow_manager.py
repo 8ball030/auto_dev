@@ -63,15 +63,23 @@ class Task:
     pause_after: int = 0
     shell: bool = False
     continue_on_error: bool = False
+    env_vars: dict = None
+    verbose: bool = False
 
     is_done: bool = False
     is_failed: bool = False
 
     def work(self):
         """Perform the task's work."""
-        self.client = CommandExecutor(self.command.split(" "), cwd=self.working_dir, logger=self.logger)
+        self.client = CommandExecutor(
+            self.command.split(" "),
+            cwd=self.working_dir,
+            logger=self.logger,
+        )
         print(f"Executing command: `{self.command}`")
-        self.is_failed = not self.client.execute(stream=self.stream, shell=self.shell)
+        self.is_failed = not self.client.execute(
+            stream=self.stream, env_vars=self.env_vars, shell=self.shell, verbose=self.verbose
+        )
         self.is_done = True
         return self
 
