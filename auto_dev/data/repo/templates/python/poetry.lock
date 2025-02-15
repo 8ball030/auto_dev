@@ -4761,4 +4761,4 @@ doc = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.12"
-content-hash = "8e24032335e0cb5824807e42e9b3d46bde354fbe84fd26d36d03cf2d66e1bf46"
+content-hash = "185988974219d29812568cdecbf8ce4ea401f0a7255061158eeac249cf651617"
