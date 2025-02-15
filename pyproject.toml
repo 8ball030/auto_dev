@@ -57,7 +57,7 @@ grpcio = "==1.69.0"
 asn1crypto = "<1.5.0,>=1.4.0"
 
 eth-utils = "==2.3.1"
-eth-abi = "==5.1.0"
+eth-abi = "==5.2.0"
 pycryptodome = "==3.20.0"
 
 rich-click = "^1.8.2"
