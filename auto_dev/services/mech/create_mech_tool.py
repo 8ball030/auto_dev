@@ -119,17 +119,8 @@ def generate_and_write_tool_file(tool_folder_path, tool_name, api_file, gpt_api_
     templates_path = Path(__file__).resolve().parent / "templates"
     env = Environment(loader=FileSystemLoader(str(templates_path)))
     template = env.get_template("generate_mech_tool.py.j2")
-    logger.info(f"tool_name: {tool_name}")
-    logger.info(f"api_logic_content (first 500 chars): {api_logic_content[:500]}")
     generated_code_prompt = template.render(tool_name=tool_name, api_logic_content=api_logic_content)
-    # Write the rendered template to a file for debugging
-    debug_template_path = Path(tool_folder_path) / f"{tool_name}_debug_template.py"
-    with open(debug_template_path, "w", encoding="utf-8") as debug_file:
-        debug_file.write(generated_code_prompt)
-
-
-
-    logger.info(f"Rendered template written to {debug_template_path} for debugging.")
+    
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
