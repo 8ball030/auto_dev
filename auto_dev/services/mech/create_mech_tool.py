@@ -196,14 +196,10 @@ def main(api_file, tool_name, author_name, gpt_key):
 
     GPT_KEY = gpt_key
     base_path = Path.cwd()
-
-    logger.info(f"The base path is {base_path}")
     # Create the tool's directory structure and necessary files
     tool_base_path = create_directory_structure(base_path, author_name)
     # Create the init file within the author's folder
     generate_init_file(tool_base_path)
-
-
 
     # Create the customs folder
     customs_path = create_customs_folder(tool_base_path)

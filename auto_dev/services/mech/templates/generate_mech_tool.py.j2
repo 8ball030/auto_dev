@@ -92,8 +92,8 @@ def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
         return f"An error occurred: {str(e)}", None, None, None
 
     return message, prompt, None, counter_callback
-    ....Edit this to work for the code I about to give you for {tool_name} based on the documentation and only give the code.
+    ....Edit this to work for the code I about to give you for {{tool_name}} based on the documentation and only give the code.
     Output only code, no words. This is being put directly in a Python file. Do not put the coding quotation formatting for python files.
     Also give me a commented out main function to run this code at the bottom of the file for testing.
     .....
-    {api_logic_content}
+    {{api_logic_content}}
