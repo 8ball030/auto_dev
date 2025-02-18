@@ -28,7 +28,9 @@ cli = build_cli()
     is_flag=True,
     default=False,
 )
-@click.option("-c", "--coverage-report", help="Run the coverage report", is_flag=True, default=True)
+@click.option(
+    "-c", "--coverage-report/--no-coverage-report", help="Run the coverage report", is_flag=True, default=False
+)
 @click.pass_context
 def test(ctx, path, watch, coverage_report) -> None:
     """Run tests for packages.
