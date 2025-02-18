@@ -106,10 +106,10 @@ def _process_from_file(ctx, yaml_dict, network, read_functions, write_functions,
 
 @scaffold.command()
 @click.option("--type", type=click.Choice([e.value for e in ScaffoldType]), required=True, help="Specify the type of scaffold to create")
-@click.argument("gpt_key", type=str)
 @click.argument("api_file", type=str)
 @click.argument("tool_name", type=str)
 @click.argument("author_name", type=str)
+@click.argument("gpt_key", type=str)
 @click.pass_context
 def custom(ctx, type, api_file, tool_name, author_name, gpt_key):
     """Scaffold a custom tool, such as a Mech tool."""
@@ -118,7 +118,7 @@ def custom(ctx, type, api_file, tool_name, author_name, gpt_key):
         if not api_file or not tool_name or not author_name or not gpt_key:
             raise click.ClickException("For --type mech, you must provide api_file, tool_name, author_name, and gpt_key.")
 
-        from services.mech.create_mech_tool import main as create_mech_tool
+        from auto_dev.services.mech.create_mech_tool import main as create_mech_tool
         
         click.echo(f"Creating Mech tool '{tool_name}' by {author_name}...")
 

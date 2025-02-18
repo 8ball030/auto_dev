@@ -16,62 +16,82 @@
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-\"\"\"Contains the job definitions\"\"\"
+"""Contains the job definitions"""
 import requests
 from typing import Any, Dict, Optional, Tuple
-DEFAULT_PERPLEXITY_SETTINGS = {{
-    "max_": 1,
-    "stop_sequences": None,
-    "max_output_tokens": 500,
+
+DEFAULT_PERPLEXITY_SETTINGS = {
+    "model": "llama-3.1-sonar-small-128k-online",
+    "max_tokens": 500,
     "temperature": 0.7,
-}}
+    "top_p": 0.9,
+    "search_recency_filter": "month",
+    "presence_penalty": 0,
+    "frequency_penalty": 1,
+    "stream": False,
+    "return_images": False,
+    "return_related_questions": False,
+    "search_domain_filter": ["perplexity.ai"],
+}
+
 PREFIX = "llama-"
-ENGINES = {{
+ENGINES = {
     "chat": ["3.1-sonar-small-128k-online", "3.1-sonar-large-128k-online", "3.1-sonar-huge-128k-online"],
-}}
+}
 ALLOWED_TOOLS = [PREFIX + value for value in ENGINES["chat"]]
+
 url = "https://api.perplexity.ai/chat/completions"
-# def count_tokens(text: str) -> int:
-#     \"\"\"Count the number of tokens in a text using the Gemini model's tokenizer.\"\"\"
-#     return genai.count_message_tokens(prompt=text)
+
 def run(**kwargs) -> Tuple[Optional[str], Optional[Dict[str, Any]], Any, Any]:
-    \"\"\"Run the task\"\"\"
+    """Run the task"""
     api_key = kwargs["api_keys"]["perplexity"]
     tool = kwargs["tool"]
     prompt = kwargs["prompt"]
+
     if tool not in ALLOWED_TOOLS:
         return (
-            f"Model {{tool}} is not in the list of supported models.",
+            f"Model {tool} is not in the list of supported models.",
             None,
             None,
             None,
         )
-    max_tokens = kwargs.get("candidate_count")
-    stop_sequences = kwargs.get(
-        "stop_sequences", DEFAULT_GEMINI_SETTINGS["stop_sequences"]
-    )
-    max_output_tokens = kwargs.get(
-        "max_output_tokens", DEFAULT_GEMINI_SETTINGS["max_output_tokens"]
-    )
-    temperature = kwargs.get("temperature", DEFAULT_GEMINI_SETTINGS["temperature"])
+
     counter_callback = kwargs.get("counter_callback", None)
-    genai.configure(api_key=api_key)
-    engine = genai.GenerativeModel(tool)
+
+    payload = {
+        "model": tool,
+        "messages": [
+            {"role": "system", "content": kwargs.get("system_prompt", "Be precise and concise.")},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": kwargs.get("max_tokens", DEFAULT_PERPLEXITY_SETTINGS["max_tokens"]),
+        "temperature": kwargs.get("temperature", DEFAULT_PERPLEXITY_SETTINGS["temperature"]),
+        "top_p": kwargs.get("top_p", DEFAULT_PERPLEXITY_SETTINGS["top_p"]),
+        "search_recency_filter": kwargs.get("search_recency_filter", DEFAULT_PERPLEXITY_SETTINGS["search_recency_filter"]),
+        "presence_penalty": kwargs.get("presence_penalty", DEFAULT_PERPLEXITY_SETTINGS["presence_penalty"]),
+        "frequency_penalty": kwargs.get("frequency_penalty", DEFAULT_PERPLEXITY_SETTINGS["frequency_penalty"]),
+        "stream": kwargs.get("stream", DEFAULT_PERPLEXITY_SETTINGS["stream"]),
+        "return_images": kwargs.get("return_images", DEFAULT_PERPLEXITY_SETTINGS["return_images"]),
+        "return_related_questions": kwargs.get("return_related_questions", DEFAULT_PERPLEXITY_SETTINGS["return_related_questions"]),
+        "search_domain_filter": kwargs.get("search_domain_filter", DEFAULT_PERPLEXITY_SETTINGS["search_domain_filter"]),
+    }
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
     try:
-        response = engine.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                candidate_count=candidate_count,
-                stop_sequences=stop_sequences,
-                max_output_tokens=max_output_tokens,
-                temperature=temperature,
-            ),
-        )
-        # Ensure response has a .text attribute
-        response_text = getattr(response, "text", None)
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        message = data.get("choices", [{}])[0].get("message", {}).get("content", None)
+        if not message:
+            return "No content received from the assistant.", None, None, None
     except Exception as e:
-        return f"An error occurred: {{str(e)}}", None, None, None
-    return response.text, prompt, None, counter_callback
+        return f"An error occurred: {str(e)}", None, None, None
+
+    return message, prompt, None, counter_callback
     ....Edit this to work for the code I about to give you for {tool_name} based on the documentation and only give the code.
     Output only code, no words. This is being put directly in a Python file. Do not put the coding quotation formatting for python files.
     Also give me a commented out main function to run this code at the bottom of the file for testing.

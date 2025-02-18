@@ -7,7 +7,7 @@ from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 
 from auto_dev import cli
-from auto_dev.services.mech.constants.prompts import COMMENTS, GENERATE_MECH_TOOL, INIT_CONTENT
+from auto_dev.services.mech.constants.prompts import COMMENTS, INIT_CONTENT
 from auto_dev.utils import get_logger, write_to_file
 
 logger = get_logger()
@@ -74,7 +74,7 @@ def create_tool_folder(customs_path, tool_name):
     return tool_folder_path
 
 def create_component_yaml(tools_folder_path, tool_name, author_name):
-    yaml_path = tools_folder_path / "component.yaml"
+    yaml_path = Path(tools_folder_path) / "component.yaml"
     if yaml_path.exists():
         logger.info(f"component.yaml already exists at {yaml_path}. Skipping creation.")
         return
@@ -95,59 +95,65 @@ def create_component_yaml(tools_folder_path, tool_name, author_name):
     logger.info(f"component.yaml created at {yaml_path}")
 
 
-def generate_and_write_tool_file(tool_folder_path, tool_name, api_file, gpt_api_key):
-    """
-    Generates and writes the content for <tool_name>.py using GPT.
-    Args:
-        tool_path (str): The path where the tool files are stored.
-        tool_name (str): The name of the tool.
-        api_file (str): The path to the file containing API logic.
-        gpt_api_key (str): The API key for OpenAI GPT.
-    Returns:
-        None
-    """
+def generate_and_write_tool_file(tool_folder_path, tool_name, api_file, gpt_api_key, force=False):
+    """Generates and writes the content for <tool_name>.py using GPT."""
     tool_py_path = Path(tool_folder_path) / f"{tool_name}.py"
-    if os.path.exists(tool_py_path):
+
+    # Always overwrite unless force=False and user declines
+    if os.path.exists(tool_py_path) and not force:
         user_input = input(f"The file {tool_py_path} already exists. Do you want to override it? (yes/no): ").strip().lower()
         if user_input != "yes":
             logger.info(f"Skipping file generation for {tool_py_path}")
             return False
+
     client = OpenAI(api_key=gpt_api_key)
+
     try:
-        # Read the content of the API logic file
         with open(api_file, 'r') as f:
             api_logic_content = f.read()
     except Exception as e:
-        logger.error(f"Error reading the API file: {e}")
+        logger.error(f"Error reading API file: {e}")
         sys.exit(1)
-    # Call GPT to generate the content
 
-        # Use Jinja to load and render the template
+    # Render the template
     templates_path = Path(__file__).resolve().parent / "templates"
     env = Environment(loader=FileSystemLoader(str(templates_path)))
     template = env.get_template("generate_mech_tool.py.j2")
-
-    # Render the template with collected variables
+    logger.info(f"tool_name: {tool_name}")
+    logger.info(f"api_logic_content (first 500 chars): {api_logic_content[:500]}")
     generated_code_prompt = template.render(tool_name=tool_name, api_logic_content=api_logic_content)
-    
+    # Write the rendered template to a file for debugging
+    debug_template_path = Path(tool_folder_path) / f"{tool_name}_debug_template.py"
+    with open(debug_template_path, "w", encoding="utf-8") as debug_file:
+        debug_file.write(generated_code_prompt)
+
+
+
+    logger.info(f"Rendered template written to {debug_template_path} for debugging.")
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
-            messages=[
-                {"role": "user", "content": generated_code_prompt}
-            ]
+            messages=[{"role": "user", "content": generated_code_prompt}]
         )
-
-        # Extract GPT's response
         gpt_response = response.choices[0].message.content.strip()
+
+        # Remove unwanted triple backticks from GPT response
+        if gpt_response.startswith("```python"):
+            gpt_response = gpt_response[9:]  # Remove first 9 characters (` ```python `)
+        if gpt_response.endswith("```"):
+            gpt_response = gpt_response[:-3]  # Remove last 3 characters (` ``` `)        
+    
     except Exception as e:
         logger.error(f"Error calling GPT: {e}")
         sys.exit(1)
 
-    # Write the generated content into the <tool_name>.py file
-    tool_py_path = Path(tool_folder_path) / f"{tool_name}.py"
+    # Write to file
+    if not gpt_response or gpt_response.strip() == "":
+        logger.error("GPT response is empty! Aborting file write.")
+        sys.exit(1)
     try:
-        with open(tool_py_path, 'w') as f:
+        logger.info(f"Writing generated code to {tool_py_path}")
+        with open(tool_py_path, 'w', encoding='utf-8') as f:
             f.write(gpt_response)
         logger.info(f"Generated content written to {tool_py_path}")
         return True
@@ -155,28 +161,43 @@ def generate_and_write_tool_file(tool_folder_path, tool_name, api_file, gpt_api_
         logger.error(f"Error writing to {tool_py_path}: {e}")
         sys.exit(1)
 
+def write_to_file(file_path, content, mode="a"):
+    """Writes content to a file, ensuring safe append mode."""
+    with open(file_path, mode, encoding="utf-8") as f:
+        f.write(content)
+
+
 def append_comments_to_tool_file(tool_file_path, comments):
     """
     Appends comments to the bottom of the specified tool file.
-    Args:
-        tool_file_path (str): The path to the tool file.
-        comments (str): The comments to append.
-    Returns:
-        None
+    Ensures existing content is not erased.
     """
     try:
-        write_to_file(tool_file_path, "\n\n# " + "\n# ".join(comments.splitlines()), mode="a")
+        # ✅ Read existing file content before appending
+        with open(tool_file_path, "r", encoding="utf-8") as f:
+            existing_content = f.read()
+
+        # ✅ Append mode ensures content is not erased
+        with open(tool_file_path, "a", encoding="utf-8") as f:
+            f.write("\n\n# " + "\n# ".join(comments.splitlines()))
+
+        # ✅ Read file after appending
+        with open(tool_file_path, "r", encoding="utf-8") as f:
+            new_content = f.read()
+
         logger.info(f"Comments successfully appended to {tool_file_path}")
+
     except Exception as e:
         logger.error(f"Error appending comments to {tool_file_path}: {e}")
 
-@cli.group()
+
+
 def main(api_file, tool_name, author_name, gpt_key):
 
     GPT_KEY = gpt_key
-    base_path = Path.cwd().parents[3]  # Equivalent to going up 4 directories
+    base_path = Path.cwd()
 
-    logger.info("The base path is" + base_path)
+    logger.info(f"The base path is {base_path}")
     # Create the tool's directory structure and necessary files
     tool_base_path = create_directory_structure(base_path, author_name)
     # Create the init file within the author's folder
