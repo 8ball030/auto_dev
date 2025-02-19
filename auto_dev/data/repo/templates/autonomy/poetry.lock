@@ -273,13 +273,13 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autonomy-dev"
-version = "0.2.128"
+version = "0.2.130"
 description = "A collection of tooling to enable open source development of autonomy tools"
 optional = false
 python-versions = "<3.12,>=3.10"
 files = [
-    {file = "autonomy_dev-0.2.128-py3-none-any.whl", hash = "sha256:b0345df47cbadc0a71128f2f3c187fd4840535a46c5af669be11b63247dd075f"},
-    {file = "autonomy_dev-0.2.128.tar.gz", hash = "sha256:4d58e4a6a75cfff60911efc86cd39c190de50cd7652e8f12217e8286403dc4ed"},
+    {file = "autonomy_dev-0.2.130-py3-none-any.whl", hash = "sha256:15cc8c8c9d2d9f5bcabe79b55ab09ad95bb287975a8bdc11dd48b0dd0c3b86e5"},
+    {file = "autonomy_dev-0.2.130.tar.gz", hash = "sha256:c1002a867c03c08922ee76b2c7c16ec30d563cd674b41faf91e7d7d2f40bdbf8"},
 ]
 
 [package.dependencies]
@@ -296,8 +296,8 @@ open-aea-cli-ipfs = "1.64.0"
 open-aea-ledger-cosmos = {version = "1.64.0", optional = true, markers = "extra == \"all\""}
 open-aea-ledger-ethereum = {version = "1.64.0", optional = true, markers = "extra == \"all\""}
 open-aea-ledger-solana = {version = "1.64.0", optional = true, markers = "extra == \"all\""}
-open-aea-test-autonomy = "0.19.3"
-open-autonomy = {version = "0.19.3", optional = true, markers = "extra == \"all\""}
+open-aea-test-autonomy = "0.19.4"
+open-autonomy = {version = "0.19.4", optional = true, markers = "extra == \"all\""}
 openapi-spec-validator = "0.2.8"
 protobuf = ">=3.19.1,<4.25.0"
 py-eth-sig-utils = "*"
@@ -318,7 +318,7 @@ typing_extensions = ">=3.10.0.2"
 web3 = ">=6.0.0,<7.0.0"
 
 [package.extras]
-all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.64.0)", "open-aea-ledger-cosmos (==1.64.0)", "open-aea-ledger-ethereum (==1.64.0)", "open-aea-ledger-solana (==1.64.0)", "open-autonomy (==0.19.3)", "pydantic (>=2.8.2,<3.0.0)", "pydoclint[all] (>=0.6.0,<0.7.0)", "ruff (>=0.5.7,<0.6.0)", "setuptools (>=75.8.0,<76.0.0)", "tbump (>=6.11.0,<7.0.0)"]
+all = ["isort (>=5.13.2,<6.0.0)", "open-aea (==1.64.0)", "open-aea-ledger-cosmos (==1.64.0)", "open-aea-ledger-ethereum (==1.64.0)", "open-aea-ledger-solana (==1.64.0)", "open-autonomy (==0.19.4)", "pydantic (>=2.8.2,<3.0.0)", "pydoclint[all] (>=0.6.0,<0.7.0)", "ruff (>=0.5.7,<0.6.0)", "setuptools (>=75.8.0,<76.0.0)", "tbump (>=6.11.0,<7.0.0)"]
 
 [[package]]
 name = "backoff"
@@ -2525,13 +2525,13 @@ solders = ">=0.14.0"
 
 [[package]]
 name = "open-aea-test-autonomy"
-version = "0.19.3"
+version = "0.19.4"
 description = "Plugin containing test tools for open-autonomy packages."
 optional = false
 python-versions = "*"
 files = [
-    {file = "open_aea_test_autonomy-0.19.3-py3-none-any.whl", hash = "sha256:4f925f599e785a19355a5eec5c71a444b59de72e388cb628a09e81d62e85d0fc"},
-    {file = "open_aea_test_autonomy-0.19.3.tar.gz", hash = "sha256:7007eded1d1e415340ae1407dda1abdefc8b1c3c62f68b8c2a89ab0ac4813f69"},
+    {file = "open_aea_test_autonomy-0.19.4-py3-none-any.whl", hash = "sha256:497b8d6345bc720cc234880ceda2bc1c470a92d3cfc37af5328eb89a0fdeace4"},
+    {file = "open_aea_test_autonomy-0.19.4.tar.gz", hash = "sha256:2896870e978100db3a656b7395bbfb2c85ecff3e94de2a312fc9f27196d4e8ce"},
 ]
 
 [package.dependencies]
@@ -2542,13 +2542,13 @@ pytest = "7.2.1"
 
 [[package]]
 name = "open-autonomy"
-version = "0.19.3"
+version = "0.19.4"
 description = "A framework for the creation of autonomous agent services."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "open_autonomy-0.19.3-py3-none-any.whl", hash = "sha256:5fc8d227d4c816c152ee615bd7128e2094429642a9d5d652cbb9145072c8b421"},
-    {file = "open_autonomy-0.19.3.tar.gz", hash = "sha256:5e0a6b48ce3a456ea3ccd0ea9e3d43a84bb3070ca3deea2909a47e527c66a145"},
+    {file = "open_autonomy-0.19.4-py3-none-any.whl", hash = "sha256:c48155be8e0f8e844bcdb78cfc2f231e86f15e2bc853b13a27a545fbc9286ee4"},
+    {file = "open_autonomy-0.19.4.tar.gz", hash = "sha256:16ee3ffbb7ba82f076ec2af86e42d063f582b58395b370cd1575522306a93498"},
 ]
 
 [package.dependencies]
@@ -4482,4 +4482,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "1f0c577626556a1de83e9b98bc707d4172ff7c27b01e0b38aa57aa8239ede8c3"
+content-hash = "691ce30da225926e3c3dd73e1dd0f9120783e09cdf81e16bec2657509a49f242"

@@ -26,12 +26,16 @@ def update_tests(public_id: str, agent_runner: DevAgentRunner) -> None:
         test_file = Path(test_file)
         test_file_content = test_file.read_text()
         test_file_ast = ast.parse(test_file_content)
+        diff = False
         for node in test_file_ast.body:
             if isinstance(node, ast.Assign) and node.targets[0].id == "AGENT_NAME":
                 node.value.s = public_id.name
+                diff = True
             if isinstance(node, ast.Assign) and node.targets[0].id == "AUTHOR":
                 node.value.s = public_id.author
-        test_file.write_text(ast.unparse(test_file_ast))
+                diff = True
+        if diff:
+            test_file.write_text(ast.unparse(test_file_ast))
 
 
 def get_available_agents() -> list[str]:

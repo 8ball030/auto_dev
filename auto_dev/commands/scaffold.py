@@ -25,6 +25,7 @@ from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING, JINJA_TEMPLATE
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.handlers.base import HandlerTypes, HandlerScaffolder
 from auto_dev.dao.scaffolder import DAOScaffolder
+from auto_dev.workflow_manager import Task
 from auto_dev.contracts.contract import DEFAULT_NULL_ADDRESS
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.dialogues.scaffolder import DialogueTypes, DialogueScaffolder
@@ -33,7 +34,6 @@ from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 from auto_dev.connections.scaffolder import ConnectionScaffolder
 from auto_dev.contracts.block_explorer import BlockExplorer
 from auto_dev.contracts.contract_scafolder import ContractScaffolder
-from auto_dev.workflow_manager import Task
 
 
 cli = build_cli()
