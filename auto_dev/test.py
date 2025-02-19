@@ -62,6 +62,6 @@ def test_path(
     args = ["pytest", path, *extra_args]
     env = os.environ.copy()
     env.update({"PYTHONPATH": "."})
-    task = Task(command=" ".join(args), env_vars=env)
+    task = Task(command=" ".join(args), env_vars=env, stream=verbose, verbose=verbose)
     task.work()
     return not task.is_failed
