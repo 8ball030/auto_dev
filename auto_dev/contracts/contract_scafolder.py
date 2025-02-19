@@ -5,11 +5,14 @@ import json
 import shutil
 from dataclasses import dataclass
 
+from auto_dev.services.package_manager.index import PackageManager
+from auto_dev.services.runner.runner import DEFAULT_VERSION
 from auto_dev.utils import isolated_filesystem
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.contracts.contract import Contract
 from auto_dev.contracts.block_explorer import BlockExplorer
+from aea.configurations.base import PackageId, PublicId, PackageType
 
 
 @dataclass
@@ -72,4 +75,20 @@ class ContractScaffolder:
                 f"contracts/{contract.name}",
                 contract.path,
             )
+        # We need to add the generated code to package manager
+
+        package_manager = PackageManager(verbose=verbose,)
+        package_manager.add_to_packages(
+            dev_packages=[
+                PackageId(
+                    package_type=PackageType.CONTRACT,
+                    public_id=PublicId(
+                        author=self.author, 
+                        name=contract.name, 
+                        version=DEFAULT_VERSION,
+                        package_hash=DEFAULT_IPFS_HASH,
+                ),
+            )],
+            third_party_packages=[]
+        )
         return contract.path

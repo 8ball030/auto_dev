@@ -9,6 +9,7 @@ Also contains a Contract, which we will use to allow the user to;
 """
 
 import enum
+import sys
 from pathlib import Path
 
 import yaml
@@ -33,6 +34,7 @@ from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 from auto_dev.connections.scaffolder import ConnectionScaffolder
 from auto_dev.contracts.block_explorer import BlockExplorer
 from auto_dev.contracts.contract_scafolder import ContractScaffolder
+from auto_dev.workflow_manager import Task
 
 class ScaffoldType(enum.Enum):
     MECH = "mech"
@@ -46,12 +48,13 @@ cli = build_cli()
 def scaffold() -> None:
     r"""Commands for scaffolding new components.
 
-    Available Commands:\n
-        contract: Scaffold a smart contract component\n
-        fsm: Scaffold a Finite State Machine (FSM)\n
-        protocol: Scaffold a protocol component\n
-        connection: Scaffold a connection component\n
-        handler: Generate an AEA handler from OpenAPI 3 specification\n
+    Available Commands:
+
+        contract: Scaffold a smart contract component
+        fsm: Scaffold a Finite State Machine (FSM)
+        protocol: Scaffold a protocol component
+        connection: Scaffold a connection component
+        handler: Generate an AEA handler from OpenAPI 3 specification
     """
 
 
@@ -149,16 +152,23 @@ def contract(ctx, public_id, address, network, read_functions, write_functions, 
     r"""Scaffold a smart contract component.
 
     Required Parameters:
-        Either one of:
-            public_id: The public ID of the contract (author/name format).
-            from_file(--from-file): Path to file containing contract addresses and names.
 
-    Optional Parameters:\n
-        address(--address): Contract address on the blockchain. (Default: null address)\n
-        from_abi(--from-abi): Path to ABI file to use for scaffolding. (Default: None)\n
-        network(--network): Blockchain network to fetch ABI from. (Default: ethereum)\n
-        read_functions(--read-functions): Comma-separated list of read functions to include. (Default: None (all))\n
-        write_functions(--write-functions): Comma-separated list of write functions to include. (Default: None (all))\n
+    one of:
+
+        public_id: The public ID of the contract (author/name format).
+        from_file: Path to file containing contract addresses and names.
+
+    Optional Parameters:
+
+        address(--address): Contract address on the blockchain. (Default: null address)
+
+        from_abi(--from-abi): Path to ABI file to use for scaffolding. (Default: None)
+
+        network(--network): Blockchain network to fetch ABI from. (Default: ethereum)
+
+        read_functions(--read-functions): Comma-separated list of read functions to include. (Default: None (all))
+
+        write_functions(--write-functions): Comma-separated list of write functions to include. (Default: None (all))
 
     Usage:
         Scaffold from address:
@@ -226,8 +236,13 @@ def contract(ctx, public_id, address, network, read_functions, write_functions, 
     contract_path = scaffolder.generate_openaea_contract(new_contract)
     logger.info("Writing abi to file, Updating contract.yaml with build path. Parsing functions.")
     new_contract.process()
-
     _log_contract_info(new_contract, contract_path, logger)
+    task = Task(command="autonomy packages lock")
+    task.work()
+    if task.is_failed:
+        logger.error("Failed to lock packages Please run 'autonomy packages lock' manually.")
+        return
+    logger.info("Locked packages successfully.")
 
 
 def _log_contract_info(contract, contract_path, logger):
@@ -250,9 +265,11 @@ def fsm(spec) -> None:
     """Scaffold a new Finite State Machine (FSM).
 
     Optional Parameters:
+
         spec: Path to FSM specification YAML file. Default: None
 
     Usage:
+
         Scaffold base FSM:
             adev scaffold fsm
 
@@ -318,12 +335,15 @@ def protocol(ctx, protocol_specification_path: str, language: str) -> None:
     """Scaffold a new protocol component.
 
     Required Parameters:
+
         protocol_specification_path: Path to protocol specification file
 
     Optional Parameters:
+
         language: Programming language for protocol (default: python)
 
     Usage:
+
         Basic protocol scaffolding:
             adev scaffold protocol path/to/spec.yaml
 
@@ -357,10 +377,13 @@ def connection(  # pylint: disable=R0914
     """Scaffold a new connection component.
 
     Required Parameters:
+
         name: Name of the connection to create.
+
         protocol: Public ID of the protocol to use (author/name format).
 
     Usage:
+
         Create connection with protocol:
             adev scaffold connection my_connection --protocol author/protocol_name
 
@@ -392,13 +415,17 @@ def handler(ctx, spec_file, public_id, new_skill, auto_confirm) -> int:
 
     Required Parameters:
         spec_file: Path to OpenAPI 3 specification file
+
         public_id: Public ID for the handler (author/name format)
 
     Optional Parameters:
+
         new_skill: Create a new skill for the handler. Default: False
+
         auto_confirm: Skip confirmation prompts. Default: False
 
     Usage:
+
         Basic handler generation:
             adev scaffold handler api_spec.yaml author/handler_name
 
@@ -457,22 +484,27 @@ def behaviour(
     """Generate AEA behaviours from an OpenAPI 3 specification.
 
     Required Parameters:
+
         spec_file: Path to OpenAPI 3 specification file
             - Must be a valid OpenAPI 3.0+ specification
             - File must exist and be readable
 
     Optional Parameters:
+
         target_speech_acts (--target-speech-acts): Comma separated list of speech acts to scaffold. (Default: None)
             - If provided, only generates behaviours for specified speech acts
             - Must match speech acts defined in the spec
+
         auto_confirm (--auto-confirm): Skip confirmation prompts. (Default: False)
             - Automatically applies all changes without prompting
             - Use with caution in production environments
+
         behaviour_type (--behaviour-type): Type of behaviour to generate. (Default: metrics)
             - metrics: Generates metrics collection behaviour
             - simple_fsm: Generates simple finite state machine behaviour
 
     Usage:
+
         Generate metrics behaviour:
             adev scaffold behaviour openapi.yaml --behaviour-type metrics
 
@@ -553,21 +585,26 @@ def handlers(
     """Generate AEA handlers from an OpenAPI 3 specification.
 
     Required Parameters:
+
         spec_file: Path to OpenAPI 3 specification file
             - Must be a valid OpenAPI 3.0+ specification
             - File must exist and be readable
 
     Optional Parameters:
+
         target_speech_acts (--target-speech-acts): Comma separated list of speech acts to scaffold. (Default: None)
             - If provided, only generates handlers for specified speech acts
             - Must match speech acts defined in the spec
+
         auto_confirm (--auto-confirm): Skip confirmation prompts. (Default: False)
             - Automatically applies all changes without prompting
             - Use with caution in production environments
+
         handler_type (--handler_type): Type of handler to generate. (Default: simple)
             - simple: Generates basic request/response handler
 
     Usage:
+
         Generate simple handler:
             adev scaffold handlers openapi.yaml --handler_type simple
 
@@ -641,17 +678,21 @@ def dialogues(
     """Generate AEA dialogues from an OpenAPI 3 specification.
 
     Required Parameters:
+
         spec_file: Path to OpenAPI 3 specification file
             - Must be a valid OpenAPI 3.0+ specification
             - File must exist and be readable
 
     Optional Parameters:
+
         target_speech_acts (--target-speech-acts): Comma separated list of speech acts to scaffold. (Default: None)
             - If provided, only generates dialogues for specified speech acts
             - Must match speech acts defined in the spec
+
         auto_confirm (--auto-confirm): Skip confirmation prompts. (Default: False)
             - Automatically applies all changes without prompting
             - Use with caution in production environments
+
         dialogue_type (--dialogue-type): Type of dialogue to generate. (Default: simple)
             - simple: Generates basic request/response dialogue
 
@@ -727,10 +768,22 @@ def tests(
 
 
 @scaffold.command()
-@click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm all actions")
+@click.option(
+    "--auto-confirm",
+    is_flag=True,
+    default=False,
+    help="Automatically confirm all prompts",
+)
 @click.pass_context
 def dao(ctx, auto_confirm) -> None:
-    """Scaffold Data Access Objects (DAOs) and generate test script based on an OpenAPI 3 specification."""
+    """Scaffold Data Access Objects (DAOs) and generate test scripts based on an OpenAPI 3 specification.
+
+    This command creates:
+
+    1. Data Access Object classes for each model in the OpenAPI spec
+    2. Sample data for testing
+    3. Test scripts to validate the Data Access Objects
+    """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
 
@@ -751,6 +804,14 @@ def dao(ctx, auto_confirm) -> None:
     component_author = customs_config.get("author")
     component_name = customs_config.get("name")
     public_id = PublicId(component_author, component_name.split(":")[0])
+    dao_dir = Path.cwd() / "daos"
+    if (
+        dao_dir.exists()
+        and not auto_confirm
+        and not click.confirm("DAOs directory already exists. Do you want to overwrite it?")
+    ):
+        logger.info("Aborting DAO scaffolding.")
+        sys.exit(1)
 
     try:
         scaffolder = DAOScaffolder(logger, verbose, auto_confirm, public_id)

@@ -34,13 +34,16 @@ def fmt(
     """Format code using the configured formatters.
 
     Required Parameters:
+
         None
 
     Optional Parameters:
+
         path (-p): Path to code to format. (Default: None)
             - If not provided, formats all packages
             - Can be file or directory path
             - Must exist in workspace
+
         changed_only (-co): Only format files that have changed. (Default: False)
             - Uses git to detect changes
             - Only formats files with uncommitted changes

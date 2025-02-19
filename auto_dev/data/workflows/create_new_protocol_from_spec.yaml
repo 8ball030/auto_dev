@@ -1,0 +1,72 @@
+id: '1'
+name: create_new_protocol_from_spec
+description: A workflow to create a new protocol from a specification
+kwargs:
+  new_author: author_2
+  new_agent: agent_2
+  new_protocol: balances
+  spec_path: auto_dev/data/protocols/examples/balances.yaml
+tasks:
+
+# tmp_agent_name='tmp_agent'
+# function generate_protocol {
+#     echo "Generating protocol $1"
+#     rm -rf packages/eightballer/protocols/$1
+#     aea create $tmp_agent_name
+#     cd $tmp_agent_name
+#     adev scaffold protocol $(echo $SPEC_PATH/$1.yaml)
+#     aea publish --local --push-missing
+#     cd ..
+#     rm -rf $tmp_agent_name
+#     rm -rf packages/eightballer/agents/$tmp_agent_name
+#     adev -v fmt -p  packages/eightballer/protocols/$1
+#     adev -v lint -p packages/eightballer/protocols/$1
+#     pytest packages/eightballer/protocols/$1
+# }
+
+  - id: '0'
+    name: Verify packages
+    description: Check that the packages registry is up to date.
+    command: autonomy packages init
+    continue_on_error: true
+
+  - id: '1'
+    name: create_new_agent
+    description: Use Adev to make a temporary agent for the new protocol.
+    command: adev create ${kwargs.new_author}/${kwargs.new_agent} -t eightballer/base --no-publish --no-clean-up --force
+
+  - id: '2'
+    name: Scaffold Protocol from Spec
+    description: Scaffold the protocol from the specification.
+    command: adev scaffold protocol ../${kwargs.spec_path}
+    working_dir: ${kwargs.new_agent}
+
+  - id: '3'
+    name: Publish All Generated components
+    description: Publish all generated components to local registry.
+    command: aea publish --local --push-missing
+    working_dir: ${kwargs.new_agent}
+  
+  - id: '4'
+    name: Format Protocol
+    description: Format the protocol.
+    command: adev fmt -p packages/eightballer/protocols/${kwargs.new_protocol}
+  
+  - id: '5'
+    name: Lint Protocol
+    description: Lint the protocol.
+    command: adev lint -p packages/eightballer/protocols/${kwargs.new_protocol}
+    pause_after: 2.0
+  
+  - id: '6'
+    name: Test Protocol
+    description: Test the protocol.
+    command: adev test -p packages/eightballer/protocols/${kwargs.new_protocol}
+    pause_after: 2.0
+
+  - id: '7'
+    name: Clean Up
+    description: Clean up the unecessary generated agent.
+    command: rm -rf packages/eightballer/agents/${kwargs.new_agent}
+
+  

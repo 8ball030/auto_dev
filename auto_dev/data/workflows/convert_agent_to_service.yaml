@@ -1,0 +1,18 @@
+id: '1'
+name: workflow_create_new_agent_from_fsm
+description: A workflow to create a new agent from a finite state machine
+kwargs:
+  new_author: author_2
+  new_agent: agent_2
+  new_service: simple_fsm_2
+tasks:
+  - id: '1'
+    name: convert_agent_to_service
+    description: Use Adev to convert from an agent to a service.
+    command: adev convert agent-to-service ${kwargs.new_author}/${kwargs.new_agent} ${kwargs.new_author}/${kwargs.new_service}
+
+  - id: '2'
+    name: run_service
+    description: Run the service.
+    command: adev run prod ${kwargs.new_author}/${kwargs.new_service} --force
+  

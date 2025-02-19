@@ -38,7 +38,7 @@ gh repo fork 8ball030/auto_dev --clone
 
 ## Install Python and Poetry
 
-auto_dev uses [Poetry](https://python-poetry.org/) for dependency management. You need to install **Python 3.9 or higher** and **Poetry < 2.0**.
+auto_dev uses [Poetry](https://python-poetry.org/) for dependency management. You need to install **Python 3.10 or higher** and **Poetry < 2.0**.
 
 You can run the following commands in your terminal to check your local Python and Poetry versions:
 
@@ -96,6 +96,9 @@ make lint
 
 # Run tests
 make test
+
+# Update documentation
+make docs
 ```
 
 These commands will ensure your code:

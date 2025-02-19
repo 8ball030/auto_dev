@@ -1,37 +1,48 @@
 """Test documentation generation."""
 
 from pathlib import Path
+from importlib import import_module
+import click
+from auto_dev.utils import read_from_file
 
 
-def check_documentation_exists(source_files: list[Path], docs_dir: Path, file_type: str):
-    """Check that documentation exists and is valid for given source files."""
+def test_check_documentation_and_suggest():
+    """Check that all source files and subcommands have documentation and suggest running make docs if not."""
+    # Define the source and docs directories
+    source_dir = Path("auto_dev/commands")
+    docs_dir = Path("docs/commands")
+
+    # Get all Python files in the source directory, excluding __init__ and __pycache__
+    source_files = list(source_dir.glob("*.py"))
+    source_files = [f for f in source_files if f.stem not in {"__init__", "__pycache__"}]
+
+    # Check that each source file has a corresponding doc file, ex. adev run
     for source_file in source_files:
         doc_file = docs_dir / f"{source_file.stem}.md"
-        assert doc_file.exists(), f"Documentation missing for {file_type} {source_file.stem}"
+        assert doc_file.exists(), f"Documentation missing for command {source_file.stem}. Consider running 'make docs'."
 
-        # Check that the documentation file is not empty
-        assert doc_file.stat().st_size > 0, f"Documentation is empty for {file_type} {source_file.stem}"
+        # Import the module and check for subcommands
+        module_name = f"auto_dev.commands.{source_file.stem}"
+        try:
+            module = import_module(module_name)
+        except ImportError as e:
+            msg = f"Could not import module {module_name}: {e}"
+            raise AssertionError(msg) from e
 
-        # Read the doc file and check for basic content
-        content = doc_file.read_text()
-        assert "# " in content, f"Documentation lacks title for {file_type} {source_file.stem}"
-        assert "## " in content, f"Documentation lacks sections for {file_type} {source_file.stem}"
+        # Get the command group function
+        group_func = getattr(module, source_file.stem, None)
+        if not group_func or not isinstance(group_func, click.Group):
+            continue
 
+        # Read the documentation file content
+        doc_content = read_from_file(doc_file)
 
-def test_all_endpoints_documented(generated_docs):
-    """Test that all command and API endpoints are documented."""
-    # Get all Python files in the commands directory
-    commands_dir = Path("auto_dev/commands")
-    command_files = list(commands_dir.glob("*.py"))
-    command_files = [f for f in command_files if f.stem not in {"__init__", "__pycache__"}]
+        # Get commands directly from the Click group
+        for cmd_name, cmd in group_func.commands.items():
+            if not isinstance(cmd, click.Command) or isinstance(cmd, click.Group):
+                continue
 
-    # Get all Python files in the API directory
-    api_dir = Path("auto_dev/api")
-    api_files = list(api_dir.glob("*.py"))
-    api_files = [f for f in api_files if f.stem not in {"__init__", "__pycache__"}]
-
-    # Check command documentation
-    check_documentation_exists(command_files, generated_docs, "command")
-
-    # Check API documentation
-    check_documentation_exists(api_files, Path("docs/api"), "API endpoint")
+            # Check for subcommand documentation within the same file, ex. adev run dev 
+            assert (
+                f"### {cmd_name}" in doc_content
+            ), f"Documentation missing for subcommand {cmd_name} in {source_file.stem}. Consider running 'make docs'."

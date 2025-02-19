@@ -1,18 +1,23 @@
 """Implement scaffolding tooling."""
 
+import sys
 import difflib
 from copy import deepcopy
 from pathlib import Path
 
 import yaml
 import rich_click as click
-from aea.configurations.base import PublicId
+from aea.configurations.base import SKILLS, PublicId, PackageType
+from aea.configurations.constants import DEFAULT_SKILL_CONFIG_FILE
 
 from auto_dev.base import build_cli
-from auto_dev.enums import FileType
-from auto_dev.utils import get_logger, write_to_file, read_from_file
-from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.enums import FileType, BehaviourTypes
+from auto_dev.utils import get_logger, write_to_file, read_from_file, snake_to_camel, load_autonolas_yaml
+from auto_dev.constants import DEFAULT_ENCODING, FSM_END_CLASS_NAME
+from auto_dev.exceptions import OperationError
+from auto_dev.workflow_manager import Task
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
+from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 
 
 logger = get_logger()
@@ -170,7 +175,7 @@ AEA_CONFIG = "aea-config.yaml"
 
 class BaseScaffolder:
     """Base class for scaffolding functionality.
-    
+
     Initializes a scaffolder with logging and loads the AEA configuration.
     """
 
@@ -231,9 +236,10 @@ class LoggingScaffolder(BaseScaffolder):
 def augment() -> None:
     r"""Commands for augmenting project components.
 
-    Available Commands:\n
-        logging: Add logging handlers to AEA configuration\n
-        customs: Augment customs components with OpenAPI3 handlers\n
+    Available Commands:
+
+        logging: Add logging handlers to AEA configuration
+        customs: Augment customs components with OpenAPI3 handlers
     """
 
 
@@ -242,15 +248,21 @@ def augment() -> None:
 def logging(handlers) -> None:
     r"""Augment AEA logging configuration with additional handlers.
 
-    Required Parameters:\n
-        handlers: One or more handlers to add (console, http, logfile)\n
+    Required Parameters:
 
-    Usage:\n
-        Add console handler:\n
-            adev augment logging console\n
+        handlers: One or more handlers to add (console, http, logfile)
 
-        Add multiple handlers:\n
-            adev augment logging console http logfile\n
+    Usage:
+
+        Add console handler:
+
+        adev augment logging console
+
+
+        Add multiple handlers:
+
+        adev augment logging console http logfile
+
 
     Notes
     -----
@@ -310,35 +322,32 @@ def connection(connections) -> None:
 @augment.command()
 @click.argument("component_type", type=click.Choice(["openapi3"]))
 @click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
-@click.option("--use-daos", is_flag=True, default=False, help="Augment OpenAPI3 handlers with DAOs")
+@click.option(
+    "--use-daos",
+    is_flag=True,
+    default=False,
+    help="Augment OpenAPI3 handlers with Data Access Objects (DAOs)",
+)
 @click.pass_context
 def customs(ctx, component_type, auto_confirm, use_daos):
-    r"""Augment a customs component with OpenAPI3 handlers.
+    """Augment a customs component with generated code.
 
-    Required Parameters:
-        component_type: Type of component to augment (currently only openapi3)
+    Usage:
+    ```
+    adev augment customs openapi3
+    ```
 
-    Optional Parameters:\n
-        auto_confirm: Skip confirmation prompts. (Default: False)\n
-        use_daos: Include DAO integration in handlers. (Default: False)\n
+    With Data Access Object integration:
+    ```
+    adev augment customs openapi3 --use-daos
+    ```
 
-    Usage:\n
-        Basic OpenAPI3 augmentation:\n
-            adev augment customs openapi3\n
+    Features:
 
-        With DAO integration:
-            adev augment customs openapi3 --use-daos
-
-        Skip confirmations:
-            adev augment customs openapi3 --auto-confirm
-
-    Notes
-    -----
-        - Requires component.yaml with api_spec field
-        - Generates/updates handlers.py with OpenAPI endpoints
-        - Creates necessary dialogue classes
-        - Optionally adds DAO integration
-        - Shows diff before updating existing handlers
+    - Generates handlers for each OpenAPI operation
+    - Creates dialogue classes for request/response handling
+    - Optionally adds Data Access Object integration
+    - Includes error handling and logging
 
     """
     logger = ctx.obj["LOGGER"]
@@ -400,6 +409,93 @@ def customs(ctx, component_type, auto_confirm, use_daos):
     if use_daos:
         scaffolder.create_exceptions()
     logger.info("OpenAPI3 scaffolding completed successfully.")
+
+
+@augment.command()
+@click.argument("spec_file", type=click.Path(exists=True))
+@click.argument("skill_public_id", type=PublicId.from_str, required=True)
+@click.option("--auto-confirm", is_flag=True, default=False, help="Auto confirm the augmentation")
+@click.option("--verbose", is_flag=True, default=False, help="Verbose output")
+@click.option("--force", is_flag=True, default=False, help="Force the augmentation")
+@click.option("--publish/--no-publish", is_flag=True, default=False, help="Publish the skill to the registry")
+def skill_from_fsm(
+    spec_file: str, skill_public_id: PublicId, auto_confirm: bool, verbose: bool, force: bool, publish: bool
+):
+    """Augment a skill with a new handler.
+
+    Required Parameters:
+
+        spec_file: Path to the FSM specification file
+
+        skill_public_id: Public ID of the skill to augment
+
+    Optional Parameters:
+
+        auto_confirm (--auto-confirm): Auto confirm the augmentation
+
+        verbose (--verbose): Verbose output
+        force (--force): Force the augmentation
+    Usage:
+
+        adev augment skill_from_fsm fsm_spec.yaml author/skill_name:0.1.0
+
+    """
+
+    if not Path(AEA_CONFIG).exists():
+        msg = f"File {AEA_CONFIG} not found. Please run this command from an agent."
+        logger.error(msg)
+        sys.exit(1)
+
+    skill_dir = Path(f"{SKILLS}/{skill_public_id.name}")
+    behaviour_path = skill_dir / "behaviours.py"
+    config, *_overrides = load_autonolas_yaml(PackageType.SKILL, skill_dir)
+
+    if config.get("author") != skill_public_id.author or config.get("name") != skill_public_id.name:
+        msg = f"Skill {skill_public_id} not found in the current project."
+        logger.error(msg)
+        raise OperationError(msg)
+
+    if behaviour_path.exists():
+        logger.error(f"Behaviours file already exists for skill {skill_public_id}.")
+        if not force:
+            logger.error("Use --force to overwrite.")
+            sys.exit(1)
+        behaviour_path.unlink()
+
+    logger.info("Augmenting skill with a new handler.")
+    scaffolder = BehaviourScaffolder(
+        spec_file,
+        behaviour_type=BehaviourTypes.simple_fsm,
+        logger=logger,
+        verbose=verbose,
+        auto_confirm=auto_confirm,
+    )
+
+    output = scaffolder.scaffold()
+    write_to_file(behaviour_path, output, FileType.PYTHON)
+    class_name = f"{snake_to_camel(scaffolder.fsm_spec.label).capitalize()}{FSM_END_CLASS_NAME}"
+    skill_yaml = read_from_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, FileType.YAML)
+    if "behaviours" not in skill_yaml:
+        skill_yaml["behaviours"] = {}
+    skill_yaml["behaviours"]["main"] = {
+        "args": {},
+        "class_name": class_name,
+    }
+    write_to_file(skill_dir / DEFAULT_SKILL_CONFIG_FILE, skill_yaml, FileType.YAML)
+    logger.info(f"Skill.yaml updated: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
+    logger.info(f"Skill successfully augmented: {skill_dir / DEFAULT_SKILL_CONFIG_FILE}")
+
+    if publish:
+        logger.info("Publishing agent and skill to the registry.")
+        config, *_overrides = load_autonolas_yaml(PackageType.AGENT, Path())
+        agent_public_id = PublicId.from_str(f"{config['author']}/{config['agent_name']}:{config['version']}")
+        task = Task(command=f"adev publish {agent_public_id}").work()
+
+        if task.is_failed:
+            logger.error(f"Error publishing skill: {task.output}")
+            sys.exit(1)
+        logger.info(f"Skill published successfully! : {skill_public_id}")
+        logger.info(f"Agent published successfully! : {agent_public_id}")
 
 
 if __name__ == "__main__":

@@ -27,9 +27,9 @@ jobs:
       matrix:
         python-version:
         - "3.11"
-        - "3.12"
+        # - "3.12"
         - "3.10"
-        poetry-version: ["1.3.2"]
+        poetry-version: ["2.0.1"]
         os:
         - ubuntu-20.04
         - macos-latest # needs to be pinned
@@ -77,3 +77,36 @@ jobs:
         with:
           pytest-coverage-path: ./coverage-report.txt
 
+  release_on_main:
+    runs-on: ubuntu-latest
+    needs: check   # Ensures this job only runs after the "check" job is completed successfully
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'Bump to ') # Optional condition to skip some commits
+
+    permissions:
+      contents: write   # Allows modifying repository content (including workflows
+      actions: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.0.1
+          virtualenvs-create: true
+          installer-parallel: true
+
+      - name: Install Adev
+        run: |
+          make install
+
+      # - name: Run release if on main
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      #   run: |
+      #     git config --global user.name "CI"
+      #     git config --global user.email "ci@station.codes"
+      #     poetry run adev release --auto-approve

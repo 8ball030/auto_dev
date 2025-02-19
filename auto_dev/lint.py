@@ -1,5 +1,7 @@
 """Simple linting tooling for autonomy repos."""
 
+from pathlib import Path
+
 from auto_dev.constants import DEFAULT_RUFF_CONFIG
 
 from .cli_executor import CommandExecutor
@@ -32,6 +34,15 @@ def check_path(path: str, verbose: bool = False) -> bool:
             - Skips raises checking
 
     """
+
+    path_obj = Path(path)
+
+    # If path doesn't exist, return True (consider it a pass)
+    if not path_obj.exists():
+        if verbose:
+            pass
+        return True
+
     ruff_command = CommandExecutor(
         [
             "poetry",

@@ -8,40 +8,26 @@ license = "Apache-2.0"
 classifiers = [
     'License :: OSI Approved :: Apache Software License',
     'Natural Language :: English',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
 ]
+package-mode = false
 
 [tool.poetry.dependencies]
-python = ">=3.9,<=3.13"
+python = ">=3.10,<3.12"
 cython = "<3.0.0"
-open-aea-ledger-solana = "==1.60.0"
-open-aea-ledger-cosmos = "==1.60.0"
-open-aea-ledger-ethereum = "==1.60.0"
-open-aea = "==1.60.0"
-open-aea-cli-ipfs = "==1.60.0"
-open-aea-test-autonomy = "==0.18.4"
-open-autonomy = "==0.18.4"
-autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.91"}}
+disutils = "^1.4.32.post2"
+setuptools = "^75.8.0"
+open-aea-ledger-solana = "==1.64.0"
+open-aea-ledger-cosmos = "==1.64.0"
+open-aea-ledger-ethereum = "==1.64.0"
+open-aea = "==1.64.0"
+open-aea-cli-ipfs = "==1.64.0"
+open-aea-test-autonomy = "==0.19.3"
+open-autonomy = "==0.19.3"
+autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.128"}}
 
-[tool.poetry.dev-dependencies]
-
-
-[tool.poetry.extras]
-dev = ["pre-commit", "virtualenv", "pip", "toml", ]
-doc = [
-    "mkdocs",
-    "mkdocs-include-markdown-plugin",
-    "mkdocs-material",
-    "mkdocstrings",
-    "mkdocs-material-extension",
-    "mkdocs-autorefs",
-]
-
+[tool.poetry.group.dev.dependencies]
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

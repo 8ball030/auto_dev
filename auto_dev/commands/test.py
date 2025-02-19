@@ -28,7 +28,7 @@ cli = build_cli()
     is_flag=True,
     default=False,
 )
-@click.option("-c", "--coverage-report", help="Run the coverage report", is_flag=True, default=True)
+@click.option("-c", "--coverage-report/--no-coverage-report", help="Run the coverage report", is_flag=True, default=False)
 @click.pass_context
 def test(ctx, path, watch, coverage_report) -> None:
     """Run tests for packages.
@@ -37,14 +37,17 @@ def test(ctx, path, watch, coverage_report) -> None:
         None
 
     Optional Parameters:
+
         path (-p): Path to directory to test. (Default: None)
             - If not provided, tests all packages
             - Must be a valid directory containing tests
             - Can be package root or specific test directory
+
         watch (-w): Watch files for changes and re-run tests. (Default: False)
             - Monitors file changes in real-time
             - Re-runs tests when files are modified
             - Useful for test-driven development
+
         coverage_report (-c): Generate test coverage report. (Default: True)
             - Creates detailed coverage analysis
             - Shows line-by-line coverage stats

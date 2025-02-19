@@ -33,23 +33,36 @@ def run() -> None:
 @click.option("-v", "--verbose", is_flag=True, help="Verbose mode.", default=False)
 @click.option("--force", is_flag=True, help="Force overwrite of existing agent", default=False)
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
+@click.option("--use-tendermint/--no-use-tendermint", help="Use Tendermint for blockchain network", default=True)
+@click.option("--install-deps/--no-install-deps", help="Install dependencies", default=True)
 @click.pass_context
-def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool) -> None:
+def dev(
+    ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool, use_tendermint: bool, install_deps: bool
+) -> None:
     """Run an agent from the local packages registry or a local path.
 
     Required Parameters:
+
         agent_public_id: The public ID of the agent (author/name format).
             If not provided, uses the current directory's agent.
 
     Optional Parameters:
+
         verbose (-v): Enable verbose logging. Shows detailed output during execution. (Default: False)
+
         force (--force): Force overwrite if agent exists locally. (Default: False)
+
         fetch (--fetch/--no-fetch): Whether to fetch agent from registry or use local package. (Default: True)
             - If True: Fetches agent from local registry
             - If False: Uses agent from current directory or packages
 
+        use-tendermint (--use-tendermint/--no-use-tendermint): Use Tendermint for blockchain network. (Default: True)
+        install-deps (--install-deps/--no-install-deps): Install dependencies. (Default: True)
+
     Example usage:
+
         adev run dev eightballer/my_agent  # Fetch and run from registry
+
         adev run dev eightballer/my_agent --no-fetch
 
     Notes
@@ -76,6 +89,7 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
             - Checks Tendermint health
             - Manages Docker containers
             - Handles network timeouts
+
     """
 
     if not agent_public_id:
@@ -94,6 +108,8 @@ def dev(ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool)
         force=force,
         logger=logger,
         fetch=fetch,
+        use_tendermint=use_tendermint,
+        install_deps=install_deps,
     )
     runner.run()
     logger.info("Agent run complete. 😎")
@@ -121,17 +137,25 @@ def prod(
     number_of_agents: int,
 ) -> None:
     """Run an agent in production mode.
+
     Required Parameters:
+
         service_public_id: The public ID of the service (author/name format).
 
     Optional Parameters:
+
         verbose (-v): Enable verbose logging. Shows detailed output during execution. (Default: False)
+
         force (--force/--no-force): Force overwrite if service exists locally. (Default: False)
+
         fetch (--fetch/--no-fetch): Whether to fetch service from registry or use local package. (Default: True)
+
         keysfile (--keysfile): Path to the private keys file. (Default: keys.json)
+
         number_of_agents (-n): Number of agents to run. (Default: 1)
 
     Example usage:
+
         adev run prod eightballer/my_service
     """
 

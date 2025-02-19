@@ -29,11 +29,13 @@ cli = build_cli()
 def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
     r"""Publish an agent to the local registry.
 
-    Required Parameters:\n
-        public_id: The public ID of the agent (author/name format).\n
+    Required Parameters:
 
-    Optional Parameters:\n
-        force (--force/--no-force): Force overwrite if package exists. (Default: False)\n
+        public_id: The public ID of the agent (author/name format).
+
+    Optional Parameters:
+
+        force (--force/--no-force): Force overwrite if package exists. (Default: False)
 
     Usage:
         Basic publish:
@@ -62,7 +64,7 @@ def publish(ctx, public_id: PublicId = None, force: bool = False) -> None:
         if not agent_runner.is_in_agent_dir():
             msg = "Not in an agent directory (aea-config.yaml not found) Please enter the agent directory to publish"
             raise OperationError(msg)
-        package_manager = PackageManager(verbose=verbose)
+        package_manager = PackageManager(verbose=verbose, agent_runner=agent_runner)
         package_manager.publish_agent(force=force, new_public_id=public_id)
         click.secho(AGENT_PUBLISHED_SUCCESS_MSG, fg="green")
         logger.info("Agent published successfully.")

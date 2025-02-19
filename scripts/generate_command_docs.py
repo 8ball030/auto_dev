@@ -11,6 +11,9 @@ from importlib import import_module
 from dataclasses import dataclass
 
 import click
+from aea.cli.utils.generic import load_yaml
+
+from auto_dev.utils import FileType, write_to_file
 
 
 # Configure logging
@@ -33,6 +36,7 @@ def discover_commands() -> list[str]:
         # Skip __init__.py and any other special files
         if file_path.stem.startswith("_"):
             continue
+        logger.info(f"Discovered command: {file_path.stem}")
         commands.append(file_path.stem)
 
     return sorted(commands)
@@ -43,10 +47,6 @@ class DocTemplates:
     """Templates for documentation generation."""
 
     COMMAND = """# {command_name}
-
-## Table of Contents
-- [Description](#description)
-{toc_subcommands}
 
 ## Description
 ::: auto_dev.commands.{command_name}.{command_name}
@@ -185,9 +185,44 @@ class CommandDocGenerator:
                 ),
                 encoding="utf-8",
             )
-            logger.info(f"Generated documentation for {command}")
         except OSError as e:
             logger.exception(f"Failed to write documentation for {command}: {e}")
+
+
+def update_mkdocs_nav(commands: list[str]) -> None:
+    """Update the mkdocs.yml navigation to include all commands."""
+    mkdocs_path = Path("mkdocs.yml")
+    try:
+        config = load_yaml(mkdocs_path)
+    except OSError as e:
+        logger.exception(f"Failed to read mkdocs.yml: {e}")
+        return
+
+    # Ensure config is a dictionary
+    if config is None:
+        config = {}
+
+    # Ensure nav exists
+    if "nav" not in config:
+        config["nav"] = []
+
+    # Find the Commands section in nav
+    for item in config["nav"]:
+        if isinstance(item, dict) and "Commands" in item:
+            # Create new commands structure
+            commands_nav = {"Commands": [{cmd: f"commands/{cmd}.md"} for cmd in sorted(commands)]}
+            config["nav"][config["nav"].index(item)] = commands_nav
+            break
+    else:
+        # If Commands section doesn't exist, add it
+        commands_nav = {"Commands": [{cmd: f"commands/{cmd}.md"} for cmd in sorted(commands)]}
+        config["nav"].append(commands_nav)
+
+    try:
+        write_to_file(mkdocs_path, config, FileType.YAML)
+        logger.info("Updated mkdocs.yml navigation")
+    except OSError as e:
+        logger.exception(f"Failed to write mkdocs.yml: {e}")
 
 
 def generate_docs() -> None:
@@ -215,6 +250,9 @@ def generate_docs() -> None:
             logger.info(f"Generated documentation for {command}")
         except Exception as e:
             logger.exception(f"Failed to generate documentation for {command}: {e}")
+
+    # Update mkdocs.yml with discovered commands
+    update_mkdocs_nav(commands)
 
     logger.info("Documentation generation complete!")
 

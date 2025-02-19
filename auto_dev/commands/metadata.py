@@ -3,7 +3,6 @@
 - print metadata: we read in a meta data file and print it in a way that can be copy pasted into the frontend.
 """
 
-import os
 import sys
 import json
 
@@ -19,7 +18,6 @@ from aea.configurations.constants import (
     CUSTOM,
     SKILLS,
     CUSTOMS,
-    SERVICE,
     SERVICES,
     CONTRACTS,
     PROTOCOLS,
@@ -95,9 +93,11 @@ def get_metadata(root, name, hash_, target_id):
 def metadata() -> None:
     r"""Commands for generating and managing package metadata.
 
-    Available Commands:\n
-        generate: Generate metadata JSON files for packages\n
-        validate: Validate existing metadata files\n
+    Available Commands:
+
+        generate: Generate metadata JSON files for packages
+
+        validate: Validate existing metadata files
     """
 
 
@@ -133,14 +133,19 @@ def metadata() -> None:
 def generate(root, target_name, target_id, strict, all) -> None:  # pylint: disable=redefined-builtin
     r"""Generate metadata JSON files for packages.
 
-    Required Parameters:\n
-        root: Path to root directory containing packages.json. Default: current directory\n
-        target_name: Name of the package to generate metadata for (e.g., contract/author/name/version)\n
-        target_id: Identifier for the metadata file (used in output filename)\n
+    Required Parameters:
 
-    Optional Parameters:\n
-        strict: Enable strict validation of metadata. (Default: False)\n
-        all: Generate metadata for all packages. (Default: False)\n
+        root: Path to root directory containing packages.json. Default: current directory
+
+        target_name: Name of the package to generate metadata for (e.g., contract/author/name/version)
+
+        target_id: Identifier for the metadata file (used in output filename)
+
+    Optional Parameters:
+
+        strict (--strict): Enable strict validation of metadata. (Default: False)
+
+        all (--all): Generate metadata for all packages. (Default: False)
 
     Usage:
         Generate for specific package:
@@ -222,10 +227,13 @@ def build_dependency_tree_for_metadata_components(component: str) -> dict:
     """Build dependency tree for metadata components.
 
     Args:
+    ----
         component: Component identifier string in format 'type/author/name'
 
     Returns:
+    -------
         Dictionary mapping dependency types to sets of dependencies
+
     """
     component_type = component.split("/")[0]
     component_author = component.split("/")[1]
@@ -246,19 +254,20 @@ def validate(ctx, metadata_file) -> None:
     r"""Validate metadata files for packages.
 
     Required Parameters:
-        metadata_file: Path to the metadata JSON file to validate\n
+
+        metadata_file: Path to the metadata JSON file to validate
 
     Usage:
-        Validate a metadata file:\n
-            adev metadata validate mints/01.json\n
+        Validate a metadata file:
+            adev metadata validate mints/01.json
 
     Notes
     -----
-        - Validates the metadata file format and content\n
-        - Checks if all dependencies are minted\n
-        - Verifies component status in mapping.txt\n
-        - Displays detailed validation results with verbose flag\n
-        - Exits with error if validation fails\n
+        - Validates the metadata file format and content
+        - Checks if all dependencies are minted
+        - Verifies component status in mapping.txt
+        - Displays detailed validation results with verbose flag
+        - Exits with error if validation fails
 
     """
     verbose = ctx.obj["VERBOSE"]

@@ -182,9 +182,10 @@ class RepoScaffolder:
 def repo() -> None:
     r"""Repository management commands.
 
-    Available Commands:\n
-        scaffold: Create and initialize a new repository with template files\n
-        update_deps: Update and lock repository dependencies\n
+    Available Commands:
+
+        scaffold: Create and initialize a new repository with template files
+        update_deps: Update and lock repository dependencies
     """
 
 
@@ -199,15 +200,21 @@ def repo() -> None:
 def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_commit) -> None:
     r"""Create a new repository and scaffold necessary files.
 
-    Required Parameters:\n
-        name: Name of the repository to create\n
+    Required Parameters:
 
-    Optional Parameters:\n
-        type_of_repo (-t): Type of repository to scaffold (autonomy, python). (Default: autonomy)\n
-        force (-f): Overwrite existing repository if it exists. (Default: False)\n
-        auto_approve (-aa): Skip confirmation prompts. (Default: False)\n
-        install (--install/--no-install): Install dependencies after scaffolding. (Default: True)\n
-        initial_commit (--initial-commit/--no-commit): Create initial git commit. (Default: True)\n
+        name: Name of the repository to create
+
+    Optional Parameters:
+
+        type_of_repo (-t): Type of repository to scaffold (autonomy, python). (Default: autonomy)
+
+        force (-f): Overwrite existing repository if it exists. (Default: False)
+
+        auto_approve (-aa): Skip confirmation prompts. (Default: False)
+
+        install (--install/--no-install): Install dependencies after scaffolding. (Default: True)
+
+        initial_commit (--initial-commit/--no-commit): Create initial git commit. (Default: True)
 
     Usage:
         Create basic autonomy repo:
@@ -351,22 +358,24 @@ def update_deps(ctx, lock: bool) -> None:
     r"""Update and lock repository dependencies.
 
     Optional Parameters:
-        lock: Lock dependencies after updating. Default: False\n
+
+        lock (--lock): Lock dependencies after updating. Default: False
 
     Usage:
-        Update dependencies:\n
-            adev repo update-deps\n
 
-        Update and lock dependencies:\n
-            adev repo update-deps --lock\n
+        Update dependencies:
+            adev repo update-deps
+
+        Update and lock dependencies:
+            adev repo update-deps --lock
 
     Notes
     -----
-        - Updates dependencies in packages.json\n
-        - Optionally locks dependency versions\n
-        - Checks for changes in dependency files\n
-        - Prompts to commit changes if detected\n
-        - Exits with error if uncommitted changes exist\n
+        - Updates dependencies in packages.json
+        - Optionally locks dependency versions
+        - Checks for changes in dependency files
+        - Prompts to commit changes if detected
+        - Exits with error if uncommitted changes exist
 
     """
     logger = ctx.obj["LOGGER"]

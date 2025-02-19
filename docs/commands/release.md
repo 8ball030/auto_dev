@@ -1,9 +1,5 @@
 # release
 
-## Table of Contents
-- [Description](#description)
-
-
 ## Description
 ::: auto_dev.commands.release.release
     options:

@@ -1,72 +1,171 @@
-# Scaffolding a new DAO
+# Scaffolding a new Data Access Object (DAO)
 
-The tools within the `dao` subcommand are used to scaffold a new DAO (Data Access Object) based on an OpenAPI 3 specification. This process automates the creation of DAO classes, dummy data, and test scripts.
+The tools within the `dao` subcommand are used to scaffold a new customs component Data Access Object (DAO) based on an OpenAPI 3 specification. This process automates the creation of Data Access Object classes, dummy data, and test scripts.
 
 ## Prerequisites
 
 1. An OpenAPI 3 specification file with components/schema models defined.
 2. A `component.yaml` file in the current directory that references the OpenAPI specification using the `api_spec` field.
 
-## Steps to Scaffold a DAO
+## Steps to Create a Data Access Object
 
 1. Ensure you have the OpenAPI 3 specification file. You can view its contents using:
 
-```bash
-cat auto_dev/data/openapi/openapi_specification.yaml
-```
+    ```
+    cat auto_dev/data/openapi/openapi_specification.yaml
+    ```
 
-2. Create or update the `component.yaml` file to reference the OpenAPI specification using the `api_spec` field.
+    Output:
 
-```yaml
-api_spec: <path_to_openapi_specification.yaml>
-```
-
-3. Run the DAO scaffolding command:
-
-```bash
-adev scaffold dao
-```
-
-The scaffolding process creates the following:
-
-1. DAO Classes: For each model defined in the OpenAPI specification, a corresponding DAO class is generated.
-2. Dummy Data: 
-   - Aggregated dummy data for all models
-   - Individual dummy data instances for testing
-3. Test Script: A test script to validate the generated DAO classes
-
-To identify the persistent schemas, the scaffolder uses the following logic:
-
-1. It checks whether custom x-persistent field is set to true for a schema. If it is, the schema is identified as a persistent schema.
-
-   ```yaml
-   components:
+    ```yaml
+    openapi: 3.0.0
+    info:
+      title: Test API
+      version: 1.0.0
+      description: A simple API for testing the OpenAPI Handler Generator
+    paths:
+      /users:
+        get:
+          summary: List users
+          responses:
+            '200':
+              description: Successful response
+              content:
+                application/json:    
+                  schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        post:
+          summary: Create a user
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/User'
+          responses:
+            '201':
+              description: Created
+              content:
+                application/json:    
+                  schema:
+                    $ref: '#/components/schemas/User'
+      /users/{userId}:
+        get:
+          summary: Get a user
+          parameters:
+            - name: userId
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            '200':
+              description: Successful response
+              content:
+                application/json:    
+                  schema:
+                    $ref: '#/components/schemas/User'
+    components:
       schemas:
-         User:
-            x-persistent: true  # Marking the schema as persistent
-            type: object
-            properties:
-               name:
-                  type: string
-                  ...
-   ```
+        User:
+          type: object
+          required:
+            - id
+            - name
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+    ```
 
-2. If no x-persistent tags are found, it then attempts to identify all the schemas in the OpenAPI specification by checking if they are used in any request or response.
-3. If the schema is used in a request and is used in multiple contexts (request or response), it is identified as a persistent schema.
+2. If not already done, scaffold a repo and a customs component.
 
-## Generated File Structure
+    Initialize aea:
+    ```bash
+    aea init --remote --author xiuxiuxar --ipfs --reset 
+    ```
 
-After running the scaffold command, you'll find the following structure in your project:
+    Create a new repo:
+    ```bash
+    adev repo scaffold -t autonomy new_station
+    ```
+
+    ```bash
+    cd new_station
+    ```
+
+    Scaffold a customs component:
+    ```bash
+    aea scaffold -tlr custom simple_dao
+    ```
+
+3. Create or update the `component.yaml` file to reference the OpenAPI specification:
+
+    ```bash
+    cp ../auto_dev/data/openapi/openapi_specification.yaml packages/xiuxiuxar/customs/simple_dao/
+    ```
+
+    ```bash
+    yq e '.api_spec = "openapi_specification.yaml"' -i packages/xiuxiuxar/customs/simple_dao/component.yaml
+    ```
+
+    ```bash
+    cat packages/xiuxiuxar/customs/simple_dao/component.yaml
+    ```
+
+    Output:
+
+    ```yaml
+    name: simple_dao
+    author: xiuxiuxar
+    version: 0.1.0
+    type: custom
+    description: The custom component package.
+    license: Apache-2.0
+    aea_version: '>=1.0.0, <2.0.0'
+    fingerprint:
+      __init__.py: bafybeigjt2jaxismyp3hspvqefjrcp33mmen3pnmnkm4rhesh74io3vikm
+    fingerprint_ignore_patterns: []
+    dependencies: {}
+    api_spec: openapi_specification.yaml
+    ```
+
+4. Run the DAO scaffolding command from the customs component directory:
+
+    ```bash
+    cd packages/xiuxiuxar/customs/simple_dao
+    ```
+
+    We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
+
+    ```bash
+    adev scaffold dao --auto-confirm
+    ```
+
+## Generated Files
+
+The scaffolding process generates the following files in your customs component:
 
 ```
-generated/
-├── dao/
-│ ├── <model_name_1>dao.py
-│ ├── <model_name_2>dao.py
-│ └── ...
-├── aggregated_data.json
-└── test_dao.py
+daos/
+├── __init__.py
+├── base_dao.py              # Base Data Access Object class
+├── <model_name_1>_dao.py   # Model-specific Data Access Object
+├── <model_name_2>_dao.py   # Model-specific Data Access Object
+├── aggregated_data.json     # Sample data for testing
+└── test_dao.py             # Test script
 ```
+
+## Implementation Details
+
+1. Base Data Access Object Class
+2. Generating Data Access Object classes for each model
+3. Test Script Generation
 
 ## How It Works
 
@@ -86,20 +185,20 @@ The generated DAO classes use Jinja2 templates for customization. If you need to
 
 ## Error Handling
 
-The scaffolding process includes comprehensive error handling to catch issues such as:
-- Missing or invalid OpenAPI specification
-- YAML or JSON parsing errors
-- File I/O errors
+The scaffolding process validates:
+- `component.yaml` exists and has `api_spec` field
+- OpenAPI spec file exits and is valid YAML
+- OpenAPI spec contains components/schemas
+- OpenAPI spec follows OpenAPI 3.0 format
 
-If any errors occur during the scaffolding process, detailed error messages will be logged to help with troubleshooting.
+Detailed error messages are logged for troubleshooting.
 
 ## Next Steps
 
-After scaffolding your DAO:
+After scaffolding your Data Access Objects:
 
-1. Review the generated DAO classes in the `generated/dao/` directory.
-2. Examine the `aggregated_data.json` file for the structure of the dummy data.
-3. Run the `test_dao.py` script to ensure the basic functionality of your DAOs.
-4. Customize the generated classes as needed for your specific use case.
+1. Review the generated Data Access Object classes in the `daos/` directory.
+2. Customize the generated classes as needed.
+3. Run the `test_dao.py` script to ensure the basic functionality of your Data Access Objects.
 
-Remember to regenerate the DAOs if you make changes to your OpenAPI specification to keep them in sync.
+Remember to regenerate the Data Access Objects if you make changes to your OpenAPI specification to keep them in sync.

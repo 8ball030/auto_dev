@@ -2,119 +2,111 @@ site_name: auto_dev
 site_url: https://8ball030.github.io/auto_dev
 repo_url: https://github.com/8ball030/auto_dev
 repo_name: 8ball030/auto_dev
-#strict: true
-
-hooks:
-  - scripts/generate_command_docs.py
-
-# Optimized navigation structure
 nav:
-  - Home: index.md
-  - Installation: installation.md
-  - Usage: 
-    - Overview: usage.md
-    - FSM: fsm.md
-    - OpenAPI: openapi.md
-    - DAO: dao.md
-  - Commands:
-    - run: commands/run.md
-    - create: commands/create.md
-    - eject: commands/eject.md
-    - lint: commands/lint.md
-    - publish: commands/publish.md
-    - test: commands/test.md
-    - improve: commands/improve.md
-    - release: commands/release.md
-    - metadata: commands/metadata.md
-    - fmt: commands/fmt.md
-    - scaffold: commands/scaffold.md
-    - deps: commands/deps.md
-    - convert: commands/convert.md
-    - repo: commands/repo.md
-    - fsm: commands/fsm.md
-    - augment: commands/augment.md
-  - Contributing: contributing.md
-  - Changelog: changelog.md
-
+- Home: index.md
+- Installation: installation.md
+- Usage:
+  - Overview: usage.md
+  - FSM: fsm.md
+  - OpenAPI: openapi.md
+  - Data Access Object: dao.md
+- Commands:
+  - augment: commands/augment.md
+  - convert: commands/convert.md
+  - create: commands/create.md
+  - create_from_fsm: commands/create_from_fsm.md
+  - deps: commands/deps.md
+  - eject: commands/eject.md
+  - fmt: commands/fmt.md
+  - fsm: commands/fsm.md
+  - improve: commands/improve.md
+  - lint: commands/lint.md
+  - metadata: commands/metadata.md
+  - publish: commands/publish.md
+  - release: commands/release.md
+  - repo: commands/repo.md
+  - run: commands/run.md
+  - scaffold: commands/scaffold.md
+  - test: commands/test.md
+  - wf: commands/wf.md
+- Contributing: contributing.md
+- Changelog: changelog.md
 theme:
   name: material
   language: en
-  #logo: assets/logo.png
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      accent: blue
-      primary: blue_grey
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      accent: blue
-      primary: blue_grey
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+  - media: '(prefers-color-scheme: light)'
+    scheme: default
+    accent: blue
+    primary: blue_grey
+    toggle:
+      icon: material/weather-night
+      name: Switch to dark mode
+  - media: '(prefers-color-scheme: dark)'
+    scheme: slate
+    accent: blue
+    primary: blue_grey
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to light mode
   font:
     code: Roboto Mono
     text: Source Sans Pro
   features:
-    - navigation.instant
-    - navigation.expand
-    - navigation.sections
-    - navigation.top
-    - toc.follow
-    - navigation.indexes
-    - search.suggest
-    - search.highlight
-    - content.code.copy
-    - content.tabs.link
-
+  - navigation.instant
+  - navigation.expand
+  - navigation.sections
+  - navigation.top
+  - toc.follow
+  - navigation.indexes
+  - search.suggest
+  - search.highlight
+  - content.code.copy
+  - content.tabs.link
 markdown_extensions:
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.superfences
-  - pymdownx.inlinehilite
-  - admonition
-  - toc:
-      permalink: true
-      toc_depth: 3
-      baselevel: 1
-  - attr_list
-  - pymdownx.snippets:
-      base_path: .
-  - pymdownx.details
-  - pymdownx.tabbed:
-      alternate_style: true 
-  - pymdownx.caret
-  - pymdownx.mark
-  - pymdownx.tilde
-
+- pymdownx.highlight:
+    anchor_linenums: true
+    line_spans: __span
+    pygments_lang_class: true
+- pymdownx.superfences
+- pymdownx.inlinehilite
+- admonition
+- toc:
+    permalink: true
+    toc_depth: 3
+    baselevel: 1
+- attr_list
+- pymdownx.snippets:
+    base_path: .
+- pymdownx.details
+- pymdownx.tabbed:
+    alternate_style: true
+- pymdownx.caret
+- pymdownx.mark
+- pymdownx.tilde
 plugins:
-  - search
-  - include-markdown
-  - mkdocstrings:
-      default_handler: python
-      handlers:
-        python:
-          selection:
-            docstring_style: sphinx
-          rendering:
-            show_root_heading: true
-            show_source: false
-            show_signature_annotations: true
-            members_order: source
-            docstring_section_style: list
-          paths: [auto_dev]
-
+- search
+- include-markdown
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        selection:
+          docstring_style: sphinx
+        rendering:
+          show_root_heading: true
+          show_source: false
+          show_signature_annotations: true
+          members_order: source
+          docstring_section_style: list
+        paths:
+        - auto_dev
 extra_css:
-  - stylesheets/extra.css
+- stylesheets/extra.css
 extra:
   social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/8ball030/auto_dev
-      name: Github
-    - icon: material/email
-      link: "mailto:8ball030@gmail.com"
+  - icon: fontawesome/brands/github
+    link: https://github.com/8ball030/auto_dev
+    name: Github
+  - icon: material/email
+    link: mailto:8ball030@gmail.com

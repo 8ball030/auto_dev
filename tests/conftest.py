@@ -8,13 +8,10 @@ import pytest
 
 from auto_dev.utils import isolated_filesystem
 from auto_dev.constants import (
-    DEFAULT_ENCODING,
     DEFAULT_PUBLIC_ID,
-    SAMPLE_PACKAGE_FILE,
-    SAMPLE_PACKAGES_JSON,
-    AUTONOMY_PACKAGES_FILE,
 )
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.workflow_manager import Task
 from scripts.generate_command_docs import generate_docs
 from auto_dev.services.package_manager.index import PackageManager
 
@@ -85,15 +82,7 @@ def test_clean_filesystem():
 @pytest.fixture
 def test_packages_filesystem(test_filesystem):
     """Fixure for testing packages."""
-    (Path(test_filesystem) / "packages").mkdir(parents=True, exist_ok=True)
-    with open(AUTONOMY_PACKAGES_FILE, "w", encoding=DEFAULT_ENCODING) as file:
-        file.write(SAMPLE_PACKAGES_JSON["packages/packages.json"])
-
-    for file, data in SAMPLE_PACKAGE_FILE.items():
-        (Path(test_filesystem) / Path(file).parent).mkdir(parents=True, exist_ok=True)
-        with open(Path(test_filesystem) / Path(file), "w", encoding=DEFAULT_ENCODING) as path:
-            path.write(data)
-
+    Task(command="autonomy packages init").work()
     return test_filesystem
 
 
@@ -108,12 +97,12 @@ def dummy_agent_tim(test_packages_filesystem) -> Path:
     """Fixture for dummy agent tim."""
     assert Path.cwd() == Path(test_packages_filesystem)
     agent = DEFAULT_PUBLIC_ID
-    command = f"adev create {agent!s} -t eightballer/base --no-clean-up"
-    command_executor = CommandExecutor(command)
-    result = command_executor.execute(verbose=True, shell=True)
-    if not result:
-        msg = f"CLI command execution failed: `{command}`"
-        raise ValueError(msg)
+    task = Task(
+        command=f"adev create {agent!s} -t eightballer/base --no-clean-up", working_dir=Path(test_packages_filesystem)
+    )
+    task.work()
+    if not task.is_done or task.is_failed:
+        raise ValueError(task.client.output)
     os.chdir(agent.name)
     return True
 
@@ -136,4 +125,5 @@ def dummy_agent_default(test_packages_filesystem) -> Path:
 @pytest.fixture
 def package_manager():
     """Fixture for PackageManager."""
+
     return PackageManager(verbose=True)

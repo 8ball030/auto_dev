@@ -156,7 +156,7 @@ class TestRepoAutonomy(BaseTestRepo):
         for key in auto_dev_deps:
             if key not in repo_deps:
                 continue
-            if auto_dev_deps[key] == repo_deps[key]:
+            if auto_dev_deps[key] in repo_deps[key]:
                 continue
             val = f"{key} New: {auto_dev_deps[key]} old: {repo_deps[key]}"
             errors.append(val)

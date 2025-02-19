@@ -37,12 +37,13 @@ def eject(ctx, component_type: str, public_id: str, fork_id: str, skip_dependenc
     and configuration updates automatically.
 
     Component Types:
+
         - skill: Agent skills (e.g., price_estimation, nft_trading)
         - contract: Smart contracts (e.g., token_bridge, amm_contract)
         - connection: Network connections (e.g., http_client, websocket)
         - protocol: Communication protocols (e.g., fipa, http)
 
-    Example Usage:
+    Usage:
 
         # Eject a skill:
         adev eject skill eightballer/metrics new_author/better_metrics
@@ -61,8 +62,11 @@ def eject(ctx, component_type: str, public_id: str, fork_id: str, skip_dependenc
     Args:
     ----
         component_type: Type of the component (skill, contract, connection, protocol)
+
         public_id: Public ID of the component to eject (author/name)
+
         fork_id: New public ID for the ejected component (author/name)
+
         skip_dependencies: Skip ejecting dependencies (they must already be ejected)
 
     """

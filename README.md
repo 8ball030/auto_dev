@@ -1,10 +1,8 @@
-# Project Status Badges
+# Autonomy Dev
 
 [![Code Quality](https://github.com/8ball030/auto_dev/actions/workflows/common_check.yaml/badge.svg)](https://github.com/8ball030/auto_dev/actions/workflows/common_check.yaml)
-[![Documentation](https://github.com/8ball030/auto_dev/actions/workflows/github_action.yml/badge.svg)](https://github.com/8ball030/auto_dev/actions/workflows/github_action.yml)
-
-
-# Autonomy Dev
+[![Documentation](https://github.com/8ball030/auto_dev/actions/workflows/docs_build_deploy.yml/badge.svg)](https://github.com/8ball030/auto_dev/actions/workflows/github_action.yml)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 Tooling to speed up open-autonomy development.
 
@@ -16,19 +14,17 @@ For detailed instructions please see the [Docs.](https://8ball030.github.io/auto
     # Make a new agent
     adev create author/cool_agent
     # Run the new agent
-    adev run author/cool_agent
+    adev run dev author/cool_agent
 
 ## Requirements
 
-- Python >= 3.10
-- Poetry <= 2.0.0
+- Python >= 3.10,<3.12
+- Poetry >= 1.8.3
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ## Features
 
-- Scaffolding of new repositories
-- Scaffolding of new agents
-- Scaffolding of new protocols
-- Scaffolding of new contracts
+- Scaffolding of new repositories, agent, protocols, contracts, connections, skills.
 - Linting and formatting tools
 - Dependency management tools
 - Test suite scaffolding
@@ -72,54 +68,8 @@ adev convert agent-to-service author/agent_name author/service_name
 ```
 ![asciicast](docs/assets/create_agent_service.gif)
 
-## Usage
-
-There are a number of useful command tools available.
-
-- Dev Tooling:
-    A). linting `adev lint`
-    B). formatting `adev fmt`
-    C). dependency management `adev deps update`
-
-- Scaffolding: Tooling to auto generate repositories and components.
-
 
 ### Scaffolding of Components
-
-#### Protocols
-
-We provide tools to generate protocols components from specs.
-
-```bash
-adev create author/tmp_agent_name -t eightballer/base --force
-cd tmp_agent_name
-adev scaffold protocol ../specs/protocols/balances.yaml 
-aea -s publish --push-missing
-...
-Starting Auto Dev v0.2.75 ...
-Using 32 processes for processing
-Setting log level to INFO
-Creating agent tmp_agent_name from template eightballer/base
-Executing command: ['poetry', 'run', 'autonomy', 'fetch', 'bafybeidohldv57m3jkc33zpgbxukaushmcibmt4ncnsnomd3pvpocxs3ui', '--alias', 'tmp_agent_name']
-Command executed successfully.
-Agent tmp_agent_name created successfully.
-Starting Auto Dev v0.2.75 ...
-Using 32 processes for processing
-Setting log level to INFO
-Read protocol specification: ../specs/protocols/balances.yaml
-protolint version 0.50.0(d6a3250)
-protolint version 0.50.0(d6a3250)
-Updated: /home/eight/Projects/StationsStation/repos/capitalisation_station/tmp_agent_name/protocols/balances/custom_types.py
-New protocol scaffolded at /home/eight/Projects/StationsStation/repos/capitalisation_station/tmp_agent_name/protocols/balances
-
-...
-# Tests can be run as well;
-adev test -p packages/eightballer/protocols/balances
-Testing path: `packages/eightballer/protocols/balances/` ⌛
-Testing... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   0% -:--:--👌 - packages/eightballer/protocols/balances/
-Testing... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:02
-Testing completed successfully! ✅
-```
 
 #### Contracts
 
@@ -127,37 +77,35 @@ We provide tools to scaffold smart contract components from existing deployed co
 
 - Complete open-aea contract component
 - Contract class with auto-generated methods
-- Test suite scaffolding
+- Events, Read and Write methods extracted from the contract ABI.
 - Type hints and documentation
 
-Basic usage:
-```bash
-adev scaffold contract <NAME> --address <CONTRACT_ADDRESS> --network <NETWORK_NAME>
-```
-
-Example using Base:
 ```bash
 # Scaffold USDC contract from Base
-adev scaffold contract usdc \
+adev scaffold contract author/usdc \
     --address 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 \
     --network base
 ```
 
-Additional options:
-```bash
-# Scaffold from local ABI file
-adev scaffold contract my_contract \
-    --address 0xContract_Address \
-    --from-abi ./path/to/abi.json \
-    --network ethereum-mainnet
+![asciicast](docs/assets/create_contract.gif)
 
-# Specify read/write functions
-adev scaffold contract my_contract \
-    --address 0xContract_Address \
-    --read-functions "balanceOf,totalSupply" \
-    --write-functions "transfer,approve" \
-    --network polygon-mainnet
+
+#### Protocols
+
+Protocols components can be fully scaffolded from a yaml file. The scaffolding process includes:
+- Protocol class with auto-generated methods
+- Linted and formatted code
+- Type hints and documentation
+- Test Suite
+- Pydantic models for custom types.
+
+
+```bash
+adev scaffold protocol auto_dev/data/protocols/examples/balances.yaml
 ```
+
+![asciicast](docs/assets/create_protocol.gif)
+
 
 ## Dependency Management
 
@@ -168,9 +116,8 @@ For projects created with adev, updates to both:
 
 are automated using as so;
 
-
 ```
-
+adev deps verify
 ```
 
 ## Release
@@ -206,6 +153,16 @@ TOTAL                              819    536    35%
 <!-- Pytest Coverage Comment:End -->
 ```
 
+## Miscillaneous
+
+There are a number of useful command tools available.
+
+- Dev Tooling:
+    A). linting `adev lint`
+    B). formatting `adev fmt`
+    C). dependency management `adev deps update`
+
+- Scaffolding: Tooling to auto generate repositories and components.
 ## Documentation
 
 ### Running Docs Locally

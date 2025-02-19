@@ -22,13 +22,15 @@ from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 from auto_dev.utils import change_dir, map_os_to_env_vars, load_autonolas_yaml
 from auto_dev.constants import DOCKERCOMPOSE_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
-from auto_dev.cli_executor import CommandExecutor
+from auto_dev.workflow_manager import Task
 from auto_dev.services.runner.base import AgentRunner
 
 
 TENDERMINT_RESET_TIMEOUT = 10
 TENDERMINT_RESET_ENDPOINT = "http://localhost:8080/hard_reset"
 TENDERMINT_RESET_RETRIES = 20
+
+DEFAULT_VERSION = "0.1.0"
 
 
 @dataclass
@@ -40,6 +42,21 @@ class DevAgentRunner(AgentRunner):
     force: bool
     logger: Any
     fetch: bool = False
+    ipfs_hash: str | None = None
+    use_tendermint: bool = True
+    install_deps: bool = True
+
+    def __post_init__(
+        self,
+    ):
+        """Post init method to set the agents package_hash if needed."""
+        if self.ipfs_hash:
+            self.agent_name = PublicId(
+                author=self.agent_name.author,
+                name=self.agent_name.name,
+                version=DEFAULT_VERSION,
+                package_hash=self.ipfs_hash,
+            )
 
     def run(self) -> None:
         """Run the agent."""
@@ -51,10 +68,10 @@ class DevAgentRunner(AgentRunner):
             sys.exit(1)
         self.logger.info(f"Changing to directory: {agent_path}")
         with change_dir(agent_path):
-            self.check_tendermint()
+            self.check_tendermint() if self.use_tendermint else None
             self.setup()
             self.execute_agent()
-        self.stop_tendermint()
+        self.stop_tendermint() if self.use_tendermint else None
 
     def check_exists(self, locally=False, in_packages=True) -> bool:
         """Check if the agent exists."""
@@ -155,7 +172,10 @@ class DevAgentRunner(AgentRunner):
 
     def fetch_agent(self) -> None:
         """Fetch the agent from registry if needed."""
-        self.logger.info(f"Fetching agent {self.agent_name} from the local package registry...")
+        msg = "Fetching from the local package registry..."
+        msg = "Fetching agent from local package registry..." if not self.ipfs_hash else "Fetching agent from IPFS..."
+
+        self.logger.info(msg)
 
         if self.check_exists(locally=True, in_packages=False):
             if not self.force:
@@ -164,10 +184,14 @@ class DevAgentRunner(AgentRunner):
             self.logger.info(f"Removing existing agent `{self.agent_name}` due to --force option.")
             self.execute_command(f"rm -rf {self.agent_name.name}")
 
-        command = f"aea -s fetch {self.agent_name} --local"
+        command = f"aea -s fetch {self.agent_name}"
+        if not self.ipfs_hash:
+            command += " --local"
         if not self.execute_command(command):
             self.logger.error(f"Failed to fetch agent {self.agent_name}.")
             sys.exit(1)
+        if self.ipfs_hash:
+            self.logger.info(f"Agent {self.agent_name} fetched successfully from IPFS.")
 
     def setup(self) -> None:
         """Setup the agent."""
@@ -179,7 +203,7 @@ class DevAgentRunner(AgentRunner):
         self.manage_keys()
 
         self.logger.info("Installing dependencies...")
-        self.install_dependencies()
+        self.install_dependencies() if self.install_deps else None
 
         self.logger.info("Setting up certificates...")
         self.issue_certificates()
@@ -197,7 +221,12 @@ class DevAgentRunner(AgentRunner):
             sys.exit(1)
         for ledger in required_ledgers:
             self.logger.info(f"Processing ledger: {ledger}")
-            self.setup_ledger_key(ledger, generate_keys)
+            # We check if a key already exists for the ledger
+            key_file = Path("..") / f"{ledger}_private_key.txt"
+            if key_file.exists():
+                self.setup_ledger_key(ledger, generate_keys=False, existing_key_file=key_file)
+            else:
+                self.setup_ledger_key(ledger, generate_keys)
 
     def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Path | None = None) -> None:
         """Setup the agent with the ledger key."""
@@ -206,13 +235,12 @@ class DevAgentRunner(AgentRunner):
         if existing_key_file:
             self.logger.info(f"Copying existing key file {existing_key_file} to {key_file}")
             shutil.copy(existing_key_file, key_file)
-        if key_file.exists():
+        elif key_file.exists():
             self.logger.error(f"Key file {key_file} already exists.")
-        else:
-            if generate_keys:
-                self.logger.info(f"Generating key for {ledger}...")
-                commands_to_errors.append([f"aea -s generate-key {ledger}", f"Key generation failed for {ledger}"])
-            commands_to_errors.append([f"aea -s add-key {ledger}", f"Key addition failed for {ledger}"])
+        elif generate_keys:
+            self.logger.info(f"Generating key for {ledger}...")
+            commands_to_errors.append([f"aea -s generate-key {ledger}", f"Key generation failed for {ledger}"])
+        commands_to_errors.append([f"aea -s add-key {ledger}", f"Key addition failed for {ledger}"])
 
         for command, error in commands_to_errors:
             result = self.execute_command(command)
@@ -272,7 +300,7 @@ class DevAgentRunner(AgentRunner):
         """
         self.logger.info("Starting agent execution...")
         try:
-            result = self.execute_command("aea -s run", verbose=True)
+            result = self.execute_command("aea -s run --env ../.env", verbose=True)
             if result:
                 self.logger.info("Agent execution completed successfully. 😎")
             else:
@@ -280,21 +308,28 @@ class DevAgentRunner(AgentRunner):
                 sys.exit(1)
         except RuntimeError as error:
             self.logger.exception(f"Agent ended with error: {error}")
+        except KeyboardInterrupt:
+            self.logger.info("Agent execution interrupted.")
         self.logger.info("Agent execution complete. 😎")
 
-    def execute_command(self, command: str, verbose=None, env_vars=None) -> None:
+    def execute_command(self, command: str, verbose=False, env_vars=None) -> None:
         """Execute a shell command."""
         current_vars = deepcopy(os.environ)
         if env_vars:
             current_vars.update(env_vars)
-        cli_executor = CommandExecutor(command=command.split(" "))
-        result = cli_executor.execute(stream=True, verbose=verbose, env_vars=current_vars)
-        if not result:
-            self.logger.error(f"Command failed: {command}")
-            self.logger.error(f"Error: {cli_executor.stderr}")
+        task = Task(
+            command=command,
+            env_vars=current_vars,
+            stream=verbose,
+            verbose=verbose,
+        ).work()
+        if task.is_failed:
+            self.logger.error(f"Command failed: {task.client.output}")
             msg = f"Command failed: {command}"
+            if "KeyboardInterrupt" in str(task.client.exception):
+                raise KeyboardInterrupt(msg)
             raise RuntimeError(msg)
-        return result
+        return task
 
     def get_version(self) -> str:
         """Get the version of the agent."""
