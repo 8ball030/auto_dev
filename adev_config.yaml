@@ -1,6 +1,6 @@
 autonomy_dependencies:
 - name: open-autonomy
-  version: 0.19.3
+  version: 0.19.4
   location: remote
   url: https://api.github.com/repos/valory-xyz/open-autonomy
   plugins: &id001
@@ -24,7 +24,7 @@ autonomy_dependencies:
   extras: null
 poetry_dependencies:
 - name: open-autonomy
-  version: 0.19.3
+  version: 0.19.4
   location: remote
   url: https://api.github.com/repos/valory-xyz/open-autonomy
   plugins: *id001
