@@ -22,7 +22,7 @@ cli = build_cli()
 
 def update_tests(public_id: str, agent_runner: DevAgentRunner) -> None:
     """We read in the test files and update the agent name in the test files."""
-    for test_file in agent_runner.agent_dir.rglob("tests/test_*.py"):
+    for test_file in agent_runner.agent_dir.glob("tests/test_*.py"):
         test_file = Path(test_file)
         test_file_content = test_file.read_text()
         test_file_ast = ast.parse(test_file_content)
