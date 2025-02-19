@@ -1,9 +1,10 @@
 """Module for testing the project."""
 
+import os
 from pathlib import Path
 from multiprocessing import cpu_count
 
-import pytest
+from auto_dev.workflow_manager import Task
 
 
 COVERAGE_COMMAND = f"""coverage report \
@@ -58,6 +59,9 @@ def test_path(
     if multiple:
         extra_args.extend(("-n", str(cpu_count())))
 
-    args = [path, *extra_args]
-    res = pytest.main(args)
-    return bool(res == 0)
+    args = ["pytest", path, *extra_args]
+    env = os.environ.copy()
+    env.update({"PYTHONPATH": "."})
+    task = Task(command=" ".join(args), env_vars=env)
+    task.work()
+    return not task.is_failed
