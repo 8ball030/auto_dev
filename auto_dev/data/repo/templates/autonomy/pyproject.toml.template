@@ -15,9 +15,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
-cython = "<3.0.0"
-disutils = "^1.4.32.post2"
-setuptools = "^75.8.0"
+disutils = ">=1.4.32.post2"
+setuptools = ">=70,<80"
 open-aea-ledger-solana = "==1.64.0"
 open-aea-ledger-cosmos = "==1.64.0"
 open-aea-ledger-ethereum = "==1.64.0"
@@ -25,7 +24,7 @@ open-aea = "==1.64.0"
 open-aea-cli-ipfs = "==1.64.0"
 open-aea-test-autonomy = "==0.19.4"
 open-autonomy = "==0.19.4"
-autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.130"}}
+autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.131"}}
 
 [tool.poetry.group.dev.dependencies]
 
