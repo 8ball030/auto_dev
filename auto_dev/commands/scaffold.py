@@ -8,15 +8,19 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
-import enum
 import sys
+import enum
 from pathlib import Path
 
 import yaml
 import rich_click as click
 from web3 import Web3
 from jinja2 import Environment, FileSystemLoader
-from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE, PROTOCOL_LANGUAGE_PYTHON, SUPPORTED_PROTOCOL_LANGUAGES
+from aea.configurations.constants import (
+    DEFAULT_AEA_CONFIG_FILE,
+    PROTOCOL_LANGUAGE_PYTHON,
+    SUPPORTED_PROTOCOL_LANGUAGES,
+)
 from aea.configurations.data_types import PublicId
 
 from auto_dev.base import build_cli
@@ -26,6 +30,7 @@ from auto_dev.constants import BASE_FSM_SKILLS, DEFAULT_ENCODING, JINJA_TEMPLATE
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.handlers.base import HandlerTypes, HandlerScaffolder
 from auto_dev.dao.scaffolder import DAOScaffolder
+from auto_dev.workflow_manager import Task
 from auto_dev.contracts.contract import DEFAULT_NULL_ADDRESS
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.dialogues.scaffolder import DialogueTypes, DialogueScaffolder
@@ -34,11 +39,14 @@ from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 from auto_dev.connections.scaffolder import ConnectionScaffolder
 from auto_dev.contracts.block_explorer import BlockExplorer
 from auto_dev.contracts.contract_scafolder import ContractScaffolder
-from auto_dev.workflow_manager import Task
+from auto_dev.services.mech.create_mech_tool import main as create_mech_tool
+
 
 class ScaffoldType(enum.Enum):
+    """Enum representing different types of scaffolds."""
     MECH = "mech"
     OTHER_TYPES = "other_types"
+
 
 cli = build_cli()
 
@@ -108,28 +116,32 @@ def _process_from_file(ctx, yaml_dict, network, read_functions, write_functions,
 
 
 @scaffold.command()
-@click.option("--type", type=click.Choice([e.value for e in ScaffoldType]), required=True, help="Specify the type of scaffold to create")
+@click.option(
+    "--type",
+    type=click.Choice([e.value for e in ScaffoldType]),
+    required=True,
+    help="Specify the type of scaffold to create",
+)
 @click.argument("api_file", type=str)
 @click.argument("tool_name", type=str)
 @click.argument("author_name", type=str)
 @click.argument("gpt_key", type=str)
 @click.pass_context
-def custom(ctx, type, api_file, tool_name, author_name, gpt_key):
+def custom(type, api_file, tool_name, author_name, gpt_key):
     """Scaffold a custom tool, such as a Mech tool."""
-    
+
     if type == "mech":
         if not api_file or not tool_name or not author_name or not gpt_key:
-            raise click.ClickException("For --type mech, you must provide api_file, tool_name, author_name, and gpt_key.")
+            msg = "For --type mech, you must provide api_file, tool_name, author_name, and gpt_key."
+            raise click.ClickException(msg)
 
-        from auto_dev.services.mech.create_mech_tool import main as create_mech_tool
-        
         click.echo(f"Creating Mech tool '{tool_name}' by {author_name}...")
 
         # Run the Mech tool creator script
         create_mech_tool(api_file=api_file, tool_name=tool_name, author_name=author_name, gpt_key=gpt_key)
-        
+
         click.echo(f"Mech tool '{tool_name}' successfully scaffolded!")
-    
+
     else:
         click.echo(f"Scaffolding for type '{type}' is not implemented yet.")
 

@@ -1,12 +1,14 @@
+"""Module containing prompt-related constants for Mech services."""
+
 COMMENTS = """
 1. The main() function should only be used for testing purposes. Do NOT push this.
 2. Once main() works as expected run 'autonomy packages lock && autonomy push-all'
-3. Add to API_KEY list in .example.env and adhere to the current structure. Only do this if the API_KEY doesn't already exist for your key.
+3. Add to API_KEY list in .example.env and adhere to the current structure.
 4. Next, add all new models to FILE_HASH_TO_TOOLS and use the new hash from packages/packages.json for your tool.
 Check this PR for reference. https://github.com/valory-xyz/mech/pull/228/files
 """
 
-INIT_CONTENT = '''#!/usr/bin/env python3
+INIT_CONTENT = """#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #
@@ -25,4 +27,4 @@ INIT_CONTENT = '''#!/usr/bin/env python3
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-'''
+"""
