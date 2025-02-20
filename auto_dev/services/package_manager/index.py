@@ -272,7 +272,8 @@ class PackageManager:
                 logger.warning(f"Package already exists in dev packages: {key} skipping.")
                 continue
             try:
-                data["dev"][key] = package_id.package_hash
+                key_hash = DEFAULT_IPFS_HASH if not package_id.public_id._package_hash else package_id.package_hash  # noqa
+                data["dev"][key] = key_hash
             except ValueError as e:
                 logger.exception(f"Error adding package: {e}")
                 msg = f"Error adding package {key} to registry. {package_id}"
@@ -359,5 +360,8 @@ class PackageManager:
         if not Path(DEFAULT_AEA_CONFIG_FILE).exists():
             msg = "Not in an agent directory. Please run this command from an agent directory."
             raise OperationError(msg)
+        # we check if there are keys and remove them
+        if self.agent_runner:
+            self.agent_runner.remove_keys()
         # Publish from agent directory (we're already there)
         self._publish_internal(force, new_public_id=new_public_id)

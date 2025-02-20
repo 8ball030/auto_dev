@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        python-versions: ["3.10"]
+        python-versions: ["3.11"]
 
     permissions:
         contents: write

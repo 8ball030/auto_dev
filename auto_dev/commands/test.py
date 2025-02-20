@@ -1,7 +1,6 @@
 """Command to run tests for packages."""
 
 import rich_click as click
-from rich.progress import track
 
 from auto_dev.base import build_cli
 from auto_dev.test import COVERAGE_COMMAND, test_path
@@ -116,7 +115,8 @@ def test(ctx, path, watch, coverage_report) -> None:
         msg = f"Unable to get packages are you in the right directory? {error}"
         raise click.ClickException(msg) from error
     results = {}
-    for package in track(range(len(packages)), description="Testing..."):
+    for package in range(len(packages)):
+        click.echo(f"Testing {packages[package]} {package + 1}/{len(packages)}")
         result = test_path(str(packages[package]), verbose=verbose, watch=watch)
         results[packages[package]] = result
         click.echo(f"{'👌' if result else '❗'} - {packages[package]}")
