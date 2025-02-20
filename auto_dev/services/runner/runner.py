@@ -16,7 +16,9 @@ import docker
 import requests
 from docker.errors import NotFound
 from aea.skills.base import PublicId
-from aea.configurations.base import PackageType
+from aea_ledger_ethereum import EthereumCrypto
+from aea.helpers.env_vars import is_env_variable
+from aea.configurations.base import PackageId, PackageType
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE
 
 from auto_dev.utils import change_dir, map_os_to_env_vars, load_autonolas_yaml
@@ -45,6 +47,7 @@ class DevAgentRunner(AgentRunner):
     ipfs_hash: str | None = None
     use_tendermint: bool = True
     install_deps: bool = True
+    ethereum_address: str | None = None
 
     def __post_init__(
         self,
@@ -134,7 +137,7 @@ class DevAgentRunner(AgentRunner):
                 time.sleep(0.2)
                 self.check_tendermint(retries + 1)
             if res.status == "running":
-                self.attempt_hard_reset()
+                self._attempt_hard_reset()
         except (subprocess.CalledProcessError, RuntimeError, NotFound) as e:
             self.logger.info(f"Tendermint container not found or error: {e}")
             if retries > 3:
@@ -151,7 +154,7 @@ class DevAgentRunner(AgentRunner):
         self.logger.info("Tendermint is running and healthy ✅")
         return None
 
-    def attempt_hard_reset(self, attempts: int = 0) -> None:
+    def _attempt_hard_reset(self, attempts: int = 0) -> None:
         """Attempt to hard reset Tendermint."""
         if attempts >= TENDERMINT_RESET_RETRIES:
             self.logger.error(f"Failed to reset Tendermint after {TENDERMINT_RESET_RETRIES} attempts.")
@@ -168,7 +171,7 @@ class DevAgentRunner(AgentRunner):
 
         self.logger.info(f"Tendermint not ready (attempt {attempts + 1}/{TENDERMINT_RESET_RETRIES}), waiting...")
         time.sleep(1)
-        self.attempt_hard_reset(attempts + 1)
+        self._attempt_hard_reset(attempts + 1)
 
     def fetch_agent(self) -> None:
         """Fetch the agent from registry if needed."""
@@ -202,12 +205,50 @@ class DevAgentRunner(AgentRunner):
         self.logger.info("Setting up agent keys...")
         self.manage_keys()
 
+        self.logger.info("Detecting Necessary Overrides. ")
+        self.extract_magic_overrides()
+
         self.logger.info("Installing dependencies...")
         self.install_dependencies() if self.install_deps else None
 
         self.logger.info("Setting up certificates...")
         self.issue_certificates()
         self.logger.info("Agent setup complete. 🎉")
+
+    def extract_magic_overrides(self):
+        """Extract the magic overrides necessary for concensus."""
+
+        magic_overrides = {
+            ".models.params.args.setup.all_participants": lambda: f'["{self.ethereum_address}"]',
+        }
+
+        _config, *overrides = load_autonolas_yaml(PackageType.AGENT, self.agent_dir)
+
+        dotted_paths = {}
+        # we go through each override and check if it is an imputed value
+
+        def recurse_dictionary(dictionary, path=""):
+            for key, value in dictionary.items():
+                if isinstance(value, dict):
+                    recurse_dictionary(value, path=f"{path}.{key}")
+                elif is_env_variable(value):
+                    dotted_paths[path + f".{key}"] = value
+
+        for override in overrides:
+            _type = override["type"]
+            public_id = PublicId.from_str(override["public_id"])
+            package_id = PackageId(package_type=PackageType(_type), public_id=public_id)
+            path = f"{package_id.package_type.value}.{public_id.name}"
+            recurse_dictionary(override, path=path)
+
+        overrides = {}
+        for key in dotted_paths:
+            for magic_var, getter in magic_overrides.items():
+                if magic_var in key:
+                    _key = key.upper().replace(".", "_")
+                    overrides[_key] = getter()
+
+        self._env_vars = overrides
 
     def manage_keys(
         self,
@@ -222,11 +263,28 @@ class DevAgentRunner(AgentRunner):
         for ledger in required_ledgers:
             self.logger.info(f"Processing ledger: {ledger}")
             # We check if a key already exists for the ledger
-            key_file = Path("..") / f"{ledger}_private_key.txt"
+            new_key_file = Path(f"{ledger}_private_key.txt")
+            if new_key_file.exists():
+                self.logger.info(f"Key file {new_key_file} already exists. Skipping key generation.")
+                continue
+            key_file = Path("..") / new_key_file
             if key_file.exists():
                 self.setup_ledger_key(ledger, generate_keys=False, existing_key_file=key_file)
             else:
                 self.setup_ledger_key(ledger, generate_keys)
+
+        self.ethereum_address = EthereumCrypto().load_private_key_from_path("ethereum_private_key.txt").address
+
+    def remove_keys(self) -> None:
+        """Remove keys from the agent."""
+        self.logger.info("Removing keys...")
+        config = load_autonolas_yaml(PackageType.AGENT)[0]
+        required_ledgers = config["private_key_paths"]
+        for ledger in required_ledgers:
+            cmd = f"aea -s remove-key {ledger}"
+            self.execute_command(cmd)
+
+        self.logger.info("Keys removed. 🔑")
 
     def setup_ledger_key(self, ledger: str, generate_keys, existing_key_file: Path | None = None) -> None:
         """Setup the agent with the ledger key."""
@@ -255,7 +313,7 @@ class DevAgentRunner(AgentRunner):
     def issue_certificates(self) -> None:
         """Issue certificates for agent if needed."""
         if not Path("../certs").exists():
-            self.execute_command("aea -s issue-certificates")
+            self.execute_command("aea -s issue-certificates", verbose=True)
         else:
             self.execute_command("cp -r ../certs ./")
 
@@ -300,7 +358,7 @@ class DevAgentRunner(AgentRunner):
         """
         self.logger.info("Starting agent execution...")
         try:
-            result = self.execute_command("aea -s run --env ../.env", verbose=True)
+            result = self.execute_command("aea -s run --env ../.env", verbose=True, env_vars=self._env_vars)
             if result:
                 self.logger.info("Agent execution completed successfully. 😎")
             else:

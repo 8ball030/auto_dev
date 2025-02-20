@@ -6,7 +6,7 @@ services:
     cpus: 0.5
     container_name: tm_0
     hostname: tm_0
-    image: "valory/open-autonomy-tendermint:0.15.2"
+    image: "valory/open-autonomy-tendermint:0.19.4"
     restart: always
     network_mode: ${NETWORK_MODE}
     environment:
