@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from multiprocessing import cpu_count
 
-from auto_dev.workflow_manager import Task
+import pytest
 
 
 COVERAGE_COMMAND = f"""coverage report \
@@ -59,9 +59,7 @@ def test_path(
     if multiple:
         extra_args.extend(("-n", str(cpu_count())))
 
-    args = ["pytest", path, *extra_args]
-    env = os.environ.copy()
-    env.update({"PYTHONPATH": "."})
-    task = Task(command=" ".join(args), env_vars=env, stream=verbose, verbose=verbose)
-    task.work()
-    return not task.is_failed
+    args = [path, *extra_args]
+    os.environ["PYTHONPATH"] = "."
+    result = pytest.main(args)
+    return result == 0
