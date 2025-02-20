@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 # This script is used to run the pre-commit checks for the repository.
 # It is called by the pre-commit hook in the repository.
