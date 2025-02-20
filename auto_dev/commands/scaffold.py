@@ -8,6 +8,7 @@ Also contains a Contract, which we will use to allow the user to;
 
 """
 
+import enum
 import sys
 from pathlib import Path
 
@@ -35,6 +36,9 @@ from auto_dev.contracts.block_explorer import BlockExplorer
 from auto_dev.contracts.contract_scafolder import ContractScaffolder
 from auto_dev.workflow_manager import Task
 
+class ScaffoldType(enum.Enum):
+    MECH = "mech"
+    OTHER_TYPES = "other_types"
 
 cli = build_cli()
 
@@ -101,6 +105,33 @@ def _process_from_file(ctx, yaml_dict, network, read_functions, write_functions,
             read_functions=read_functions,
             write_functions=write_functions,
         )
+
+
+@scaffold.command()
+@click.option("--type", type=click.Choice([e.value for e in ScaffoldType]), required=True, help="Specify the type of scaffold to create")
+@click.argument("api_file", type=str)
+@click.argument("tool_name", type=str)
+@click.argument("author_name", type=str)
+@click.argument("gpt_key", type=str)
+@click.pass_context
+def custom(ctx, type, api_file, tool_name, author_name, gpt_key):
+    """Scaffold a custom tool, such as a Mech tool."""
+    
+    if type == "mech":
+        if not api_file or not tool_name or not author_name or not gpt_key:
+            raise click.ClickException("For --type mech, you must provide api_file, tool_name, author_name, and gpt_key.")
+
+        from auto_dev.services.mech.create_mech_tool import main as create_mech_tool
+        
+        click.echo(f"Creating Mech tool '{tool_name}' by {author_name}...")
+
+        # Run the Mech tool creator script
+        create_mech_tool(api_file=api_file, tool_name=tool_name, author_name=author_name, gpt_key=gpt_key)
+        
+        click.echo(f"Mech tool '{tool_name}' successfully scaffolded!")
+    
+    else:
+        click.echo(f"Scaffolding for type '{type}' is not implemented yet.")
 
 
 @scaffold.command()
