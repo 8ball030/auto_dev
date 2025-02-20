@@ -9,8 +9,11 @@ echo 'doing autonomy'
 REPO_NAME="test_repo"
 poetry run adev repo scaffold $REPO_NAME -t autonomy --force --auto-approve --no-install
 cd $REPO_NAME
+echo removing old env 
 poetry env remove --all
-poetry lock --no-cache || exit 0
+echo locking
+poetry lock --no-cache -vv || exit 0
+echo installing
 poetry install
 poetry check --lock
 cp poetry.lock ../auto_dev/data/repo/templates/autonomy/
