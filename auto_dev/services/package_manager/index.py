@@ -361,6 +361,7 @@ class PackageManager:
             msg = "Not in an agent directory. Please run this command from an agent directory."
             raise OperationError(msg)
         # we check if there are keys and remove them
-        self.agent_runner.remove_keys()
+        if self.agent_runner:
+            self.agent_runner.remove_keys()
         # Publish from agent directory (we're already there)
         self._publish_internal(force, new_public_id=new_public_id)
