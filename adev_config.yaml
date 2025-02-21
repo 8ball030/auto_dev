@@ -23,7 +23,7 @@ autonomy_dependencies:
   - open-aea-cli-ipfs
   extras: null
 - name: visualisation-station
-  version: 0.1.5
+  version: 0.1.8
   location: remote
   url: https://api.github.com/repos/StationsStation/visualisation_station
   plugins: null
