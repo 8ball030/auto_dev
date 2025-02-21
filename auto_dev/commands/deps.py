@@ -27,7 +27,6 @@ We want to be able to update the hash of the package.
 
 """
 
-from contextlib import chdir
 import os
 import sys
 import shutil
@@ -120,9 +119,9 @@ def from_key_to_path(key: str) -> Path:
 
 def remove_old_package(package_path: Path, proposed_dependency_updates: dict[str, str]) -> None:
     """We remove the old package directories."""
+    del package_path
     for package_name in proposed_dependency_updates:
         path = from_key_to_path(package_name)
-        breakpoint()
         if path.exists():
             shutil.rmtree(path, ignore_errors=True)
 
@@ -832,4 +831,3 @@ def verify(auto_approve: bool = False):
 
 if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
-
