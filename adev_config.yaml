@@ -7,7 +7,7 @@ autonomy_dependencies:
   - open-aea-test-autonomy
   extras: null
 - name: stations-station
-  version: 0.1.18
+  version: 0.1.19
   location: remote
   url: https://api.github.com/repos/StationsStation/stations_station
   plugins: null
@@ -23,7 +23,7 @@ autonomy_dependencies:
   - open-aea-cli-ipfs
   extras: null
 - name: visualisation-station
-  version: 0.1.4
+  version: 0.1.5
   location: remote
   url: https://api.github.com/repos/StationsStation/visualisation_station
   plugins: null
