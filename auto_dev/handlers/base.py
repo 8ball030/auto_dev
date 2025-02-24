@@ -19,13 +19,15 @@ class HandlerTypes(Enum):
 
 class HandlerScaffolder(BehaviourScaffolder):
     """Handler Scaffolder for protocol-based handlers.
-    
+
     Args:
+    ----
         protocol_specification_path: Path to the protocol specification file.
         handler_type: Type of handler to scaffold.
         logger: Logger instance.
         verbose: Whether to enable verbose logging.
         auto_confirm: Whether to automatically confirm prompts.
+
     """
 
     component_class: str = "handlers"

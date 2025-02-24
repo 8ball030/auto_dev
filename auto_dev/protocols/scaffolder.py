@@ -441,12 +441,15 @@ class ProtocolScaffolder:
             ):
                 if node.names[0].name == "runtime_version":
                     continue
-            elif all(
-                [
-                    isinstance(node, ast.Expr),
-                    isinstance(getattr(node, "value", None), ast.Call),
-                ]
-            ) and node.value.func.value.id == "_runtime_version":
+            elif (
+                all(
+                    [
+                        isinstance(node, ast.Expr),
+                        isinstance(getattr(node, "value", None), ast.Call),
+                    ]
+                )
+                and node.value.func.value.id == "_runtime_version"
+            ):
                 continue
             new_body.append(node)
 

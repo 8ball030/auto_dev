@@ -15,10 +15,12 @@ logger = get_logger()
 @dataclass
 class BlockExplorer:
     """Class to interact with the blockchain explorer.
-    
+
     Args:
+    ----
         url: The URL of the block explorer API.
         network: The blockchain network to interact with. Must be an instance of Network enum.
+
     """
 
     url: str

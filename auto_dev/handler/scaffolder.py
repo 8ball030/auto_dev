@@ -37,10 +37,12 @@ class ScaffolderConfig(BaseModel):
 
 class HandlerScaffolder:
     """Handler Scaffolder for generating and managing API handlers.
-    
+
     Args:
+    ----
         config: Configuration object containing scaffolding settings.
         logger: Logger instance for output and debugging.
+
     """
 
     def __init__(
@@ -512,9 +514,7 @@ class HandlerScaffolder:
 
         return [schema for schema, usage in schema_usage.items() if "response" in usage or "nested_request" in usage]
 
-    def _resolve_path_item(
-        self, path_item: PathItem | Reference, api_spec: OpenAPI, path: str
-    ) -> PathItem | None:
+    def _resolve_path_item(self, path_item: PathItem | Reference, api_spec: OpenAPI, path: str) -> PathItem | None:
         """Resolve a path item if it's a reference."""
         if isinstance(path_item, Reference):
             try:
@@ -615,7 +615,7 @@ class HandlerScaffolder:
 
 class HandlerScaffoldBuilder:
     """Builder class for creating HandlerScaffolder instances.
-    
+
     Provides a fluent interface for configuring and creating HandlerScaffolder objects.
     """
 

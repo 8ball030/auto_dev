@@ -42,7 +42,7 @@ from aea.identity.base import Identity
 from aea.mail.base import Envelope, Message
 from aea.protocols.dialogue.base import Dialogue as BaseDialogue
 
-from packages.{protocol_author}.protocols.{protocol_name}.dialogues import {protocol_name_camelcase}Dialogues as Base{protocol_name_camelcase}Dialogues
+from packages.{protocol_author}.protocols.{protocol_name}.dialogues import Base{protocol_name_camelcase}Dialogues
 from packages.{protocol_author}.protocols.{protocol_name}.dialogues import {protocol_name_camelcase}Dialogue
 
 from packages.{author}.connections.{name}.connection import (
