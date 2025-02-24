@@ -158,7 +158,7 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
             "handler_mapping": handler_mapping,
             "ROLE": roles[0].upper(),
             "OTHER_ROLE": roles[-1].upper(),
-            "PERFORMATIVES": [i.upper() for i in speech_acts],
+            "PERFORMATIVE": speech_acts[0].upper(),
         }
 
     def augment(self) -> None:
