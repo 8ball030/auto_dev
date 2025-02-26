@@ -25,7 +25,6 @@ HEADER = """
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
-{docstring}
 """
 
 DOCSTRING = """\"\"\"{proper_name} connection and channel.\"\"\""""
@@ -44,7 +43,7 @@ from aea.mail.base import Envelope, Message
 from aea.protocols.dialogue.base import Dialogue
 
 from packages.{protocol_author}.protocols.{protocol_name}.dialogues import {protocol_name_camelcase}Dialogue
-from packages.{protocol_author}.protocols.{protocol_name}.dialogues import {protocol_name_camelcase}Dialogues as Base{protocol_name_camelcase}Dialogues
+from packages.{protocol_author}.protocols.{protocol_name}.dialogues import Base{protocol_name_camelcase}Dialogues
 from packages.{protocol_author}.protocols.{protocol_name}.message import {protocol_name_camelcase}Message
 
 # TODO: import any library dependencies for the connection

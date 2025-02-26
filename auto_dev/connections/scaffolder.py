@@ -132,6 +132,7 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
         self.tests = self.path / "tests"
         self.test_connection = self.tests / "test_connection.py"
         self.test_connection_init = self.tests / "__init__.py"
+        self.public_id = PublicId.from_str(name)
 
     @property
     def kwargs(self) -> dict:
@@ -147,9 +148,9 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
         return {
             "year": 2023,  # overwritten by aea scaffold
             "author": AEA_CONFIG["author"],  # overwritten by aea scaffold in copyright header
-            "name": self.name,
-            "name_camelcase": to_camel(self.name),
-            "proper_name": to_camel(self.name, sep=" "),
+            "name": self.public_id.name,
+            "name_camelcase": to_camel(self.public_id.name),
+            "proper_name": to_camel(self.public_id.name, sep=" "),
             "protocol_author": protocol_author,
             "protocol_name": protocol_name,
             "protocol_name_camelcase": to_camel(protocol_name),
@@ -177,11 +178,13 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
 
 class ConnectionScaffolder:
     """Class for scaffolding connection components.
-    
+
     Args:
+    ----
         ctx: Click context object.
         name: Name of the connection.
         protocol_id: Public ID of the protocol to use.
+
     """
 
     def __init__(self, ctx: click.Context, name: str, protocol_id: PublicId):
@@ -204,10 +207,11 @@ class ConnectionScaffolder:
         self.protocol_id = protocol_id
         self.protocol = read_protocol(protocol_specification_path)
         self.logger.info(f"Read protocol specification: {protocol_specification_path}")
+        self.public_id = PublicId.from_str(self.name)
 
     def update_config(self) -> None:
         """Update connection.yaml."""
-        connection_path = Path.cwd() / "connections" / self.name
+        connection_path = Path.cwd() / "connections" / self.public_id.name
         connection_yaml = connection_path / "connection.yaml"
         with open(connection_yaml, encoding=DEFAULT_ENCODING) as infile:
             connection_config = self.ctx.aea_ctx.connection_loader.load(infile)
@@ -220,10 +224,10 @@ class ConnectionScaffolder:
 
     def update_readme(self) -> None:
         """Update README.md."""
-        connection_path = Path.cwd() / "connections" / self.name
+        connection_path = Path.cwd() / "connections" / self.public_id.name
         file_path = connection_path / "README.md"
         kwargs = {
-            "name": " ".join(map(str.capitalize, self.name.split("_"))),
+            "name": " ".join(map(str.capitalize, self.public_id.name.split("_"))),
         }
         content = README_TEMPLATE.format(**kwargs)
         write_to_file(str(file_path), content, FileType.TEXT)
@@ -234,7 +238,8 @@ class ConnectionScaffolder:
         template.augment()
 
         with folder_swapper(template.path, template.src):
-            command = f"aea scaffold connection {self.name}"
+            public_id = PublicId.from_str(self.name)
+            command = f"aea scaffold connection {public_id.name}"
             cli_executor = CommandExecutor(command.split(" "))
             result = cli_executor.execute(verbose=self.verbose)
             if not result:
@@ -244,7 +249,7 @@ class ConnectionScaffolder:
         self.update_config()
         self.update_readme()
 
-        connection_id = PublicId(AEA_CONFIG["author"], self.name, "0.1.0")
+        connection_id = PublicId(AEA_CONFIG["author"], self.public_id.name, "0.1.0")
         cli_executor = CommandExecutor(f"aea fingerprint connection {connection_id}".split())
         result = cli_executor.execute(verbose=True)
         if not result:

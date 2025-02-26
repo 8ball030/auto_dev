@@ -18,13 +18,15 @@ class DialogueTypes(Enum):
 
 class DialogueScaffolder(BehaviourScaffolder):
     """Dialogue Scaffolder.
-    
+
     Args:
+    ----
         protocol_specification_path: Path to the protocol specification file.
         dialogue_type: Type of dialogue to scaffold.
         logger: Logger instance.
         verbose: Whether to enable verbose logging.
         auto_confirm: Whether to automatically confirm prompts.
+
     """
 
     component_class: str = "dialogues"
