@@ -13,7 +13,7 @@ from auto_dev.utils import currenttz, get_logger, snake_to_camel
 from auto_dev.fsm.fsm import FsmSpec
 from auto_dev.constants import JINJA_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
-from auto_dev.protocols.scaffolder import ProtocolScaffolder, read_protocol
+from auto_dev.protocols.scaffolder import ProtocolScaffolder
 
 
 ProtocolSpecification = namedtuple("ProtocolSpecification", ["metadata", "custom_types", "speech_acts"])
@@ -126,7 +126,6 @@ class BehaviourScaffolder(ProtocolScaffolder):
         self.verbose = verbose
         self.behaviour_type = behaviour_type
         self.protocol_specification_path = protocol_specification_path
-        self.protocol_specification = read_protocol(self.protocol_specification_path)
         self.logger.info(f"Read protocol specification: {protocol_specification_path}")
         self.auto_confirm = auto_confirm
         self.env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
@@ -135,7 +134,7 @@ class BehaviourScaffolder(ProtocolScaffolder):
     def scaffold(self):
         """Scaffold the protocol."""
         return (
-            self._scaffold_simple_fsm if self.behaviour_type is BehaviourTypes.simple_fsm.value else self._scaffold_protocol
+            self._scaffold_simple_fsm if self.behaviour_type is BehaviourTypes.simple_fsm else self._scaffold_protocol
         )
 
     @property
