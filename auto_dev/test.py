@@ -48,7 +48,7 @@ def test_path(
             - Integrates with coverage reporting
 
     """
-    extra_args = []
+    extra_args = ["--cache-clear"]
 
     if verbose:
         extra_args.append("-v")

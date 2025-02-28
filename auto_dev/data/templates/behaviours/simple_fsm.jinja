@@ -28,10 +28,12 @@ from enum import Enum
 
 
 class {{class_name}}Events(Enum):
+    """Events for the fsm."""
     {%for event in events %}
     {{event}} = '{{event}}'{% endfor %}
 
 class {{class_name}}States(Enum):
+    """States for the fsm."""
     {% for state in states %}
     {{state.upper()}} = '{{state.lower()}}'{% endfor %}
 
@@ -45,15 +47,18 @@ class BaseState(State, ABC):
         self._is_done = False  # Initially, the state is not done
 
     def act(self) -> None:
+        """Perform the act."""
         print(f"Performing action for state {self._state}")
         self._is_done = True
         self._event = {{class_name}}Events.DONE
 
     def is_done(self) -> bool:
+        """Is done."""
         return self._is_done
 
     @property
     def event(self) -> Optional[str]:
+        """Current event"""
         return self._event
 
 

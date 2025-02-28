@@ -207,13 +207,9 @@ def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_comm
     Optional Parameters:
 
         type_of_repo (-t): Type of repository to scaffold (autonomy, python). (Default: autonomy)
-
         force (-f): Overwrite existing repository if it exists. (Default: False)
-
         auto_approve (-aa): Skip confirmation prompts. (Default: False)
-
         install (--install/--no-install): Install dependencies after scaffolding. (Default: True)
-
         initial_commit (--initial-commit/--no-commit): Create initial git commit. (Default: True)
 
     Usage:

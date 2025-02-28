@@ -184,6 +184,7 @@ class ProdAgentRunner(AgentRunner):
         self.logger.info("Pushing all packages to the registry...")
         # We silence all output from click
         Task(command="make clean").work()
+        Task(command="autonomy packages lock").work()
         with open(os.devnull, "w", encoding="utf-8") as f, redirect_stdout(f):
             push_all_packages(REGISTRY_REMOTE, retries=3, package_type_config_class=PACKAGE_TYPE_TO_CONFIG_CLASS)
         self.logger.info("All packages pushed successfully. 🎉")

@@ -40,7 +40,7 @@ tasks:
   - id: '5'
     name: Test the agent
     description: Run the agent tests.
-    command: adev test -p packages/${kwargs.new_author}/agents/${kwargs.new_agent}
+    command: adev -v test -p packages/${kwargs.new_author}/agents/${kwargs.new_agent}
 
   - id: '6'
     name: Cleanup
