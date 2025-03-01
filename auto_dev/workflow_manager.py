@@ -347,6 +347,10 @@ class WorkflowManager:
                     if exit_on_failure and not task.continue_on_error:
                         sys.exit(1)
 
+                    if not task.continue_on_error:
+                        workflow.is_failed = True
+                        workflow.is_success = False
+                        return False
         return True
 
     def create_table(self, workflow_name: str) -> Table:

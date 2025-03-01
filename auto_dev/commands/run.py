@@ -126,6 +126,7 @@ def dev(
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local service package", default=True)
 @click.option("--keysfile", help="Path to the private keys file.", type=click.File(), default="keys.json")
 @click.option("--number_of_agents", "-n", help="Number of agents to run.", type=int, default=1)
+@click.option("--env-file", help="Path to the environment file.", type=str, default=".env")
 @click.pass_context
 def prod(
     ctx,
@@ -135,6 +136,7 @@ def prod(
     fetch: bool,
     keysfile: click.File,
     number_of_agents: int,
+    env_file: click.File,
 ) -> None:
     """Run an agent in production mode.
 
@@ -172,6 +174,7 @@ def prod(
         fetch=fetch,
         keysfile=Path(keysfile.name).absolute(),
         number_of_agents=number_of_agents,
+        env_file=Path(env_file),
     )
     runner.run()
     logger.info("Agent run complete. 😎")

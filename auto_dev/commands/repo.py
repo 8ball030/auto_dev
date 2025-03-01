@@ -8,12 +8,14 @@ contains the following commands;
         . pyproject.toml.
 """
 
+import os
 import sys
 import difflib
 from shutil import rmtree
 from pathlib import Path
 from dataclasses import dataclass
 
+import requests
 import rich_click as click
 from rich import print  # pylint: disable=W0622
 from rich.prompt import Prompt
@@ -24,6 +26,7 @@ from auto_dev.base import build_cli
 from auto_dev.enums import UserInput
 from auto_dev.utils import change_dir
 from auto_dev.constants import (
+    DEFAULT_TIMEOUT,
     TEMPLATE_FOLDER,
     DEFAULT_ENCODING,
     SAMPLE_PYTHON_CLI_FILE,
@@ -416,6 +419,82 @@ def update_deps(ctx, lock: bool) -> None:
     else:
         logger.info("No changes detected in the dependency file.")
         logger.info("Dependency file is up to date.")
+
+
+def create_github_repo(repo_name, token, user: str, private: bool = False, is_org: bool = False):
+    """Create a new repository on Github."""
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+
+    data = {
+        "name": repo_name,
+        "private": private,
+        "auto_init": False,
+    }
+    if is_org:
+        data["organization"] = user
+        url = f"https://api.github.com/orgs/{user}/repos"
+    else:
+        url = "https://api.github.com/user/repos"
+        data["owner"] = user
+    print(f"Creating repository `{repo_name}` on Github. for user `{user}`")
+    response = requests.post(url, headers=headers, json=data, timeout=DEFAULT_TIMEOUT)
+    if response.status_code == 201:
+        return response.json()
+    return response.json()
+
+
+@repo.command()
+@click.option("--repo", type=str, required=False, help="Name of the repository to create")
+@click.option("--user", help="Github user", type=str, required=True)
+@click.option("--private", help="Make the repo private", is_flag=False, default=True)
+@click.option("--token", help="Github token", type=str, required=False)
+@click.option("--org", help="Create the repository under an organization", is_flag=True, default=False)
+@click.pass_context
+def create_remote(ctx, repo, token, user, private, org) -> None:
+    r"""Create a new repository on Github.
+
+    Required Parameters:
+
+        user (--user): Github user. to create the repository under.
+
+    Optional Parameters:
+
+        repo_name: Name of the repository to create
+
+        token (--token): Github token. (Default: None)
+
+        private (--private): Make the repository private. (Default: False)
+
+    Usage:
+        Create a new repository:
+            adev repo create-github-repo my_repo
+
+        Create a new private repository:
+            adev repo create-github-repo my_repo --private
+
+    Notes
+    -----
+        - Creates a new repository on Github
+        - Requires a Github token to authenticate
+        - Optionally makes the repository private
+        - Returns the response from the Github API
+
+    """
+    logger = ctx.obj["LOGGER"]
+    if not repo:
+        repo = Path.cwd().name
+    if not token:
+        token = os.environ.get("GITHUB_PAT")
+
+    response = create_github_repo(repo, token, user, private, org)
+    if "message" in response:
+        logger.error(f"Error creating repository: {response}")
+        logger.error(f"Error creating repository: {response['message']}")
+        sys.exit(1)
+    logger.info(f"Repository `{repo}` created successfully!")
 
 
 if __name__ == "__main__":
