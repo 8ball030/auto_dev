@@ -343,7 +343,6 @@ class WorkflowManager:
                 self.update_table(self.table, task, status, display_process)
                 if status == "Failed":
                     self.logger.error(f"Task {task.id} failed.")
-                    self.logger.error(f"Task {task.client.output}")
                     if exit_on_failure and not task.continue_on_error:
                         sys.exit(1)
 

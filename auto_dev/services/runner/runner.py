@@ -48,6 +48,7 @@ class DevAgentRunner(AgentRunner):
     use_tendermint: bool = True
     install_deps: bool = True
     ethereum_address: str | None = None
+    env_file: str = ".env"
 
     def __post_init__(
         self,
@@ -248,7 +249,19 @@ class DevAgentRunner(AgentRunner):
                     _key = key.upper().replace(".", "_")
                     overrides[_key] = getter()
 
+        def generate_env_vars(self) -> dict:
+            """Generate the environment variables for the deployment."""
+            # we read in the .env file and update the environment variables
+            all_parts = {}
+            if (Path("..") / self.env_file).exists():
+                with open((Path("..") / self.env_file), encoding="utf-8") as file:
+                    all_parts.update(dict(line.strip().split("=") for line in file if "=" in line))
+            else:
+                self.logger.warning(f"Environment file {self.env_file} not found.")
+            return all_parts
+
         self._env_vars = overrides
+        self._env_vars.update(generate_env_vars(self))
 
     def manage_keys(
         self,
