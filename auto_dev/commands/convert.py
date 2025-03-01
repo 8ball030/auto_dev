@@ -3,6 +3,7 @@
 import sys
 import shutil
 from pathlib import Path
+from textwrap import dedent
 
 import yaml
 import rich_click as click
@@ -118,6 +119,34 @@ class ConvertCliTool(BasePackageScaffolder):
         code_dir.mkdir(parents=True, exist_ok=True)
         code_path = code_dir / self.template_name.split(JINJA_SUFFIX)[0]
         code_path.write_text(rendered, DEFAULT_ENCODING)
+        test_data = dedent("""
+        \"\"\"Tests for the service.\"\"\"
+
+        def test_service():
+            \"\"\"Test the service.\"\"\"
+            assert True
+        """)
+
+        test_path = code_dir / "tests"
+        test_path.mkdir(parents=True, exist_ok=True)
+        test_init_path = test_path / "__init__.py"
+        test_init_path.write_text(
+            dedent("""
+        \"\"\"Tests for the service.\"\"\"
+        """),
+            DEFAULT_ENCODING,
+        )
+
+        test_path /= "test_service.py"
+        test_path.write_text(test_data, DEFAULT_ENCODING)
+
+        init_path = code_dir / "__init__.py"
+        init_path.write_text(
+            dedent("""
+        \"\"\"Service package.\"\"\"
+        """),
+            DEFAULT_ENCODING,
+        )
 
     def check_if_service_exists(
         self,

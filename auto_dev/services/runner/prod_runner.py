@@ -217,7 +217,7 @@ class ProdAgentRunner(AgentRunner):
             "ALL_PARTICIPANTS": json.dumps(self.all_participants),
         }
         # we read in the .env file and update the environment variables
-        if Path(".." / self.env_file).exists():
+        if (Path("..") / self.env_file).exists():
             with open(Path(".." / self.env_file), encoding="utf-8") as file:
                 all_parts.update(dict(line.strip().split("=") for line in file if "=" in line))
         else:
