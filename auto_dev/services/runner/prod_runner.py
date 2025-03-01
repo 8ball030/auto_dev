@@ -48,6 +48,7 @@ class ProdAgentRunner(AgentRunner):
     fetch: bool = False
     keysfile: Path = "keys.json"
     number_of_agents: int = 1
+    env_file: Path = Path(".env")
 
     def run(self) -> None:
         """Run the agent."""
@@ -184,6 +185,7 @@ class ProdAgentRunner(AgentRunner):
         self.logger.info("Pushing all packages to the registry...")
         # We silence all output from click
         Task(command="make clean").work()
+        Task(command="autonomy packages lock").work()
         with open(os.devnull, "w", encoding="utf-8") as f, redirect_stdout(f):
             push_all_packages(REGISTRY_REMOTE, retries=3, package_type_config_class=PACKAGE_TYPE_TO_CONFIG_CLASS)
         self.logger.info("All packages pushed successfully. 🎉")
@@ -192,6 +194,8 @@ class ProdAgentRunner(AgentRunner):
         """Build the deployment."""
         self.logger.info("Building the deployment...")
         env_vars = self.generate_env_vars()
+        for key in env_vars:
+            self.logger.info(f"Environment variable: {key} has been set!")
         self.execute_command(
             f"autonomy deploy build {self.keysfile} --o abci_build -ltm",
             env_vars=env_vars,
@@ -209,9 +213,16 @@ class ProdAgentRunner(AgentRunner):
 
     def generate_env_vars(self) -> dict:
         """Generate the environment variables for the deployment."""
-        return {
+        all_parts = {
             "ALL_PARTICIPANTS": json.dumps(self.all_participants),
         }
+        # we read in the .env file and update the environment variables
+        if Path(".." / self.env_file).exists():
+            with open(Path(".." / self.env_file), encoding="utf-8") as file:
+                all_parts.update(dict(line.strip().split("=") for line in file if "=" in line))
+        else:
+            self.logger.warning(f"Environment file {self.env_file} not found.")
+        return all_parts
 
     def execute_agent(
         self,

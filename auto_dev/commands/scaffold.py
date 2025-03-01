@@ -440,7 +440,7 @@ def handler(ctx, spec_file, public_id, new_skill, auto_confirm) -> int:
     type=click.Choice([f.value for f in (BehaviourTypes.metrics, BehaviourTypes.simple_fsm)]),
     required=True,
     help="The type of behaviour to generate.",
-    default=BehaviourTypes.metrics,
+    default=BehaviourTypes.metrics.value,
 )
 @click.pass_context
 def behaviour(
