@@ -35,9 +35,17 @@ def run() -> None:
 @click.option("--fetch/--no-fetch", help="Fetch from registry or use local agent package", default=True)
 @click.option("--use-tendermint/--no-use-tendermint", help="Use Tendermint for blockchain network", default=True)
 @click.option("--install-deps/--no-install-deps", help="Install dependencies", default=True)
+@click.option("--env-file", help="Path to the environment file.", type=str, default=".env")
 @click.pass_context
 def dev(
-    ctx, agent_public_id: PublicId, verbose: bool, force: bool, fetch: bool, use_tendermint: bool, install_deps: bool
+    ctx,
+    agent_public_id: PublicId,
+    verbose: bool,
+    force: bool,
+    fetch: bool,
+    use_tendermint: bool,
+    install_deps: bool,
+    env_file: str,
 ) -> None:
     """Run an agent from the local packages registry or a local path.
 
@@ -110,6 +118,7 @@ def dev(
         fetch=fetch,
         use_tendermint=use_tendermint,
         install_deps=install_deps,
+        env_file=Path(env_file),
     )
     runner.run()
     logger.info("Agent run complete. 😎")
