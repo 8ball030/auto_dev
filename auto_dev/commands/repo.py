@@ -239,9 +239,16 @@ def scaffold(ctx, name, type_of_repo, force, auto_approve, install, initial_comm
             - Adds sample main.py and cli.py files
 
     """
+
     logger = ctx.obj["LOGGER"]
-    verbose = ctx.obj["VERBOSE"]
     logger.info(f"Creating a new {type_of_repo} repo.")
+    verbose = ctx.obj["VERBOSE"]
+    scaffold_new_repo(logger, name, type_of_repo, force, auto_approve, install, initial_commit, verbose)
+    logger.info(f"Repository `{name}` successfully created.")
+
+
+def scaffold_new_repo(logger, name, type_of_repo, force, auto_approve, install, initial_commit, verbose) -> None:
+    """Scaffold a new repo."""
     render_args["project_name"] = name
     if Path(name).exists() and not force:
         logger.error(f"Repo `{name}` already exists.\n\tPlease choose a different name or use the --force flag.")
