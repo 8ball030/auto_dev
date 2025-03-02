@@ -11,141 +11,141 @@ The tools within the `dao` subcommand are used to scaffold a new customs compone
 
 1. Ensure you have the OpenAPI 3 specification file. You can view its contents using:
 
-    ```
-    cat auto_dev/data/openapi/openapi_specification.yaml
-    ```
+```
+cat auto_dev/data/openapi/openapi_specification.yaml
+```
 
-    Output:
+Output:
 
-    ```yaml
-    openapi: 3.0.0
-    info:
-      title: Test API
-      version: 1.0.0
-      description: A simple API for testing the OpenAPI Handler Generator
-    paths:
-      /users:
-        get:
-          summary: List users
-          responses:
-            '200':
-              description: Successful response
-              content:
-                application/json:    
-                  schema:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/User'
-        post:
-          summary: Create a user
-          requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/User'
-          responses:
-            '201':
-              description: Created
-              content:
-                application/json:    
-                  schema:
-                    $ref: '#/components/schemas/User'
-      /users/{userId}:
-        get:
-          summary: Get a user
-          parameters:
-            - name: userId
-              in: path
-              required: true
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+  description: A simple API for testing the OpenAPI Handler Generator
+paths:
+  /users:
+    get:
+      summary: List users
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
               schema:
-                type: integer
-          responses:
-            '200':
-              description: Successful response
-              content:
-                application/json:    
-                  schema:
-                    $ref: '#/components/schemas/User'
-    components:
-      schemas:
-        User:
-          type: object
-          required:
-            - id
-            - name
-          properties:
-            id:
-              type: integer
-            name:
-              type: string
-            email:
-              type: string
-    ```
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:    
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{userId}:
+    get:
+      summary: Get a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                $ref: '#/components/schemas/User'
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+```
 
 2. If not already done, scaffold a repo and a customs component.
 
-    Initialize aea:
-    ```bash
-    aea init --remote --author xiuxiuxar --ipfs --reset 
-    ```
+Initialize aea:
+```bash
+aea init --remote --author xiuxiuxar --ipfs --reset 
+```
 
-    Create a new repo:
-    ```bash
-    adev repo scaffold -t autonomy new_station
-    ```
+Create a new repo:
+```bash
+adev repo scaffold -t autonomy new_station
+```
 
-    ```bash
-    cd new_station
-    ```
+```bash
+cd new_station
+```
 
-    Scaffold a customs component:
-    ```bash
-    aea scaffold -tlr custom simple_dao
-    ```
+Scaffold a customs component:
+```bash
+aea scaffold -tlr custom simple_dao
+```
 
 3. Create or update the `component.yaml` file to reference the OpenAPI specification:
 
-    ```bash
-    cp ../auto_dev/data/openapi/openapi_specification.yaml packages/xiuxiuxar/customs/simple_dao/
-    ```
+```bash
+cp ../auto_dev/data/openapi/openapi_specification.yaml packages/xiuxiuxar/customs/simple_dao/
+```
 
-    ```bash
-    yq e '.api_spec = "openapi_specification.yaml"' -i packages/xiuxiuxar/customs/simple_dao/component.yaml
-    ```
+```bash
+yq e '.api_spec = "openapi_specification.yaml"' -i packages/xiuxiuxar/customs/simple_dao/component.yaml
+```
 
-    ```bash
-    cat packages/xiuxiuxar/customs/simple_dao/component.yaml
-    ```
+```bash
+cat packages/xiuxiuxar/customs/simple_dao/component.yaml
+```
 
-    Output:
+Output:
 
-    ```yaml
-    name: simple_dao
-    author: xiuxiuxar
-    version: 0.1.0
-    type: custom
-    description: The custom component package.
-    license: Apache-2.0
-    aea_version: '>=1.0.0, <2.0.0'
-    fingerprint:
-      __init__.py: bafybeigjt2jaxismyp3hspvqefjrcp33mmen3pnmnkm4rhesh74io3vikm
-    fingerprint_ignore_patterns: []
-    dependencies: {}
-    api_spec: openapi_specification.yaml
-    ```
+```yaml
+name: simple_dao
+author: xiuxiuxar
+version: 0.1.0
+type: custom
+description: The custom component package.
+license: Apache-2.0
+aea_version: '>=1.0.0, <2.0.0'
+fingerprint:
+  __init__.py: bafybeigjt2jaxismyp3hspvqefjrcp33mmen3pnmnkm4rhesh74io3vikm
+fingerprint_ignore_patterns: []
+dependencies: {}
+api_spec: openapi_specification.yaml
+```
 
 4. Run the DAO scaffolding command from the customs component directory:
 
-    ```bash
-    cd packages/xiuxiuxar/customs/simple_dao
-    ```
+```bash
+cd packages/xiuxiuxar/customs/simple_dao
+```
 
-    We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
+We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
 
-    ```bash
-    adev scaffold dao --auto-confirm
-    ```
+```bash
+adev scaffold dao --auto-confirm
+```
 
 ## Generated Files
 
