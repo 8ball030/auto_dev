@@ -1,0 +1,71 @@
+id: ''
+name: workflow_create_new_custom_handler
+description: A workflow to create a new custom from an OpenAPI spec
+kwargs:
+  new_author: author_2
+  new_agent: agent_2
+  new_custom: custom_2
+  openapi_spec_path: auto_dev/data/openapi/openapi_specification.yaml
+tasks:
+
+  - id: '0'
+    name: Initialize packages
+    description: Initialize package registry
+    command: autonomy packages init
+    continue_on_error: true
+
+  - id: '1'
+    name: Create agent
+    description: Create new agent from template
+    command: adev create ${kwargs.new_author}/${kwargs.new_agent} -t eightballer/frontend_agent --no-clean-up --force
+
+  - id: '2'
+    name: Eject custom component
+    description: Extract simple_html custom component for handler use
+    command: adev eject custom eightballer/simple_html ${kwargs.new_author}/${kwargs.new_custom}
+    working_dir: ${kwargs.new_agent}
+
+  - id: '3'
+    name: Publish agent
+    description: Publish agent to registry
+    command: adev publish ${kwargs.new_author}/${kwargs.new_agent} --force
+    working_dir: ${kwargs.new_agent}
+
+  - id: '4'
+    name: Copy OpenAPI spec
+    description: Copy OpenAPI specification to custom component
+    command: cp auto_dev/data/openapi/openapi_specification.yaml packages/${kwargs.new_author}/customs/${kwargs.new_custom}/openapi3_spec.yaml
+
+  - id: '5'
+    name: Update component config
+    description: Add OpenAPI spec reference to component.yaml
+    command: yq e '.api_spec = "openapi3_spec.yaml"' -i packages/${kwargs.new_author}/customs/${kwargs.new_custom}/component.yaml
+    shell: true
+
+  - id: '6'
+    name: Augment with OpenAPI
+    description: Enhance custom component with OpenAPI handler methods
+    command: adev augment customs openapi3 --auto-confirm
+    working_dir: packages/${kwargs.new_author}/customs/${kwargs.new_custom}
+
+  - id: '7'
+    name: Set handler class
+    description: Set handler class to ApiHttpHandler
+    command: yq e '.handlers[].class_name = "ApiHttpHandler"' -i packages/${kwargs.new_author}/customs/${kwargs.new_custom}/component.yaml
+    shell: true
+
+  - id: '8'
+    name: Configure agent
+    description: Set agent to use new custom component
+    command: yq e '(select(.public_id == "eightballer/trader_abci:0.1.0") | .models.params.args.user_interface.custom_component) = "${kwargs.new_author}/${kwargs.new_custom}"' -i packages/${kwargs.new_author}/agents/${kwargs.new_agent}/aea-config.yaml
+    shell: true
+
+  - id: '9'
+    name: Run tests
+    description: Verify agent functionality
+    command: adev -v test -p packages/${kwargs.new_author}/agents/${kwargs.new_agent}
+
+  - id: '10'
+    name: Cleanup
+    description: Remove temporary files
+    command: rm -rf ${kwargs.new_agent}
