@@ -1,17 +1,17 @@
-# Scaffolding a new Data Access Object (DAO)
+# Data Access Object (DAO) Scaffolding
 
-The tools within the `dao` subcommand are used to scaffold a new customs component Data Access Object (DAO) based on an OpenAPI 3 specification. This process automates the creation of Data Access Object classes, dummy data, and test scripts.
+This guide explains how to scaffold Data Access Objects based on an OpenAPI 3 specification, automating the creation of database interaction classes.
 
 ## Prerequisites
 
-1. An OpenAPI 3 specification file with components/schema models defined.
-2. A `component.yaml` file in the current directory that references the OpenAPI specification using the `api_spec` field.
+- An OpenAPI 3 specification file with defined components/schema models
+- A `component.yaml` file referencing the OpenAPI specification via the `api_spec` field
 
-## Steps to Create a Data Access Object
+## Quick Start
 
-### 1. Define an OpenAPI3 spec
+### 1. Define an OpenAPI 3 specification
 
-Ensure you have the OpenAPI 3 specification file. You can view its contents using:
+Your specification should include schema definitions:
 
 ```
 cat auto_dev/data/openapi/openapi_specification.yaml
@@ -26,7 +26,7 @@ info:
   version: 1.0.0
   description: A simple API for testing the OpenAPI Handler Generator
 paths:
-  /users:
+  /api/users:
     get:
       summary: List users
       responses:
@@ -53,7 +53,7 @@ paths:
             application/json:    
               schema:
                 $ref: '#/components/schemas/User'
-  /users/{userId}:
+  /api/users/{userId}:
     get:
       summary: Get a user
       parameters:
@@ -85,7 +85,10 @@ components:
           type: string
 ```
 
-### 2. [Optional] Scaffold a repo and a customs component.
+### 2. Set Up Your Project Structure
+
+!!! note "Optional Step"
+    Skip this if you already have a project structure set up.
 
 Initialize aea:
 ```bash
@@ -106,7 +109,7 @@ Scaffold a customs component:
 aea scaffold -tlr custom simple_dao
 ```
 
-### 3. Create or update the `component.yaml` file to reference the OpenAPI specification.
+### 3. Configure Your Component
 
 ```bash
 cp ../auto_dev/data/openapi/openapi_specification.yaml packages/xiuxiuxar/customs/simple_dao/
@@ -137,21 +140,22 @@ dependencies: {}
 api_spec: openapi_specification.yaml
 ```
 
-### 4. Run the DAO scaffolding command.
+### 4. Generate DAOs
 
 ```bash
 cd packages/xiuxiuxar/customs/simple_dao
 ```
 
-We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
+!!! tip
+    We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
 
 ```bash
 adev scaffold dao --auto-confirm
 ```
 
-## Generated Files
+## Generated Structure
 
-The scaffolding process generates the following files in your customs component:
+The scaffolding process creates the following files:
 
 ```
 daos/
@@ -159,48 +163,70 @@ daos/
 ├── base_dao.py              # Base Data Access Object class
 ├── <model_name_1>_dao.py    # Model-specific Data Access Object
 ├── <model_name_2>_dao.py    # Model-specific Data Access Object
-├── aggregated_data.json     # Sample data for testing
+├── aggregated_data.json     # Sample test data
 └── test_dao.py              # Test script
 ```
 
-## Implementation Details
+## Understanding the Generated Code
 
-1. Base Data Access Object Class
-2. Generating Data Access Object classes for each model
-3. Test Script Generation
+### Base DAO
 
-## How It Works
+The `base_dao.py` file contains:
 
-The scaffolding process involves several steps:
+- Common CRUD operations (Create, Read, Update, Delete)
+- Transaction handling
+- Error management
 
-1. Loading and validating the OpenAPI specification (checking for required fields, etc.)
-2. Generating DAO classes for each model
-3. Creating dummy data for testing
-4. Generating a test script
+### Model-Specific DAOs
 
-For more details on the implementation, refer to:
-`auto_dev/dao/scaffolder.py`
+Each model gets its own DAO class with:
+
+- Model-specific validation
+- Custom query methods
+- Type hints for your schema
+
+### Test Data
+
+The `aggregated_data.json` file contains:
+
+- Sample data for each model
+- Valid test cases for CRUD operations
 
 ## Customization
 
-The generated DAO classes use Jinja2 templates for customization. If you need to modify the structure of the generated classes, you can update the templates located in the `auto_dev/data/templates/dao` directory.
+!!! tip "Template Customization"
+    The generated DAOs use Jinja2 templates. To customize:
+    
+    1. Locate templates in `auto_dev/data/templates/dao`
+    2. Modify them to suit your requirements
+    3. Re-run the scaffolding command
 
-## Error Handling
+## Best Practices
+
+### Error Handling
 
 The scaffolding process validates:
-- `component.yaml` exists and has `api_spec` field
-- OpenAPI spec file exits and is valid YAML
-- OpenAPI spec contains components/schemas
-- OpenAPI spec follows OpenAPI 3.0 format
 
-Detailed error messages are logged for troubleshooting.
+- Component configuration
+- OpenAPI specification format
+- Schema definitions
 
-## Next Steps
+!!! warning "Schema Requirements"
+    Ensure your OpenAPI spec includes proper schema definitions with required fields and property types.
 
-After scaffolding your Data Access Objects:
+### Keeping DAOs in Sync
 
-1. Review the generated Data Access Object classes in the `daos/` directory.
-2. Customize the generated classes as needed.
-3. Run the `test_dao.py` script to ensure the basic functionality of your Data Access Objects.
+!!! success "Regenerate After Changes"
+    Always regenerate your DAOs after modifying your OpenAPI specification to maintain consistency.
 
-Remember to regenerate the Data Access Objects if you make changes to your OpenAPI specification to keep them in sync.
+## Testing Your DAOs
+
+Run the generated test script to verify functionality:
+
+```bash
+python -m packages.your_author.customs.simple_dao.daos.test_dao
+```
+
+## Integration with Handlers
+
+DAOs work seamlessly with OpenAPI handlers. See the [OpenAPI Handler Integration](openapi.md) guide for details on connecting your DAOs to API endpoints.
