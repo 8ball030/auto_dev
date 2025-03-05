@@ -1,16 +1,16 @@
-# Augmenting visualisation station with an OpenAPI Handler
+# OpenAPI Handler Integration
 
-The tools within the `openapi` subcommand are used to augment a customs component with handler methods based on an OpenAPI 3 specification. This process automates the creation of endpoints methods. 
+This guide explains how to augment components with handler methods based on an OpenAPI 3.
 
 ## Prerequisites
 
-1. An OpenAPI 3 specification file with paths, operationIds, and if augmenting with data access objects, schemas defined.
-2. A `component.yaml` file in the current directory that references the OpenAPI specification using the `api_spec` field.
-3. If augmenting with DAOs, DAOs for each schema in the OpenAPI specification (see dao docs for how to scaffold these).
+- An OpenAPI 3 specification file with defined paths and operationIds
+- A `component.yaml` file referencing the OpenAPI specification via the `api_spec` field.
+- For DAO integration: Data Access Objects for each schema in the specification. See [Data Access Object](dao.md).
 
-## Steps to Augment a Handler (without data access objects)
+## Basic Handler Augmentation
 
-### 1. Define an OpenAPI3 spec.
+### 1. Define an OpenAPI 3 Specification.
 
 ```
 cat auto_dev/data/openapi/openapi_specification.yaml
@@ -84,7 +84,10 @@ components:
           type: string
 ```
 
-### 2. [Optional] Scaffold a repo and a customs component.
+### 2. Set Up Your Project Structure
+
+!!! note "Optional Step"
+    Skip this if you already have a project structure set up.
 
 Initialise aea:
 
@@ -129,7 +132,9 @@ cd ..
 ```
 
 
-### 3. Create or update the `component.yaml` file to reference the OpenAPI specification.
+### 3. Configure Your Component
+
+Add your OpenAPI specification to the component:
 
 ```bash
 cp ../auto_dev/data/openapi/openapi_specification.yaml packages/xiuxiuxar/customs/new_handler/openapi3_spec.yaml
@@ -171,7 +176,7 @@ handlers:
   args: {}
 ```
 
-### 4. Run the Handler augment command.
+### 4. Run the Augmentation Command
 
 ```bash
 cd packages/xiuxiuxar/customs/new_handler
@@ -183,7 +188,7 @@ We automatically confirm all actions, though you can omit the `--auto-confirm` f
 adev augment customs openapi3 --auto-confirm
 ```
 
-### 5. Update the component and aea-config.yaml to run the new handler.
+### 5. Update Configuration
 
 ```bash
 cd ../../../..
@@ -205,56 +210,65 @@ yq e '(select(.public_id == "eightballer/trader_abci:0.1.0") | .models.params.ar
 autonomy packages lock
 ```
 
-### 6. Run the agent.
+### 6. Run Your Agent
 
 ```shell
 adev run dev xiuxiuxar/agent --force
 ```
 
-The augmenting process creates the following handler methods: For each path defined in the OpenAPI specification, a corresponding handler method is generated along with a general handler and resolver method.
+## Advanced: Integration with Data Access Objects (DAOs)
 
-## How It Works
+### 1. Complete Basic Setup
 
-The augmentation process involves several steps:
+Follow steps 1-3 from the basic handler augmentation.
 
-1. Loading and validating the OpenAPI specification.
-2. Generating handler methods for each path.
+### 2. Scaffold DAOs
 
-For more details on the implementation, refer to:
-`auto_dev/handler/scaffolder.py`
-
-## Customization
-
-The generated Handler methods use Jinja2 templates for customization. If you need to modify the structure of the generated classes, you can update the templates located in the `JINJA_TEMPLATE_FOLDER`.
-
-## Next Steps
-
-After augmenting your handler:
-
-- Review the generated handler methods in the `handlers.py` file.
-
-Remember to regenerate the handlers if you make changes to your OpenAPI specification to keep them in sync.
-
-## Steps to Augment a Handler (with DAOs)
-
-### 1. Perform steps 1-3 above. 
-
-### 2. Run the DAO scaffold command.
-
-[NOTE]
-We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
+!!! tip
+    We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
 
 
 ```shell
 adev scaffold dao --auto-confirm
 ```
 
-### 3. Run the handler augment command with DAO flag.  
+### 3. Augment with DAO Integration
 
-We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
+!!! tip
+    We automatically confirm all actions, though you can omit the `--auto-confirm` flag to see the actions that will be taken.
 
 ```shell
 adev augment customs openapi3 --use-daos --auto-confirm
 ```
 
-### 4. Perform 5-6 above.
+### 4. Complete Configuration
+
+Follow steps 5-6 from the basic handler augmentation.
+
+## How It Works
+
+The augmentation process:
+
+1. Loads and validates the OpenAPI specification
+2. Generates handler methods for each defined path
+3. Creates resolver methods to handle requests
+4. When using DAOs, connects endpoints to database operations
+
+!!! tip "Implementation Details"
+    For more details on the implementation, see `auto_dev/handler/scaffolder.py`
+
+## Customization
+
+The generated handlers use Jinja2 templates. To customize the structure:
+
+1. Locate the templates in the `JINJA_TEMPLATE_FOLDER`
+2. Modify them to suit your specific requirements
+3. Re-run the augmentation command
+
+## Best Practices
+
+!!! warning "Keep in Sync"
+    Always regenerate handlers after modifying your OpenAPI specification to maintain consistency.
+
+!!! success "Review Generated Code"
+    After augmentation, review the generated code in `handlers.py` to ensure it meets your requirements.
