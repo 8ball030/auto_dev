@@ -9,7 +9,9 @@ The tools within the `dao` subcommand are used to scaffold a new customs compone
 
 ## Steps to Create a Data Access Object
 
-1. Ensure you have the OpenAPI 3 specification file. You can view its contents using:
+### 1. Define an OpenAPI3 spec
+
+Ensure you have the OpenAPI 3 specification file. You can view its contents using:
 
 ```
 cat auto_dev/data/openapi/openapi_specification.yaml
@@ -83,7 +85,7 @@ components:
           type: string
 ```
 
-2. If not already done, scaffold a repo and a customs component.
+### 2. [Optional] Scaffold a repo and a customs component.
 
 Initialize aea:
 ```bash
@@ -104,7 +106,7 @@ Scaffold a customs component:
 aea scaffold -tlr custom simple_dao
 ```
 
-3. Create or update the `component.yaml` file to reference the OpenAPI specification:
+### 3. Create or update the `component.yaml` file to reference the OpenAPI specification.
 
 ```bash
 cp ../auto_dev/data/openapi/openapi_specification.yaml packages/xiuxiuxar/customs/simple_dao/
@@ -135,7 +137,7 @@ dependencies: {}
 api_spec: openapi_specification.yaml
 ```
 
-4. Run the DAO scaffolding command from the customs component directory:
+### 4. Run the DAO scaffolding command.
 
 ```bash
 cd packages/xiuxiuxar/customs/simple_dao
@@ -155,10 +157,10 @@ The scaffolding process generates the following files in your customs component:
 daos/
 ├── __init__.py
 ├── base_dao.py              # Base Data Access Object class
-├── <model_name_1>_dao.py   # Model-specific Data Access Object
-├── <model_name_2>_dao.py   # Model-specific Data Access Object
+├── <model_name_1>_dao.py    # Model-specific Data Access Object
+├── <model_name_2>_dao.py    # Model-specific Data Access Object
 ├── aggregated_data.json     # Sample data for testing
-└── test_dao.py             # Test script
+└── test_dao.py              # Test script
 ```
 
 ## Implementation Details
