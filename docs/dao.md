@@ -223,7 +223,7 @@ The scaffolding process validates:
 
 Run the generated test script to verify functionality:
 
-```bash
+```
 python -m packages.your_author.customs.simple_dao.daos.test_dao
 ```
 
