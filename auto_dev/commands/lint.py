@@ -124,8 +124,11 @@ def lint(ctx, path, changed_only) -> None:
         raise click.ClickException(msg)
 
 
-def single_thread_lint(paths, verbose, logger):
+def single_thread_lint(paths: list[str], verbose, logger):
     """Run the linting in a single thread."""
+    if not isinstance(paths, list):
+        msg = "Paths must be a list of strings."
+        raise TypeError(msg)
     results = {}
     for package in track(range(len(paths)), description="Linting..."):
         path = paths[package]

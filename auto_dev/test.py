@@ -61,5 +61,6 @@ def test_path(
 
     args = [path, *extra_args]
     os.environ["PYTHONPATH"] = "."
+    os.environ["PYTHONWARNINGS"] = "ignore"
     result = pytest.main(args)
     return result == 0

@@ -7,10 +7,16 @@ from auto_dev.commands.run import run
 
 
 @pytest.mark.parametrize(
-    "group,command",
+    ("group", "command"),
     [
-        (run, "dev",),
-        (run, "prod",),
+        (
+            run,
+            "dev",
+        ),
+        (
+            run,
+            "prod",
+        ),
     ],
 )
 def test_executes_help(group, command):

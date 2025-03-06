@@ -25,6 +25,7 @@ HEADER = """
 #   limitations under the License.
 #
 # ------------------------------------------------------------------------------
+\"\"\" Module for scaffolded component. \"\"\"
 """
 
 DOCSTRING = """\"\"\"{proper_name} connection and channel.\"\"\""""
