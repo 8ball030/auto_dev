@@ -749,13 +749,6 @@ def bump(
         click.echo("No packages.json file found. Skipping autonomy packages verification.")
         sys.exit(1)
 
-    
-    local_packages = get_package_json(packages_dir)["third_party"]
-
-    for key, package_hash in local_packages.items():
-        print(f"Removing old package: {key}")
-        remove_old_package(repo=packages_dir, proposed_dependency_updates={key: package_hash})
-
     click.echo("Verifying poetry dependencies... 📝")
     cmd, poetry_issues = get_update_command(
         version_set_loader.poetry_dependencies.poetry_dependencies, strict=strict, use_latest=latest
