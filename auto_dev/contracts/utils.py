@@ -58,7 +58,10 @@ PARAM_TO_STR_MAPPING = {
     ParamType.BYTES32_ARRAY_ARRAY: "List[List[str]]",
     ParamType.BYTES_ARRAY: "List[str]",
     ParamType.INT256_ARRAY: "List[int]",
+    ParamType.UINT256_2_ARRAY: "List[int]",
+    ParamType.UINT256_3_ARRAY: "List[int]",
 }
+
 
 PYTHON_KEYWORDS = [
     "from",

@@ -83,8 +83,11 @@ class Formatter:
         return command.execute(verbose=verbose)
 
 
-def single_thread_fmt(paths, verbose, logger, remote=False):
+def single_thread_fmt(paths: list[str], verbose, logger, remote=False):
     """Run the formatting in a single thread."""
+    if isinstance(paths, str):
+        msg = "Paths must be a list of strings."
+        raise TypeError(msg)
     results = {}
     formatter = Formatter(verbose, remote=remote)
     local_formatter = Formatter(verbose, remote=False)

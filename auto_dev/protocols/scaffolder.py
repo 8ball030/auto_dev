@@ -563,6 +563,9 @@ class ProtocolScaffolder:
             return raw_classes, all_dummy_data, enums
         for custom_type, definition in protocol.custom_types.items():
             if definition.startswith("enum "):
+                PROTOBUF_TO_PYTHON[custom_type.split(":")[1]] = custom_type.split(":")[1]
+        for custom_type, definition in protocol.custom_types.items():
+            if definition.startswith("enum "):
                 continue
             class_data = {
                 "name": custom_type.split(":")[1],

@@ -2,7 +2,9 @@
 
 from pathlib import Path
 from importlib import import_module
+
 import click
+
 from auto_dev.utils import read_from_file
 
 
@@ -42,7 +44,7 @@ def test_check_documentation_and_suggest():
             if not isinstance(cmd, click.Command) or isinstance(cmd, click.Group):
                 continue
 
-            # Check for subcommand documentation within the same file, ex. adev run dev 
+            # Check for subcommand documentation within the same file, ex. adev run dev
             assert (
                 f"### {cmd_name}" in doc_content
             ), f"Documentation missing for subcommand {cmd_name} in {source_file.stem}. Consider running 'make docs'."

@@ -24,6 +24,8 @@ class ParamType(Enum):
     UINT256_ARRAY = "uint256[]"
     UINT64_ARRAY = "uint64[]"
     INT256_ARRAY = "int256[]"
+    UINT256_2_ARRAY = "uint256[2]"
+    UINT256_3_ARRAY = "uint256[3]"
     INT80_ARRAY = "int80[]"
     ADDRESS_ARRAY = "address[]"
     STRING = "string"

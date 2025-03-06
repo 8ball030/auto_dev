@@ -1,15 +1,20 @@
 """Module to represent a contract."""
 
+import ast
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import yaml
 from web3 import Web3
 
+from auto_dev.fmt import single_thread_fmt
 from auto_dev.enums import FileType
-from auto_dev.utils import write_to_file, snake_to_camel
+from auto_dev.utils import get_paths, get_logger, write_to_file, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING
+from auto_dev.commands.lint import single_thread_lint
 from auto_dev.contracts.function import Function
+from auto_dev.data.contracts.header import HEADER
 from auto_dev.contracts.contract_events import ContractEvent
 from auto_dev.contracts.contract_functions import FunctionType, ContractFunction
 
@@ -68,6 +73,7 @@ class Contract:
         self.address = address
         self.path = Path.cwd() / "packages" / self.author / "contracts" / self.name
         self.web3 = web3 if web3 is not None else Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
+        self.function_names = []
 
     def write_abi_to_file(self) -> None:
         """Write the abi to a file."""
@@ -107,6 +113,33 @@ class Contract:
         contract_py_path = self.path / "contract.py"
         with contract_py_path.open("r", encoding=DEFAULT_ENCODING) as file_pointer:
             contract_py = file_pointer.read()
+
+        tree = ast.parse(contract_py)
+
+        class_name = "MyScaffoldContract"
+        functions_to_remove_from_class = [
+            "get_raw_transaction",
+            "get_raw_message",
+            "get_state",
+        ]
+
+        for x, node in enumerate(deepcopy(tree.body)):
+            if isinstance(node, ast.ClassDef) and node.name == class_name:
+                output = []
+                for _i, function in enumerate(deepcopy(node.body)):
+                    if isinstance(function, ast.FunctionDef) and function.name in functions_to_remove_from_class:
+                        continue
+                    output.append(function)
+                node.body = output
+            tree.body[x] = node
+
+        write_to_file(str(contract_py_path), ast.unparse(tree), FileType.TEXT)
+
+        with contract_py_path.open("r", encoding=DEFAULT_ENCODING) as file_pointer:
+            contract_py = file_pointer.read()
+
+        linter_skips = "# ruff: noqa: PLR0904"
+
         contract_py = contract_py.replace("class MyScaffoldContract", f"class {snake_to_camel(self.name)}")
         contract_py = contract_py.replace(
             'contract_id = PublicId.from_str("open_aea/scaffold:0.1.0")',
@@ -114,7 +147,8 @@ class Contract:
         )
         contract_py = contract_py.replace(
             "from aea.configurations.base import PublicId",
-            f"from packages.{self.author}.contracts.{self.name} import PUBLIC_ID",
+            "from aea.configurations.base import PublicId"
+            + f"\nfrom packages.{self.author}.contracts.{self.name} import PUBLIC_ID",
         )
 
         contract_py = contract_py.replace(
@@ -122,19 +156,47 @@ class Contract:
             "from aea.crypto.base import LedgerApi, Address",
         )
 
-        read_functions = "\n".join([function.to_string() for function in self.read_functions])
-        write_functions = "\n".join([function.to_string() for function in self.write_functions])
+        contract_py = contract_py.replace(
+            "from typing import Any",
+            linter_skips + "\nfrom typing import Any, Dict, List, Tuple, Union, Optional, cast",
+        )
+
+        read_functions = "\n".join([self.ensure_unique_name(function).to_string() for function in self.read_functions])
+        write_functions = "\n".join(
+            [self.ensure_unique_name(function).to_string() for function in self.write_functions]
+        )
 
         events = "\n".join([event.to_string() for event in self.events])
         contract_str = "\n".join(contract_py.split("/n")[:36]) + read_functions + write_functions + events
 
         write_to_file(str(contract_py_path), contract_str, FileType.TEXT)
 
+    def ensure_unique_name(self, function: Function) -> Function:
+        """Ensure the function name is unique.
+        Returns a new function with a unique name should the function name already exist.
+        """
+        if function.name not in self.function_names:
+            self.function_names.append(function.name)
+            return function
+        index = 1
+        while True:
+            new_name = f"{function.name}_{index}"
+            if new_name not in self.function_names:
+                self.function_names.append(new_name)
+                func = Function(
+                    function.abi,
+                    function.function_type,
+                )
+                func.abi["name"] = function.abi["name"] + f"_{index}"
+                return func
+            index += 1
+
     def update_contract_init__(self) -> None:
         """Append the Public."""
         init_py_path = self.path / "__init__.py"
         public_id = f"PublicId.from_str('{self.author}/{self.name}:0.1.0')"
-        content = f"\nfrom aea.configurations.base import PublicId\n\nPUBLIC_ID = {public_id}\n"
+        doc_string = f'"""This module contains the contract for the {self.name}."""'
+        content = HEADER + doc_string + f"\nfrom aea.configurations.base import PublicId\n\nPUBLIC_ID = {public_id}\n"
         write_to_file(str(init_py_path), content, FileType.TEXT)
 
     def update_all(self) -> None:
@@ -142,6 +204,12 @@ class Contract:
         self.update_contract_yaml()
         self.update_contract_py()
         self.update_contract_init__()
+
+        # format and lint the contract
+        paths = get_paths(self.path)
+        single_thread_lint(paths, verbose=True, logger=get_logger())
+        single_thread_fmt(paths, verbose=True, logger=get_logger())
+        single_thread_lint(paths, verbose=True, logger=get_logger())
 
     def scaffold_read_function(self, function):
         """Scaffold a read function."""
