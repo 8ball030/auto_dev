@@ -109,7 +109,6 @@ def from_key_to_path(key: str) -> Path:
     parts = key.split("/")
 
     path_list = [
-        "packages",
         parts[1],
         parts[0] + "s",
         parts[2],

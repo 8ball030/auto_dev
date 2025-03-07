@@ -1,6 +1,5 @@
 """Service for handling component dependencies."""
 
-from typing import Set, Dict
 from pathlib import Path
 
 from auto_dev.utils import load_autonolas_yaml
@@ -13,18 +12,22 @@ class DependencyBuilder:
         """Initialize the dependency builder.
 
         Args:
+        ----
             component_path: Path to the component directory
             component_type: Type of the component (skill, protocol, etc.)
+
         """
         self.component_path = Path(component_path)
         self.component_type = component_type
-        self.dependencies: Dict[str, Set[str]] = {}
+        self.dependencies: dict[str, set[str]] = {}
 
     def process_dependencies_field(self, config_deps: dict) -> None:
         """Process the dependencies field of a component config.
 
         Args:
+        ----
             config_deps: Dependencies configuration from component config
+
         """
         for dep_type, deps in config_deps.items():
             if dep_type not in self.dependencies:
@@ -35,8 +38,10 @@ class DependencyBuilder:
         """Process a component field (protocols, contracts, etc) from config.
 
         Args:
+        ----
             field_type: Type of the component field
             field_deps: List of dependencies for this field
+
         """
         if field_type not in self.dependencies:
             self.dependencies[field_type] = set()
@@ -45,13 +50,18 @@ class DependencyBuilder:
     @classmethod
     def build_dependency_tree_for_component(
         cls, component_path: Path | str, component_type: str
-    ) -> Dict[str, Set[str]]:
+    ) -> dict[str, set[str]]:
         """Build dependency tree for a component.
+
         Args:
+        ----
             component_path: Path to the component directory
             component_type: Type of the component (skill, protocol, etc.)
+
         Returns:
-            Dictionary mapping dependency types to sets of dependencies
+        -------
+            Dictionary mapping dependency types to sets of dependencies.
+
         """
         try:
             builder = cls(component_path, component_type)
@@ -70,4 +80,5 @@ class DependencyBuilder:
 
             return builder.dependencies
         except (FileNotFoundError, ValueError) as e:
-            raise ValueError(f"Failed to build dependency tree for component {component_path}") from e
+            msg = f"Failed to build dependency tree for component {component_path}"
+            raise ValueError(msg) from e
