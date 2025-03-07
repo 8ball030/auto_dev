@@ -255,7 +255,12 @@ class DevAgentRunner(AgentRunner):
             all_parts = {}
             if (Path("..") / self.env_file).exists():
                 with open((Path("..") / self.env_file), encoding="utf-8") as file:
-                    all_parts.update(dict(line.strip().split("=") for line in file if "=" in line))
+
+                    def from_env_file(line):
+                        key, *value = line.strip().split("=")
+                        return key, "=".join(value)
+
+                    all_parts.update(dict(from_env_file(line) for line in file if "=" in line))
             else:
                 self.logger.warning(f"Environment file {self.env_file} not found.")
             return all_parts
