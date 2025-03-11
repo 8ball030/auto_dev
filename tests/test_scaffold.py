@@ -89,7 +89,7 @@ def test_scaffold_fsm_with_aea_run(cli_runner, spec, dummy_agent_tim):
     assert "An error occurred during instantiation of connection valory" in result.output
 
 
-def test_scaffold_protocol(cli_runner, dummy_agent_default):
+def test_scaffold_protocol(cli_runner, dummy_agent_tim):
     """Test scaffold protocol."""
 
     path = Path.cwd() / ".." / "tests" / "data" / "dummy_protocol.yaml"
@@ -99,11 +99,11 @@ def test_scaffold_protocol(cli_runner, dummy_agent_default):
     assert result, runner.output
 
     assert runner.return_code == 0, result.output
-    assert f"New protocol scaffolded" in runner.output
+    assert "New protocol scaffolded" in runner.output
 
     protocol = read_protocol(str(path))
     original_content = path.read_text(encoding=DEFAULT_ENCODING)
-    readme_path = Path.cwd() / "protocols" / protocol.metadata["name"] / "README.md"
+    readme_path = dummy_agent_tim / "protocols" / protocol.metadata["name"] / "README.md"
     assert original_content in readme_path.read_text(encoding=DEFAULT_ENCODING)
 
 
