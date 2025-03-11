@@ -46,12 +46,6 @@ class BaseState(State, ABC):
         self._event = None
         self._is_done = False  # Initially, the state is not done
 
-    def act(self) -> None:
-        """Perform the act."""
-        print(f"Performing action for state {self._state}")
-        self._is_done = True
-        self._event = {{class_name}}Events.DONE
-
     def is_done(self) -> bool:
         """Is done."""
         return self._is_done
@@ -66,16 +60,24 @@ class BaseState(State, ABC):
 {% for state in states %}
 class {{ state }}(BaseState):
     """This class implements the behaviour of the state {{ state }}."""
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self._state = {{class_name}}States.{{state.upper()}}
+    _state = {{class_name}}States.{{state.upper()}}
+
+    def act(self) -> None:
+        """Perform the act."""
+        print(f"Performing action for state {self._state}")
+        self._is_done = True
+        self._event = {{class_name}}Events.DONE
 {% endfor %}
-
-
 
 
 class {{class_name}}FsmBehaviour(FSMBehaviour):
     """This class implements a simple Finite State Machine behaviour."""
+
+    rounds = [
+        {% for state in states %}
+        {{state}},
+        {% endfor %}
+    ]
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
