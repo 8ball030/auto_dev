@@ -38,7 +38,7 @@ python = ">=3.10,<3.12"
 open-autonomy = "==0.19.4"
 open-aea = "==1.64.0"
 open-aea-test-autonomy = "==0.19.4"
-open-aea-ledger-ethereum = {path = "/home/eight/Projects/StationsStation/repos/capitalisation_station/third_party/upstream/open-aea/plugins/aea-ledger-ethereum"}
+open-aea-ledger-ethereum = "==1.64.0"
 open-aea-ledger-solana = "==1.64.0"
 open-aea-ledger-cosmos = "==1.64.0"
 open-aea-cli-ipfs = "==1.64.0"
