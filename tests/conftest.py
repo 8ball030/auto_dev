@@ -104,7 +104,7 @@ def dummy_agent_tim(test_packages_filesystem) -> Path:
     if not task.is_done or task.is_failed:
         raise ValueError(task.client.output)
     os.chdir(agent.name)
-    return True
+    return Path.cwd()
 
 
 @pytest.fixture

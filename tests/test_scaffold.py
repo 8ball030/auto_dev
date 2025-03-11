@@ -89,16 +89,17 @@ def test_scaffold_fsm_with_aea_run(cli_runner, spec, dummy_agent_tim):
     assert "An error occurred during instantiation of connection valory" in result.output
 
 
-@pytest.mark.skip(reason="Needs chain contracts update")
-def test_scaffold_protocol(cli_runner, dummy_agent_tim, caplog):
+def test_scaffold_protocol(cli_runner, dummy_agent_tim):
     """Test scaffold protocol."""
 
     path = Path.cwd() / ".." / "tests" / "data" / "dummy_protocol.yaml"
-    command = ["scaffold", "protocol", str(path)]
-    result = cli_runner.invoke(cli, command)
+    command = ["adev", "scaffold", "protocol", str(path)]
+    runner = cli_runner(command)
+    result = runner.execute()
+    assert result, runner.output
 
-    assert result.exit_code == 0, result.output
-    assert f"New protocol scaffolded at {dummy_agent_tim}" in caplog.text
+    assert runner.return_code == 0, result.output
+    assert "New protocol scaffolded" in runner.output
 
     protocol = read_protocol(str(path))
     original_content = path.read_text(encoding=DEFAULT_ENCODING)
