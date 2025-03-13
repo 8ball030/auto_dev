@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        python-versions: [3.11]
+        python-versions: [3.11, 3.12, 3.13]
         poetry-version: ["2.0.1"]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
