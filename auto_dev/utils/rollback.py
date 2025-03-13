@@ -1,21 +1,23 @@
-import os
-import signal
+"""Filesystem utilities for temporary backups and rollback mechanisms."""
+
 import shutil
+import signal
 import tempfile
 from pathlib import Path
-from contextlib import contextmanager, chdir
+from contextlib import chdir, contextmanager
 
 from auto_dev.utils import signals
 
+
 # https://www.youtube.com/watch?v=0GRLhpMao3I
-# async-signal safe is the strongest concept of reentrancy. 
+# async-signal safe is the strongest concept of reentrancy.
 # async-signal safe implies thread safe.
 
 # signal.SIGKILL cannot be intercepted
 SIGNALS_TO_BLOCK = (signal.SIGINT, signal.SIGTERM)
 
 
-def restore_from_backup(directory: Path, backup: Path):
+def _restore_from_backup(directory: Path, backup: Path):
     for item in directory.rglob("*"):
         backup_item = backup / item.relative_to(directory)
         if item.is_file() or item.is_symlink():
@@ -35,6 +37,7 @@ def restore_from_backup(directory: Path, backup: Path):
 
 @contextmanager
 def on_exit(directory: Path):
+    """Creates a temporary backup of the directory and restores it upon exit."""
     backup = Path(tempfile.mkdtemp(prefix="backup_")) / directory.name
     shutil.copytree(directory, backup, symlinks=True)
     with chdir(Path.cwd()):
@@ -42,12 +45,13 @@ def on_exit(directory: Path):
             yield
         finally:
             with signals.mask(*SIGNALS_TO_BLOCK):
-                restore_from_backup(directory, backup)
+                _restore_from_backup(directory, backup)
             shutil.rmtree(backup)
 
 
 @contextmanager
 def on_exception(directory: Path):
+    """Creates a temporary backup of the directory and restores it only if an exception occurs."""
     backup = Path(tempfile.mkdtemp(prefix="backup_")) / directory.name
     shutil.copytree(directory, backup, symlinks=True)
     with chdir(Path.cwd()):
@@ -55,7 +59,7 @@ def on_exception(directory: Path):
             yield
         except BaseException:
             with signals.mask(*SIGNALS_TO_BLOCK):
-                restore_from_backup(directory, backup)
+                _restore_from_backup(directory, backup)
             raise
         finally:
             shutil.rmtree(backup)

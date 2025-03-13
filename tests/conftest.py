@@ -3,8 +3,8 @@
 
 import os
 import tempfile
-from contextlib import chdir
 from pathlib import Path
+from contextlib import chdir
 
 import pytest
 

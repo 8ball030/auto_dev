@@ -1,18 +1,18 @@
+"""Signal management utilities."""
+
 import signal
 from types import FrameType
-from typing import Callable, Union
 from contextlib import contextmanager
+from collections.abc import Callable
 
 
 CallableSignalHandler = Callable[[int, FrameType], None]
-SignalHandler = Union[signal.Handlers, CallableSignalHandler]
+SignalHandler = signal.Handlers | CallableSignalHandler
 
 
 @contextmanager
 def block(*signals: int):
-    """
-    Context manager to globally block specified signals by replacing their handlers with signal.SIG_IGN.
-    """
+    """Context manager to globally block specified signals by replacing their handlers with signal.SIG_IGN."""
     original_handlers = {sig: signal.getsignal(sig) for sig in signals}
     try:
         for sig in signals:
@@ -25,9 +25,7 @@ def block(*signals: int):
 
 @contextmanager
 def mask(*signals: int):
-    """
-    Context manager to temporarily block specified signals for the current thread by modifying its signal mask.
-    """
+    """Context manager to temporarily block specified signals for the current thread by modifying its signal mask."""
     original_mask = signal.pthread_sigmask(signal.SIG_BLOCK, signals)
     try:
         yield
@@ -37,9 +35,7 @@ def mask(*signals: int):
 
 @contextmanager
 def replace_handler(signal_handler: SignalHandler, *signals: int):
-    """
-    Context manager to replace the signal handlers for specified signals with a custom handler.
-    """
+    """Context manager to replace the signal handlers for specified signals with a custom handler."""
     original_handlers = {sig: signal.getsignal(sig) for sig in signals}
     try:
         for sig in signals:
