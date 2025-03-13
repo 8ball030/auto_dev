@@ -3,11 +3,12 @@
 import os
 import json
 import shutil
+from pathlib import Path
 from dataclasses import dataclass
 
 from aea.configurations.base import PublicId, PackageId, PackageType
 
-from auto_dev.utils import isolated_filesystem
+from auto_dev.utils import rollback
 from auto_dev.constants import DEFAULT_ENCODING, DEFAULT_IPFS_HASH
 from auto_dev.cli_executor import CommandExecutor
 from auto_dev.contracts.contract import Contract
@@ -61,7 +62,7 @@ class ContractScaffolder:
             msg = "Failed to initialise agent lib."
             raise ValueError(msg)
 
-        with isolated_filesystem():
+        with rollback.on_exception(Path.cwd()):
             if not (output := CommandExecutor("aea create myagent".split(" "))).execute(verbose=verbose):
                 msg = f"Failed to create agent.\n{output}"
                 raise ValueError(msg)
