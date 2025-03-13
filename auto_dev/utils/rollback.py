@@ -3,7 +3,7 @@ import signal
 import shutil
 import tempfile
 from pathlib import Path
-from contextlib import contextmanager
+from contextlib import contextmanager, chdir
 
 from auto_dev.utils import signals
 
@@ -37,23 +37,25 @@ def restore_from_backup(directory: Path, backup: Path):
 def on_exit(directory: Path):
     backup = Path(tempfile.mkdtemp(prefix="backup_")) / directory.name
     shutil.copytree(directory, backup, symlinks=True)
-    try:
-        yield
-    finally:
-        with signals.mask(*SIGNALS_TO_BLOCK):
-            restore_from_backup(directory, backup)
-        shutil.rmtree(backup)
+    with chdir(Path.cwd()):
+        try:
+            yield
+        finally:
+            with signals.mask(*SIGNALS_TO_BLOCK):
+                restore_from_backup(directory, backup)
+            shutil.rmtree(backup)
 
 
 @contextmanager
 def on_exception(directory: Path):
     backup = Path(tempfile.mkdtemp(prefix="backup_")) / directory.name
     shutil.copytree(directory, backup, symlinks=True)
-    try:
-        yield
-    except BaseException:
-        with signals.mask(*SIGNALS_TO_BLOCK):
-            restore_from_backup(directory, backup)
-        raise
-    finally:
-        shutil.rmtree(backup)
+    with chdir(Path.cwd()):
+        try:
+            yield
+        except BaseException:
+            with signals.mask(*SIGNALS_TO_BLOCK):
+                restore_from_backup(directory, backup)
+            raise
+        finally:
+            shutil.rmtree(backup)
