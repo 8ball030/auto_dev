@@ -5426,5 +5426,5 @@ all = ["isort", "open-aea", "open-aea-ledger-cosmos", "open-aea-ledger-ethereum"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.10,<3.13"
-content-hash = "2926b64f6200841d9056997337de487104423ffce6925fa8a5cf6b230ca87f12"
+python-versions = ">=3.10,<3.14"
+content-hash = "49aa473e1d5865ac4e2f30fe6986061da0576c00094efd71ffea1126ddcd62d5"
