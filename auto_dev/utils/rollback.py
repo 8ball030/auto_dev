@@ -4,16 +4,11 @@ import shutil
 import signal
 import tempfile
 from pathlib import Path
-from contextlib import chdir, contextmanager
+from contextlib import contextmanager
+from os import chdir
 
 from auto_dev.utils import signals
 
-
-# https://www.youtube.com/watch?v=0GRLhpMao3I
-# async-signal safe is the strongest concept of reentrancy.
-# async-signal safe implies thread safe.
-
-# signal.SIGKILL cannot be intercepted
 SIGNALS_TO_BLOCK = (signal.SIGINT, signal.SIGTERM)
 
 
@@ -33,6 +28,17 @@ def _restore_from_backup(directory: Path, backup: Path):
             directory_item.mkdir(parents=True, exist_ok=True)
         elif item.is_file():
             shutil.copy2(item, directory_item)
+
+
+@contextmanager
+def chdir(new_dir):
+    old_dir = os.getcwd()
+    try:
+        os.chdir(new_dir)
+        yield
+    finally:
+        os.chdir(old_dir)
+
 
 
 @contextmanager
