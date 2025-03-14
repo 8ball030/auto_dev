@@ -4,7 +4,6 @@
 import os
 import tempfile
 from pathlib import Path
-from contextlib import chdir
 
 import pytest
 
@@ -13,6 +12,7 @@ from auto_dev.constants import (
     DEFAULT_PUBLIC_ID,
 )
 from auto_dev.cli_executor import CommandExecutor
+from auto_dev.utils.rollback import chdir
 from auto_dev.workflow_manager import Task
 from scripts.generate_command_docs import generate_docs
 from auto_dev.services.package_manager.index import PackageManager

@@ -14,7 +14,8 @@ SIGNALS_TO_BLOCK = (signal.SIGINT, signal.SIGTERM)
 
 
 @contextmanager
-def _chdir(new_dir):
+def chdir(new_dir):
+    """Change the current working directory temporarily."""
     old_dir = os.getcwd()
     try:
         os.chdir(new_dir)
@@ -46,7 +47,7 @@ def on_exit(directory: Path):
     """Creates a temporary backup of the directory and restores it upon exit."""
     backup = Path(tempfile.mkdtemp(prefix="backup_")) / directory.name
     shutil.copytree(directory, backup, symlinks=True)
-    with _chdir(Path.cwd()):
+    with chdir(Path.cwd()):
         try:
             yield
         finally:
@@ -60,7 +61,7 @@ def on_exception(directory: Path):
     """Creates a temporary backup of the directory and restores it only if an exception occurs."""
     backup = Path(tempfile.mkdtemp(prefix="backup_")) / directory.name
     shutil.copytree(directory, backup, symlinks=True)
-    with _chdir(Path.cwd()):
+    with chdir(Path.cwd()):
         try:
             yield
         except BaseException:
