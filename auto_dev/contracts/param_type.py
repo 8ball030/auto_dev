@@ -38,3 +38,4 @@ class ParamType(Enum):
     BYTES = "bytes"
     BYTES_ARRAY = "bytes[]"
     BYTES32_ARRAY_ARRAY = "bytes32[][]"
+    BOOL_ARRAY = "bool[]"
