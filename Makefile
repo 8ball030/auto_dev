@@ -1,16 +1,7 @@
 # This line is setting a variable ROOT_DIR to the absolute path of the directory where the Makefile is located.
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # The purpose of this command is to extract lines from .gitignore that are between # Clean and # End Clean comments
-CLEAN_PATTERNS := $(shell cat .gitignore | while read line; do \
-	if [ "$$line" = "# Clean" ]; then capturing=1; \
-	elif [ "$$line" = "# End Clean" ]; then capturing=0; \
-	elif [ "$$capturing" = "1" ] && ! echo "$$line" | grep -q "^#"; then echo "$$line"; \
-	fi; \
-done)
-
-
->>>>>>> 9df49b3 (feat:scripting-approach)
-
+CLEAN_PATTERNS := $(shell awk '/^# Clean$$/{flag=1;next}/^# End Clean$$/{flag=0}flag&&!/^#/{print}' .gitignore)
 
 .PHONY: clean
 clean:
@@ -20,10 +11,11 @@ clean:
 
 install:
 	poetry run bash auto_dev/data/repo/templates/autonomy/install.sh
+
 lint:
 	poetry run adev -v -n 0 lint -p . -co
 
-fmt: 
+fmt:
 	poetry run adev -n 0 fmt -p . -co
 
 test:
