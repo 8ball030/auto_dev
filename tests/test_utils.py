@@ -125,13 +125,13 @@ def autonomy_fs(test_packages_filesystem):
 
 def test_get_paths_changed_only(test_packages_filesystem):
     """Test get_paths."""
-    assert test_packages_filesystem == str(Path.cwd())
+    assert Path.cwd() == test_packages_filesystem
     assert len(get_paths(changed_only=True)) == 0
 
 
 def test_get_paths(test_packages_filesystem):
     """Test get_paths."""
-    assert test_packages_filesystem == str(Path.cwd())
+    assert Path.cwd() == test_packages_filesystem
     assert len(get_paths()) == 0
 
 

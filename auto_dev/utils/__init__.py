@@ -189,29 +189,6 @@ def get_paths(path: str | None = None, changed_only: bool = False):
 
 
 @contextmanager
-def isolated_filesystem(copy_cwd: bool = False):
-    """Context manager to create an isolated file system.
-    And to navigate to it and then to clean it up.
-    """
-    original_path = Path.cwd()
-    with tempfile.TemporaryDirectory(dir=tempfile.gettempdir()) as temp_dir:
-        temp_dir_path = Path(temp_dir).resolve()
-        os.chdir(temp_dir_path)
-        if copy_cwd:
-            # we copy the content of the original directory into the temporary one
-            for file_name in os.listdir(original_path):
-                if file_name == "__pycache__":
-                    continue
-                file_path = Path(original_path, file_name)
-                if file_path.is_file():
-                    shutil.copy(file_path, temp_dir_path)
-                elif file_path.is_dir():
-                    shutil.copytree(file_path, Path(temp_dir, file_name))
-        yield str(Path(temp_dir_path))
-    os.chdir(original_path)
-
-
-@contextmanager
 def change_dir(target_path):
     """Temporarily change the working directory."""
     original_path = str(Path.cwd())
