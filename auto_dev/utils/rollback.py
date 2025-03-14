@@ -1,20 +1,27 @@
 """Filesystem utilities for temporary backups and rollback mechanisms."""
 
+import os
 import shutil
 import signal
 import tempfile
 from pathlib import Path
-from contextlib import chdir, contextmanager
+from contextlib import contextmanager
 
 from auto_dev.utils import signals
 
 
-# https://www.youtube.com/watch?v=0GRLhpMao3I
-# async-signal safe is the strongest concept of reentrancy.
-# async-signal safe implies thread safe.
-
-# signal.SIGKILL cannot be intercepted
 SIGNALS_TO_BLOCK = (signal.SIGINT, signal.SIGTERM)
+
+
+@contextmanager
+def chdir(new_dir):
+    """Change the current working directory temporarily."""
+    old_dir = os.getcwd()
+    try:
+        os.chdir(new_dir)
+        yield
+    finally:
+        os.chdir(old_dir)
 
 
 def _restore_from_backup(directory: Path, backup: Path):
