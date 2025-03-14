@@ -34,7 +34,7 @@ include = "\\.pyi?$"
 exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox\n  | \\.venv\n  | _build\n  | buck-out\n  | build\n  | dist\n)/\n"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.10,<3.14"
 open-autonomy = "==0.19.4"
 open-aea = "==1.64.0"
 open-aea-test-autonomy = "==0.19.4"
