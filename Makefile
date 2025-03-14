@@ -1,5 +1,7 @@
+# This line is setting a variable ROOT_DIR to the absolute path of the directory where the Makefile is located.
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-CLEAN_PATTERNS := $(shell awk '/^# Clean$$/{f=1; next} /^# End Clean$$/{f=0} f' .gitignore)
+# The purpose of this command is to extract lines from .gitignore that are between # Clean and # End Clean comments
+CLEAN_PATTERNS = $(shell sed -n '/^# Clean$$/,/^# End Clean$$/p' .gitignore)
 
 .PHONY: clean
 clean:
@@ -9,10 +11,11 @@ clean:
 
 install:
 	poetry run bash auto_dev/data/repo/templates/autonomy/install.sh
+
 lint:
 	poetry run adev -v -n 0 lint -p . -co
 
-fmt: 
+fmt:
 	poetry run adev -n 0 fmt -p . -co
 
 test:
