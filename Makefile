@@ -3,8 +3,6 @@ ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # The purpose of this command is to extract lines from .gitignore that are between # Clean and # End Clean comments
 CLEAN_PATTERNS = $(shell sed -n '/^# Clean$$/,/^# End Clean$$/p' .gitignore)
 
-
-
 .PHONY: clean
 clean:
 	@$(foreach pattern,$(CLEAN_PATTERNS), \
