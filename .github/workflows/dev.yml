@@ -47,7 +47,7 @@ jobs:
 
       - name: Install ci dependencies
         run: |
-          make -d install
+          make install
 
       - name: Run tests
         run: |
