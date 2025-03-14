@@ -27,7 +27,7 @@ jobs:
       matrix:
         python-version:
         - "3.11"
-        # - "3.12"
+        - "3.12"
         - "3.10"
         poetry-version: ["2.0.1"]
         os:
@@ -49,7 +49,7 @@ jobs:
 
       - name: Install Adev
         run: |
-          make install
+          make -d install
 
       - name: Format
         run: |
