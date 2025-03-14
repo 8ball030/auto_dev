@@ -1,7 +1,9 @@
+# Ensure we actually use bash as shell
+SHELL := $(shell which bash)
 # This line is setting a variable ROOT_DIR to the absolute path of the directory where the Makefile is located.
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 # The purpose of this command is to extract lines from .gitignore that are between # Clean and # End Clean comments
-CLEAN_PATTERNS := $(shell awk '/^# Clean\$\$/{f=1; next} /^# End Clean\$\$/{f=0} f' .gitignore)
+CLEAN_PATTERNS := $(shell grep -A 1000 "# Clean" .gitignore | grep -B 1000 "# End Clean" | grep -v "^#")
 
 
 
