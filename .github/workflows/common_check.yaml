@@ -49,7 +49,7 @@ jobs:
 
       - name: Install Adev
         run: |
-          make install
+          make -d install
 
       - name: Format
         run: |
