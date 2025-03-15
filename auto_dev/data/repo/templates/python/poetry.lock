@@ -351,7 +351,6 @@ description = "Backport of CPython tarfile module"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
-markers = "python_version < \"3.12\""
 files = [
     {file = "backports.tarfile-1.2.0-py3-none-any.whl", hash = "sha256:77e284d754527b01fb1e6fa8a1afe577858ebe4e9dad8919e34c862cb399bc34"},
     {file = "backports_tarfile-1.2.0.tar.gz", hash = "sha256:d75e02c268746e1b8144c278978b6e98e85de6ad16f8e4b0844a154557eca991"},
@@ -5015,5 +5014,5 @@ doc = []
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.10,<3.14"
-content-hash = "70c9977b4134c13849e610ecd4b6769a598b4007a25ae021256b30b3db38c844"
+python-versions = ">=3.10,<3.12"
+content-hash = "88cf9072c79d4e44940ac309a38b21882bd0d479882fcdc23aadd3be7b2668ae"
