@@ -1,0 +1,19 @@
+// deeply_nested_message.proto
+
+syntax = "proto3";
+
+message DeeplyNestedMessage {
+  NestedLevel1 nested = 1;
+
+  message NestedLevel1 {
+    NestedLevel2 nested = 1;
+
+    message NestedLevel2 {
+      NestedLevel3 nested = 1;
+
+      message NestedLevel3 {
+        int32 value = 1;
+      }
+    }
+  }
+}

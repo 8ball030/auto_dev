@@ -1,0 +1,11 @@
+// oneof_value.proto
+
+syntax = "proto3";
+
+message OneofValue {
+  oneof value {
+    int32 int_value = 1;
+    string string_value = 2;
+    bool bool_value = 3;
+  }
+}

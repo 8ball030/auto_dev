@@ -1,0 +1,10 @@
+// nested_messages.proto
+
+syntax = "proto3";
+
+message NestedMessage {
+  message InnerMessage {
+    string label = 1;
+  }
+  InnerMessage nested = 1;
+}
