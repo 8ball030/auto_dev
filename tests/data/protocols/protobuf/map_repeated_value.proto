@@ -1,0 +1,11 @@
+// map_repeated_value.proto
+
+syntax = "proto3";
+
+message MapRepeatedValue {
+  map<string, RepeatedInts> data = 1;
+
+  message RepeatedInts {
+    repeated int32 values = 1;
+  }
+}
