@@ -1,0 +1,60 @@
+import struct
+
+from pydantic import BaseModel, confloat, conint
+
+
+MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
+
+min_int32 = -1 << 31
+max_int32 = (1 << 31) - 1
+min_uint32 = 0
+max_uint32 = (1 << 32) - 1
+
+min_int64 = -1 << 63
+max_int64 = (1 << 63) - 1
+min_uint64 = 0
+max_uint64 = (1 << 64) - 1
+
+min_float32 = struct.unpack('f', struct.pack('I', 0xFF7FFFFF))[0]
+max_float32 = struct.unpack('f', struct.pack('I', 0x7F7FFFFF))[0]
+min_float64 = struct.unpack('d', struct.pack('Q', 0xFFEFFFFFFFFFFFFF))[0]
+max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
+{#-#}
+{%- set scalar_map = {
+    "double": "confloat(ge=min_float64, le=max_float64)",
+    "float": "confloat(ge=min_float32, le=max_float32)",
+    "int32": "conint(ge=min_int32, le=max_int32)",
+    "int64": "conint(ge=min_int64, le=max_int64)",
+    "uint32": "conint(ge=min_uint32, le=max_uint32)",
+    "uint64": "conint(ge=min_uint64, le=max_uint64)",
+    "sint32": "conint(ge=min_int32, le=max_int32)",
+    "sint64": "conint(ge=min_int64, le=max_int64)",
+    "fixed32": "conint(ge=min_uint32, le=max_uint32)",
+    "fixed64": "conint(ge=min_uint64, le=max_uint64)",
+    "sfixed32": "conint(ge=min_int32, le=max_int32)",
+    "sfixed64": "conint(ge=min_int64, le=max_int64)",
+    "bool": "bool",
+    "string": "str",
+    "bytes": "bytes",
+} %}
+{#-#}
+{%- for message in result.file_elements %}
+{%- if message.__class__.__name__ == "Message" %}
+class {{ message.name }}(BaseModel):
+{#- First handle nested messages only #}
+{%- for element in message.elements if element.__class__.__name__ == "Message" %}
+    class {{ element.name }}(BaseModel):
+    {%- for field in element.elements %}
+        {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}
+    {%- endfor %}
+{%- endfor %}
+{#- Now handle top-level fields only #}
+{%- for field in message.elements if field.__class__.__name__ == "Field" %}
+    {%- if field.cardinality == 'REPEATED' %}
+    {{ field.name }}: list[{{ scalar_map.get(field.type, field.type) }}]
+    {%- else %}
+    {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}
+    {%- endif %}
+{%- endfor %}
+{% endif %}
+{% endfor %}
