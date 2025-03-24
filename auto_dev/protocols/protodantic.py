@@ -31,6 +31,12 @@ def _compute_import_path(file_path: Path, repo_root: Path) -> str:
     return f".{file_path.stem}"
 
 
+def _remove_runtime_version_code(pb2_content: str) -> str:
+    pb2_content = re.sub(r'^from\s+google\.protobuf\s+import\s+runtime_version\s+as\s+_runtime_version\s*\n', '', pb2_content, flags=re.MULTILINE)
+    pb2_content = re.sub(r'_runtime_version\.ValidateProtobufRuntimeVersion\s*\(\s*[^)]*\)\s*\n?', '', pb2_content, flags=re.DOTALL)
+    return pb2_content
+
+
 def create(
     proto_inpath: Path,
     code_outpath: Path,
@@ -49,6 +55,31 @@ def create(
     generated_code = protodantic_template.render(result=result)
     code_outpath.write_text(generated_code)
 
+    subprocess.run(
+        [
+            "protoc",
+            f"--python_out={code_outpath.parent}",
+            f"--proto_path={proto_inpath.parent}",
+            proto_inpath.name,
+        ],
+        cwd=proto_inpath.parent,
+        check=True
+    )
+
     import_path = _compute_import_path(code_outpath, repo_root)
-    generated_tests = hypothesis_template.render(result=result, import_path=import_path)
+    message_path = str(Path(import_path).parent)
+
+    pb2_path = code_outpath.parent / f"{proto_inpath.stem}_pb2.py"
+    pb2_content = pb2_path.read_text()
+    pb2_content = _remove_runtime_version_code(pb2_content)
+    pb2_path.write_text(pb2_content)
+
+    messages_pb2 = pb2_path.with_suffix("").name
+
+    generated_tests = hypothesis_template.render(
+        result=result,
+        import_path=import_path,
+        message_path=message_path,
+        messages_pb2=messages_pb2,
+    )
     test_outpath.write_text(generated_tests)
