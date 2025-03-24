@@ -1,4 +1,5 @@
 import re
+import os
 import subprocess  # nosec: B404
 from pathlib import Path
 from pprint import pprint
@@ -8,7 +9,6 @@ from typing import Union
 from typing import Generic, TypeVar
 from jinja2 import Template, Environment, FileSystemLoader
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 from hypothesis import strategies as st
 
@@ -24,16 +24,35 @@ def get_repo_root() -> Path:
     return Path(repo_root.decode("utf-8"))
 
 
-path = get_repo_root() / "tests" / "data" / "protocols" / "protobuf"
+repo_root = get_repo_root()
+path = repo_root / "tests" / "data" / "protocols" / "protobuf"
 assert path.exists()
 proto_files = {file.name: file for file in path.glob("*.proto")}
 
 env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
-jinja_template = env.get_template('protocols/protodantic.jinja')
 
-file = proto_files["primitives.proto"]
-content = file.read_text()
 
-result = Parser().parse(content)
-generated_code = jinja_template.render(result=result)
-print(generated_code)
+def compute_import_path(file_path: Path, repo_root: Path) -> str:
+    if file_path.is_relative_to(repo_root):
+        relative_path = file_path.relative_to(repo_root)
+        return ".".join(relative_path.with_suffix('').parts)
+    return f".{file_path.stem}"
+
+
+def create_pydantic(
+    proto_inpath: Path,
+    code_outpath: Path,
+    test_outpath: Path,
+) -> None:
+    content = proto_inpath.read_text()
+
+    protodantic_template = env.get_template('protocols/protodantic.jinja')
+    hypothesis_template = env.get_template('protocols/hypothesis.jinja')
+
+    result = Parser().parse(content)
+    generated_code = protodantic_template.render(result=result)
+    code_outpath.write_text(generated_code)
+
+    import_path = compute_import_path(code_outpath, test_outpath)
+    generated_tests = hypothesis_template.render(result=result, import_path=import_path)
+    test_outpath.write_text(generated_tests)
