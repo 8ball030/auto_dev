@@ -56,5 +56,32 @@ class {{ message.name }}(BaseModel):
     {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}
     {%- endif %}
 {%- endfor %}
+
+    @staticmethod
+    def encode(proto_obj, {{ message.name|lower }}: "{{ message.name }}") -> None:
+    {%- for element in message.elements if element.__class__.__name__ == "Field" %}
+        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+        {{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
+        {%- else %}
+        proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
+        {%- endif %}
+    {%- endfor %}
+
+    @classmethod
+    def decode(cls, proto_obj) -> "{{ message.name }}":
+    {%- for element in message.elements if element.__class__.__name__ == "Field" %}
+        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+        decoded_{{ element.name }} = cls.{{ element.type }}.decode(proto_obj.{{ element.name }})
+        {%- else %}
+        decoded_{{ element.name }} = proto_obj.{{ element.name }}
+        {%- endif %}
+    {%- endfor %}
+
+        return cls(
+            {%- for element in message.elements if element.__class__.__name__ == "Field" %}
+            {{ element.name }}=decoded_{{ element.name }}{{ "," if not loop.last else "" }}
+            {%- endfor %}
+        )
+
 {% endif %}
 {% endfor %}
