@@ -49,6 +49,6 @@ def create(
     generated_code = protodantic_template.render(result=result)
     code_outpath.write_text(generated_code)
 
-    import_path = _compute_import_path(code_outpath, test_outpath)
+    import_path = _compute_import_path(code_outpath, repo_root)
     generated_tests = hypothesis_template.render(result=result, import_path=import_path)
     test_outpath.write_text(generated_tests)
