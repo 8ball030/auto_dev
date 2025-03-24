@@ -24,26 +24,22 @@ def get_repo_root() -> Path:
     return Path(repo_root.decode("utf-8"))
 
 
-repo_root = get_repo_root()
-path = repo_root / "tests" / "data" / "protocols" / "protobuf"
-assert path.exists()
-proto_files = {file.name: file for file in path.glob("*.proto")}
-
-env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
-
-
-def compute_import_path(file_path: Path, repo_root: Path) -> str:
+def _compute_import_path(file_path: Path, repo_root: Path) -> str:
     if file_path.is_relative_to(repo_root):
         relative_path = file_path.relative_to(repo_root)
         return ".".join(relative_path.with_suffix('').parts)
     return f".{file_path.stem}"
 
 
-def create_pydantic(
+def create(
     proto_inpath: Path,
     code_outpath: Path,
     test_outpath: Path,
 ) -> None:
+
+    repo_root = get_repo_root()
+    env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
+
     content = proto_inpath.read_text()
 
     protodantic_template = env.get_template('protocols/protodantic.jinja')
@@ -53,6 +49,6 @@ def create_pydantic(
     generated_code = protodantic_template.render(result=result)
     code_outpath.write_text(generated_code)
 
-    import_path = compute_import_path(code_outpath, test_outpath)
+    import_path = _compute_import_path(code_outpath, test_outpath)
     generated_tests = hypothesis_template.render(result=result, import_path=import_path)
     test_outpath.write_text(generated_tests)
