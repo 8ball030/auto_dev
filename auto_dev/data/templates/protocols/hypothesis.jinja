@@ -2,6 +2,8 @@ from hypothesis import given
 from hypothesis import strategies as st
 import pytest
 
+from {{ message_path }} import {{ messages_pb2 }}
+
 from {{ import_path }} import ( 
     min_int32,
     max_int32,
@@ -64,4 +66,9 @@ from {{ import_path }} import (
 @given({{ message.name|lower }}_strategy)
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
     assert isinstance({{ message.name|lower }}, {{ message.name }})
+    proto_obj = {{ message.name|lower }}_pb2.{{ message.name }}()
+    {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})
+    result = {{ message.name }}.decode(proto_obj)
+    assert id({{ message.name|lower }}) != id(result)
+    assert {{ message.name|lower }} == result
 {%- endfor %}
