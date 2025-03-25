@@ -106,23 +106,11 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
 {%- endmacro -%}
 
 {%- macro encode_repeated(element, message) -%}
-    {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-        for item in {{ message.name|lower }}.{{ element.name }}:
-            {{ element.type }}.encode(proto_obj.{{ element.name }}.add(), item)
-    {%- else %}
-        proto_obj.{{ element.name }}.extend({{ message.name|lower }}.{{ element.name }})
-    {%- endif %}
+    proto_obj.{{ element.name }}.extend({{ message.name|lower }}.{{ element.name }})
 {%- endmacro -%}
 
 {%- macro decode_repeated(element) -%}
-    decoded_{{ element.name }} = [
-        {%- if scalar_map.get(element.type) not in scalar_map.values() -%}
-            cls.{{ element.type }}.decode(item)
-        {%- else %}
-            item
-        {%- endif %}
-            for item in proto_obj.{{ element.name }}
-        ]
+    decoded_{{ element.name }} = [item for item in proto_obj.{{ element.name }}]
 {%- endmacro -%}
 
 {#- First, generate Enums #}
