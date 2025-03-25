@@ -112,10 +112,10 @@ class {{ message.name }}(BaseModel):
     {%- if element.type in enum_names %}
         {%- if element.cardinality == "OPTIONAL" %}
         decoded_{{ element.name }} = (
-            (proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
+            {{ element.type }}(proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
         )
         {%- else %}
-        decoded_{{ element.name }} = (proto_obj.{{ element.name }})
+        decoded_{{ element.name }} = {{ element.type }}(proto_obj.{{ element.name }})
         {%- endif %}
     {%- elif element.cardinality == "REPEATED" %}
         decoded_{{ element.name }} = [

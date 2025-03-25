@@ -53,7 +53,11 @@ from {{ import_path }} import (
 
 {# Define strategies for Enums at the top level #}
 {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
+{%- if enum.cardinality == "OPTIONAL" %}
+{{ enum.name|lower }}_strategy = st.one_of(st.none(), st.sampled_from({{ enum.name }}))
+{%- else %}
 {{ enum.name|lower }}_strategy = st.sampled_from({{ enum.name }})
+{%- endif %}
 {%- endfor %}
 
 {# Define strategies for each message #}
