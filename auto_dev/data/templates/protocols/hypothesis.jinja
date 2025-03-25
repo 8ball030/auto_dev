@@ -53,11 +53,7 @@ from {{ import_path }} import (
 
 {# Define strategies for Enums at the top level #}
 {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
-{%- if enum.cardinality == "OPTIONAL" %}
-{{ enum.name|lower }}_strategy = st.one_of(st.none(), st.sampled_from({{ enum.name }}))
-{%- else %}
 {{ enum.name|lower }}_strategy = st.sampled_from({{ enum.name }})
-{%- endif %}
 {%- endfor %}
 
 {# Define strategies for each message #}
@@ -74,7 +70,7 @@ from {{ import_path }} import (
     ),
         {%- elif element.__class__.__name__ == "Field" %}
     {%- if element.type in enum_names %}
-    {{ element.name }}={% if element.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ element.type|lower }}_strategy){% else %}{{ element.type|lower }}_strategy{% endif %},
+    {{ element.name }}={% if element.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ element.type|lower }}_strategy){% elif element.cardinality == "REPEATED" %}st.lists({{ element.type|lower }}_strategy){% else %}{{ element.type|lower }}_strategy{% endif %},
     {%- else %}
     {{ element.name }}={% if element.cardinality == 'REPEATED' %}st.lists({{ scalar_map.get(element.type, element.type) }}){% elif element.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ scalar_map.get(element.type, element.type) }}){% else %}{{ scalar_map.get(element.type, element.type) }}{% endif %},
     {%- endif %}
