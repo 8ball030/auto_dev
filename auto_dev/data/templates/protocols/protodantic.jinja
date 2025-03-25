@@ -46,16 +46,16 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
 {%- set enum_names = enum_names.append( enum.name ) %}
 {%- endfor %}
 
-{%- macro encode_scalar(element, message) -%}
+{%- macro encode_scalar(element, message, indent_level = 1) -%}
+    {%- set indent = '    ' * indent_level -%}
     {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-        {{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
+    {{ indent }}{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
     {%- else %}
-        proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
+    {{ indent }}proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
     {%- endif %}
 {%- endmacro -%}
 
 {%- macro decode_scalar(element, message) -%}
-    {%- set result -%}
     decoded_{{ element.name }} = (
         {%- if scalar_map.get(element.type) not in scalar_map.values() %}
             cls.{{ element.type }}.decode(proto_obj.{{ element.name }})
@@ -63,7 +63,6 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
             proto_obj.{{ element.name }}
         {%- endif %}
         )
-    {%- endset -%}{{ result }}
 {%- endmacro -%}
 
 {%- macro encode_enum(element, message) -%}
@@ -99,23 +98,11 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
 
 {%- macro encode_optional(element, message) -%}
     if {{ message.name|lower }}.{{ element.name }} is not None:
-        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-            {{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
-        {%- else %}
-            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
-        {%- endif %}
+        {{ encode_scalar(element, message, indent_level=2) }}
 {%- endmacro -%}
 
 {%- macro decode_optional(element) -%}
-    {%- set result -%}
-    decoded_{{ element.name }} = (
-        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-            cls.{{ element.type }}.decode(proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
-        {%- else %}
-            proto_obj.{{ element.name }} if proto_obj.HasField("{{ element.name }}") else None
-        {%- endif %}
-        )
-    {%- endset -%}{{ result }}
+    decoded_{{ element.name }} = {{ decode_scalar(element, message) }} if proto_obj.HasField("{{ element.name }}") else None
 {%- endmacro -%}
 
 {%- macro encode_repeated(element, message) -%}
