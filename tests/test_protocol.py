@@ -25,6 +25,7 @@ PROTO_FILES = _get_proto_files()
 @pytest.mark.parametrize("proto_path", [
     PROTO_FILES["primitives.proto"],
     PROTO_FILES["optional_primitives.proto"],
+    PROTO_FILES["repeated_primitives.proto"],
     ])
 def test_protodantic(proto_path: Path):
 
