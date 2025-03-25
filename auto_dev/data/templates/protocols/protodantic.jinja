@@ -46,6 +46,98 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
 {%- set enum_names = enum_names.append( enum.name ) %}
 {%- endfor %}
 
+{%- macro encode_scalar(element, message) -%}
+    {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+        {{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
+    {%- else %}
+        proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
+    {%- endif %}
+{%- endmacro -%}
+
+{%- macro decode_scalar(element, message) -%}
+    {%- set result -%}
+    decoded_{{ element.name }} = (
+        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+            cls.{{ element.type }}.decode(proto_obj.{{ element.name }})
+        {%- else %}
+            proto_obj.{{ element.name }}
+        {%- endif %}
+        )
+    {%- endset -%}{{ result }}
+{%- endmacro -%}
+
+{%- macro encode_enum(element, message) -%}
+    {%- if element.cardinality == "REPEATED" %}
+        for item in {{ message.name|lower }}.{{ element.name }}:
+            proto_obj.{{ element.name }}.append(item.value)
+    {%- elif element.cardinality == "OPTIONAL" %}
+        if {{ message.name|lower }}.{{ element.name }} is not None:
+            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
+    {%- else %}
+        proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
+    {%- endif %}
+{%- endmacro -%}
+
+{%- macro decode_enum(element) -%}
+    {%- if element.cardinality == "REPEATED" %}
+        decoded_{{ element.name }} = [
+            {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+            {{ element.type }}(item)
+            {%- else %}
+            item
+            {%- endif %}
+            for item in proto_obj.{{ element.name }}
+        ]
+    {%- elif element.cardinality == "OPTIONAL" %}
+        decoded_{{ element.name }} = (
+            {{ element.type }}(proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
+        )
+    {%- else %}
+        decoded_{{ element.name }} = {{ element.type }}(proto_obj.{{ element.name }})
+    {%- endif %}
+{%- endmacro -%}
+
+{%- macro encode_optional(element, message) -%}
+    if {{ message.name|lower }}.{{ element.name }} is not None:
+        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+            {{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
+        {%- else %}
+            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
+        {%- endif %}
+{%- endmacro -%}
+
+{%- macro decode_optional(element) -%}
+    {%- set result -%}
+    decoded_{{ element.name }} = (
+        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+            cls.{{ element.type }}.decode(proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
+        {%- else %}
+            proto_obj.{{ element.name }} if proto_obj.HasField("{{ element.name }}") else None
+        {%- endif %}
+        )
+    {%- endset -%}{{ result }}
+{%- endmacro -%}
+
+{%- macro encode_repeated(element, message) -%}
+    {%- if scalar_map.get(element.type) not in scalar_map.values() %}
+        for item in {{ message.name|lower }}.{{ element.name }}:
+            {{ element.type }}.encode(proto_obj.{{ element.name }}.add(), item)
+    {%- else %}
+        proto_obj.{{ element.name }}.extend({{ message.name|lower }}.{{ element.name }})
+    {%- endif %}
+{%- endmacro -%}
+
+{%- macro decode_repeated(element) -%}
+    decoded_{{ element.name }} = [
+        {%- if scalar_map.get(element.type) not in scalar_map.values() -%}
+            cls.{{ element.type }}.decode(item)
+        {%- else %}
+            item
+        {%- endif %}
+            for item in proto_obj.{{ element.name }}
+        ]
+{%- endmacro -%}
+
 {#- First, generate Enums #}
 {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
 class {{ enum.name }}(Enum):
@@ -54,7 +146,7 @@ class {{ enum.name }}(Enum):
 {%- endfor %}
 {%- endfor %}
 
-{#- Now generate message classes #}
+{#Now generate message classes #}
 {%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
 class {{ message.name }}(BaseModel):
 {#- Handle nested messages #}
@@ -77,35 +169,13 @@ class {{ message.name }}(BaseModel):
     def encode(proto_obj, {{ message.name|lower }}: "{{ message.name }}") -> None:
     {%- for element in message.elements if element.__class__.__name__ == "Field" %}
     {%- if element.type in enum_names %}
-        {%- if element.cardinality == "REPEATED" %}
-        for item in {{ message.name|lower }}.{{ element.name }}:
-            proto_obj.{{ element.name }}.append(item.value)
-        {%- elif element.cardinality == "OPTIONAL" %}
-        if {{ message.name|lower }}.{{ element.name }} is not None:
-            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
-        {%- else %}
-        proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
-        {%- endif %}
+        {{ encode_enum(element, message) }}
     {%- elif element.cardinality == "REPEATED" %}
-        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-        for item in {{ message.name|lower }}.{{ element.name }}:
-            {{ element.type }}.encode(proto_obj.{{ element.name }}.add(), item)
-        {%- else %}
-        proto_obj.{{ element.name }}.extend({{ message.name|lower }}.{{ element.name }})
-        {%- endif %}
+        {{ encode_repeated(element, message) }}
     {%- elif element.cardinality == "OPTIONAL" %}
-        if {{ message.name|lower }}.{{ element.name }} is not None:
-            {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-            {{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
-            {%- else %}
-            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
-            {%- endif %}
+        {{ encode_optional(element, message) }}
     {%- else %}
-        {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-        {{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
-        {%- else %}
-        proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
-        {%- endif %}
+        {{ encode_scalar(element, message) }}
     {%- endif %}
     {%- endfor %}
 
@@ -113,47 +183,13 @@ class {{ message.name }}(BaseModel):
     def decode(cls, proto_obj) -> "{{ message.name }}":
     {%- for element in message.elements if element.__class__.__name__ == "Field" %}
     {%- if element.type in enum_names %}
-        {%- if element.cardinality == "REPEATED" %}
-        decoded_{{ element.name }} = [
-            {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-            {{ element.type }}(item)
-            {%- else %}
-            item
-            {%- endif %}
-            for item in proto_obj.{{ element.name }}
-        ]
-        {%- elif element.cardinality == "OPTIONAL" %}
-        decoded_{{ element.name }} = (
-            {{ element.type }}(proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
-        )
-        {%- else %}
-        decoded_{{ element.name }} = {{ element.type }}(proto_obj.{{ element.name }})
-        {%- endif %}
+        {{ decode_enum(element) }}
     {%- elif element.cardinality == "REPEATED" %}
-        decoded_{{ element.name }} = [
-            {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-            cls.{{ element.type }}.decode(item)
-            {%- else %}
-            item
-            {%- endif %}
-            for item in proto_obj.{{ element.name }}
-        ]
+        {{ decode_repeated(element) }}
     {%- elif element.cardinality == "OPTIONAL" %}
-        decoded_{{ element.name }} = (
-            {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-            cls.{{ element.type }}.decode(proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
-            {%- else %}
-            proto_obj.{{ element.name }} if proto_obj.HasField("{{ element.name }}") else None
-            {%- endif %}
-        )
+        {{ decode_optional(element) }}
     {%- else %}
-        decoded_{{ element.name }} = (
-            {%- if scalar_map.get(element.type) not in scalar_map.values() %}
-            cls.{{ element.type }}.decode(proto_obj.{{ element.name }})
-            {%- else %}
-            proto_obj.{{ element.name }}
-            {%- endif %}
-        )
+        {{ decode_scalar(element) }}
     {%- endif %}
     {%- endfor %}
 
