@@ -51,11 +51,11 @@ from {{ import_path }} import (
     {{ element.name|lower }}=st.builds(
         {{ message.name }}.{{ element.name }},
         {%- for field in element.elements %}
-        {{ field.name }}={{ scalar_map.get(field.type, field.type) }},
+        {{ field.name }}={% if field.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ scalar_map.get(field.type, field.type) }}){% else %}{{ scalar_map.get(field.type, field.type) }}{% endif %},
         {%- endfor %}
     ),
         {%- elif element.__class__.__name__ == "Field" %}
-    {{ element.name }}={% if element.cardinality == 'REPEATED' %}st.lists({{ scalar_map.get(element.type, element.type) }}){% else %}{{ scalar_map.get(element.type, element.type) }}{% endif %},
+    {{ element.name }}={% if element.cardinality == 'REPEATED' %}st.lists({{ scalar_map.get(element.type, element.type) }}){% elif element.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ scalar_map.get(element.type, element.type) }}){% else %}{{ scalar_map.get(element.type, element.type) }}{% endif %},
         {%- endif %}
     {%- endfor %}
 )
@@ -66,7 +66,7 @@ from {{ import_path }} import (
 @given({{ message.name|lower }}_strategy)
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
     assert isinstance({{ message.name|lower }}, {{ message.name }})
-    proto_obj = {{ message.name|lower }}_pb2.{{ message.name }}()
+    proto_obj = {{ messages_pb2 }}.{{ message.name }}()
     {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})
     result = {{ message.name }}.decode(proto_obj)
     assert id({{ message.name|lower }}) != id(result)
