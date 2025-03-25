@@ -20,9 +20,13 @@ def _get_proto_files() -> dict[str, Path]:
     return proto_files
 
 
-def test_protodantic():
-    proto_files = _get_proto_files()
-    proto_path = proto_files["primitives.proto"]
+PROTO_FILES = _get_proto_files()
+
+@pytest.mark.parametrize("proto_path", [
+    PROTO_FILES["primitives.proto"],
+    PROTO_FILES["optional_primitives.proto"],
+    ])
+def test_protodantic(proto_path: Path):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
