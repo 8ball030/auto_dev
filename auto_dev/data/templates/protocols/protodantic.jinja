@@ -1,4 +1,5 @@
 import struct
+from enum import Enum
 
 from pydantic import BaseModel, confloat, conint
 
@@ -38,17 +39,32 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
     "bytes": "bytes",
 } %}
 {#-#}
-{%- for message in result.file_elements %}
-{%- if message.__class__.__name__ == "Message" %}
+
+{# Define a list of enum names #}
+{%- set enum_names = [] %}
+{%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
+{%- set enum_names = enum_names.append( enum.name ) %}
+{%- endfor %}
+
+{#- First, generate Enums #}
+{%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
+class {{ enum.name }}(Enum):
+{%- for value in enum.elements %}
+    {{ value.name }} = {{ value.number }}
+{%- endfor %}
+{%- endfor %}
+
+{#- Now generate message classes #}
+{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
 class {{ message.name }}(BaseModel):
-{#- First handle nested messages only #}
+{#- Handle nested messages #}
 {%- for element in message.elements if element.__class__.__name__ == "Message" %}
     class {{ element.name }}(BaseModel):
     {%- for field in element.elements %}
         {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}{% if field.cardinality == "OPTIONAL" %} | None{% endif %}
     {%- endfor %}
 {%- endfor %}
-{#- Now handle top-level fields only #}
+{#- Handle fields, including enums #}
 {%- for field in message.elements if field.__class__.__name__ == "Field" %}
     {%- if field.cardinality == 'REPEATED' %}
     {{ field.name }}: list[{{ scalar_map.get(field.type, field.type) }}]
@@ -60,7 +76,9 @@ class {{ message.name }}(BaseModel):
     @staticmethod
     def encode(proto_obj, {{ message.name|lower }}: "{{ message.name }}") -> None:
     {%- for element in message.elements if element.__class__.__name__ == "Field" %}
-    {%- if element.cardinality == "REPEATED" %}
+    {%- if element.type in enum_names %}
+        proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
+    {%- elif element.cardinality == "REPEATED" %}
         {%- if scalar_map.get(element.type) not in scalar_map.values() %}
         for item in {{ message.name|lower }}.{{ element.name }}:
             {{ element.type }}.encode(proto_obj.{{ element.name }}.add(), item)
@@ -86,7 +104,9 @@ class {{ message.name }}(BaseModel):
     @classmethod
     def decode(cls, proto_obj) -> "{{ message.name }}":
     {%- for element in message.elements if element.__class__.__name__ == "Field" %}
-    {%- if element.cardinality == "REPEATED" %}
+    {%- if element.type in enum_names %}
+        decoded_{{ element.name }} = proto_obj.{{ element.name }}
+    {%- elif element.cardinality == "REPEATED" %}
         decoded_{{ element.name }} = [
             {%- if scalar_map.get(element.type) not in scalar_map.values() %}
             cls.{{ element.type }}.decode(item)
@@ -120,5 +140,4 @@ class {{ message.name }}(BaseModel):
             {%- endfor %}
         )
 
-{% endif %}
 {% endfor %}
