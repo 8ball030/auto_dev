@@ -77,7 +77,12 @@ class {{ message.name }}(BaseModel):
     def encode(proto_obj, {{ message.name|lower }}: "{{ message.name }}") -> None:
     {%- for element in message.elements if element.__class__.__name__ == "Field" %}
     {%- if element.type in enum_names %}
+        {%- if element.cardinality == "OPTIONAL" %}
+        if {{ message.name|lower }}.{{ element.name }} is not None:
+            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
+        {%- else %}
         proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
+        {%- endif %}
     {%- elif element.cardinality == "REPEATED" %}
         {%- if scalar_map.get(element.type) not in scalar_map.values() %}
         for item in {{ message.name|lower }}.{{ element.name }}:
@@ -105,7 +110,13 @@ class {{ message.name }}(BaseModel):
     def decode(cls, proto_obj) -> "{{ message.name }}":
     {%- for element in message.elements if element.__class__.__name__ == "Field" %}
     {%- if element.type in enum_names %}
-        decoded_{{ element.name }} = proto_obj.{{ element.name }}
+        {%- if element.cardinality == "OPTIONAL" %}
+        decoded_{{ element.name }} = (
+            (proto_obj.{{ element.name }}) if proto_obj.HasField("{{ element.name }}") else None
+        )
+        {%- else %}
+        decoded_{{ element.name }} = (proto_obj.{{ element.name }})
+        {%- endif %}
     {%- elif element.cardinality == "REPEATED" %}
         decoded_{{ element.name }} = [
             {%- if scalar_map.get(element.type) not in scalar_map.values() %}
