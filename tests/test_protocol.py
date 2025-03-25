@@ -26,6 +26,7 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["primitives.proto"],
     PROTO_FILES["optional_primitives.proto"],
     PROTO_FILES["repeated_primitives.proto"],
+    PROTO_FILES["basic_enum.proto"],
     ])
 def test_protodantic(proto_path: Path):
 
