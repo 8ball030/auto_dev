@@ -51,6 +51,51 @@ from {{ import_path }} import (
 {%- set enum_names = enum_names.append( enum.name ) %}
 {%- endfor %}
 
+{%- macro scalar_strategy(field) -%}
+    {%- if field.type in enum_names -%}
+        {{ field.type|lower }}_strategy
+    {%- else -%}
+        {{ scalar_map.get(field.type, field.type) }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro optional_strategy(field) -%}
+    st.one_of(st.none(), {{ scalar_strategy(field) }})
+{%- endmacro -%}
+
+{%- macro repeated_strategy(field) -%}
+    st.lists({{ scalar_strategy(field) }})
+{%- endmacro -%}
+
+{%- macro message_strategy(message, prefix="") -%}
+{#- Build a list of nested message names in this message -#}
+{%- set nested_names = [] -%}
+{%- for m in message.elements if m.__class__.__name__ == "Message" %}
+{%- set enum_names = nested_names.append(m.name) %}
+{%- endfor %}
+
+{#- Generate strategies for inner messages first -#}
+{%- for element in message.elements if element.__class__.__name__ == "Message" %}
+{{ message_strategy(element, message.name + ".") }}
+{%- endfor %}
+
+{{ message.name|lower }}_strategy = st.builds(
+    {{ prefix }}{{ message.name }},
+    {%- for element in message.elements if element.__class__.__name__ == "Field" %}
+        {%- if element.type in nested_names %}
+        {{ element.name }}={{ element.type|lower }}_strategy,
+        {%- elif element.cardinality == "OPTIONAL" %}
+        {{ element.name }}={{ optional_strategy(element) }},
+        {%- elif element.cardinality == "REPEATED" %}
+        {{ element.name }}={{ repeated_strategy(element) }},
+        {%- else %}
+        {{ element.name }}={{ scalar_strategy(element) }},
+        {%- endif %}
+    {%- endfor %}
+)
+{%- endmacro %}
+
+
 {# Define strategies for Enums at the top level #}
 {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
 {{ enum.name|lower }}_strategy = st.sampled_from({{ enum.name }})
@@ -58,27 +103,8 @@ from {{ import_path }} import (
 
 {# Define strategies for each message #}
 {%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
-{{ message.name|lower }}_strategy = st.builds(
-    {{ message.name }},
-    {%- for element in message.elements %}
-        {%- if element.__class__.__name__ == "Message" %}
-    {{ element.name|lower }}=st.builds(
-        {{ message.name }}.{{ element.name }},
-        {%- for field in element.elements %}
-        {{ field.name }}={% if field.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ scalar_map.get(field.type, field.type) }}){% else %}{{ scalar_map.get(field.type, field.type) }}{% endif %},
-        {%- endfor %}
-    ),
-        {%- elif element.__class__.__name__ == "Field" %}
-    {%- if element.type in enum_names %}
-    {{ element.name }}={% if element.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ element.type|lower }}_strategy){% elif element.cardinality == "REPEATED" %}st.lists({{ element.type|lower }}_strategy){% else %}{{ element.type|lower }}_strategy{% endif %},
-    {%- else %}
-    {{ element.name }}={% if element.cardinality == 'REPEATED' %}st.lists({{ scalar_map.get(element.type, element.type) }}){% elif element.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ scalar_map.get(element.type, element.type) }}){% else %}{{ scalar_map.get(element.type, element.type) }}{% endif %},
-    {%- endif %}
-        {%- endif %}
-    {%- endfor %}
-)
+{{ message_strategy(message) }}
 {%- endfor %}
-
 
 {# Define tests for each message #}
 {%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
