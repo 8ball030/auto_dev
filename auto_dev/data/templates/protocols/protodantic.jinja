@@ -99,24 +99,24 @@ class {{ enum.name }}(Enum):
 {%- endfor %}
 {%- endfor %}
 
-{#Now generate message classes #}
-{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
+{%- macro render_message(message, indent_level = 1) %}
 class {{ message.name }}(BaseModel):
-{#- Handle nested messages #}
-{%- for element in message.elements if element.__class__.__name__ == "Message" %}
-    class {{ element.name }}(BaseModel):
-    {%- for field in element.elements %}
-        {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}{% if field.cardinality == "OPTIONAL" %} | None{% endif %}
-    {%- endfor %}
-{%- endfor %}
-{#- Handle fields, including enums #}
-{%- for field in message.elements if field.__class__.__name__ == "Field" %}
-    {%- if field.cardinality == 'REPEATED' %}
+    {%- set indent = '    ' * indent_level -%}
+    {# Handle nested messages recursively #}
+    {%- for nested in message.elements if nested.__class__.__name__ == "Message" %}
+    {{indent}}{{ render_message(nested, indent_level + 1) | indent(indent_level * 4) }}
+    {% endfor %}
+
+    {#- Handle fields of the message -#}
+    {%- for field in message.elements if field.__class__.__name__ == "Field" %}
+    {%- if field.cardinality == "REPEATED" %}
     {{ field.name }}: list[{{ scalar_map.get(field.type, field.type) }}]
+    {%- elif field.cardinality == "OPTIONAL" %}
+    {{ field.name }}: {{ scalar_map.get(field.type, field.type) }} | None
     {%- else %}
-    {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}{% if field.cardinality == "OPTIONAL" %} | None{% endif %}
+    {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}
     {%- endif %}
-{%- endfor %}
+    {%- endfor %}
 
     @staticmethod
     def encode(proto_obj, {{ message.name|lower }}: "{{ message.name }}") -> None:
@@ -148,4 +148,9 @@ class {{ message.name }}(BaseModel):
             {%- endfor %}
         )
 
-{% endfor %}
+{%- endmacro %}
+
+{# Now generate all message classes #}
+{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
+{{ render_message(message) }}
+{%- endfor %}
