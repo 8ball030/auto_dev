@@ -46,21 +46,21 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
 {%- set enum_names = enum_names.append( enum.name ) %}
 {%- endfor %}
 
-{%- macro encode_scalar(element, message) -%}
+{%- macro encode_scalar(element, message, full_name) -%}
     {%- if element.type in enum_names -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-    {{ message.name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
+    {{ full_name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
     {%- else -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
     {%- endif -%}
 {%- endmacro -%}
 
-{%- macro decode_scalar(element, message) -%}
-    decoded_{{ element.name }} = {%if element.type in enum_names -%}
+{%- macro decode_scalar(element, message, full_name) -%}
+    decoded_{{ element.name }} = {% if element.type in enum_names -%}
         {{ element.type }}(proto_obj.{{ element.name }})
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-        {{ message.name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
+        {{ full_name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
     {%- else -%}
         proto_obj.{{ element.name }}
     {%- endif -%}
@@ -101,12 +101,13 @@ class {{ enum.name }}(Enum):
 {%- endfor %}
 {%- endfor %}
 
-{%- macro render_message(message, indent_level=1, prefix="") %}
+{%- macro render_message(message, prefix="", indent_level=1) %}
 class {{ message.name }}(BaseModel):
     {%- set indent = '    ' * indent_level -%}
+    {%- set prefix = (prefix + '.' if prefix else '') + message.name -%}
     {# Handle nested messages recursively #}
     {%- for nested in message.elements if nested.__class__.__name__ == "Message" %}
-    {{indent}}{{ render_message(nested, indent_level + 1) | indent(4, true) }}
+    {{indent}}{{ render_message(nested, prefix, indent_level + 1) | indent(4, true) }}
     {% endfor %}
 
     {#- Handle fields of the message -#}
@@ -128,7 +129,7 @@ class {{ message.name }}(BaseModel):
     {%- elif element.cardinality == "OPTIONAL" %}
         {{ encode_optional(element, message) }}
     {%- else %}
-        {{ encode_scalar(element, message) }}
+        {{ encode_scalar(element, message, prefix) }}
     {%- endif %}
     {%- endfor %}
 
@@ -140,7 +141,7 @@ class {{ message.name }}(BaseModel):
     {%- elif element.cardinality == "OPTIONAL" %}
         {{ decode_optional(element, message) }}
     {%- else %}
-        {{ decode_scalar(element, message) }}
+        {{ decode_scalar(element, message, prefix) }}
     {%- endif %}
     {%- endfor %}
 
