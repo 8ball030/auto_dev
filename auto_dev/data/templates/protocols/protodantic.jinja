@@ -49,6 +49,8 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
 {%- macro encode_scalar(element, message) -%}
     {%- if element.type in enum_names -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
+    {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
+    {{ message.name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
     {%- else -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
     {%- endif -%}
@@ -58,7 +60,7 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
     decoded_{{ element.name }} = {%if element.type in enum_names -%}
         {{ element.type }}(proto_obj.{{ element.name }})
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-        {{ element.type }}.decode(proto_obj.{{ element.name }})
+        {{ message.name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
     {%- else -%}
         proto_obj.{{ element.name }}
     {%- endif -%}
