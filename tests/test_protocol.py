@@ -29,7 +29,8 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["basic_enum.proto"],
     PROTO_FILES["optional_enum.proto"],
     PROTO_FILES["repeated_enum.proto"],
-    ])
+    PROTO_FILES["simple_message.proto"],
+])
 def test_protodantic(proto_path: Path):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
