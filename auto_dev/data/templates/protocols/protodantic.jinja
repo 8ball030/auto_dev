@@ -39,6 +39,24 @@ max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
     "bytes": "bytes",
 } %}
 {#-#}
+{%- set type_map = {
+    "double": "float",
+    "float": "float",
+    "int32": "int",
+    "int64": "int",
+    "uint32": "int",
+    "uint64": "int",
+    "sint32": "int",
+    "sint64": "int",
+    "fixed32": "int",
+    "fixed64": "int",
+    "sfixed32": "int",
+    "sfixed64": "int",
+    "bool": "bool",
+    "string": "str",
+    "bytes": "bytes",
+} %}
+{#-#}
 
 {# Define a list of enum names #}
 {%- set enum_names = [] %}
@@ -110,6 +128,13 @@ class {{ message.name }}(BaseModel):
     {{indent}}{{ render_message(nested, prefix, indent_level + 1) | indent(4, true) }}
     {% endfor %}
 
+    {%- for oneof in message.elements if oneof.__class__.__name__ == "OneOf" %}
+    {{ oneof.name }}:
+        {%- for field in oneof.elements -%}
+        {{ ' ' }}{{ scalar_map.get(field.type, field.type) }}{{ " | " if not loop.last else "" }}
+        {%- endfor %}
+    {%- endfor %}
+
     {#- Handle fields of the message -#}
     {%- for field in message.elements if field.__class__.__name__ == "Field" %}
     {%- if field.cardinality == "REPEATED" %}
@@ -133,6 +158,13 @@ class {{ message.name }}(BaseModel):
     {%- endif %}
     {%- endfor %}
 
+    {%- for element in message.elements if element.__class__.__name__ == "OneOf" %}
+        {%- for field in element.elements %}
+        if isinstance({{ message.name|lower }}.{{ element.name }}, {{ type_map.get(field.type, field.type) }}):
+            proto_obj.{{ field.name }} = {{ message.name|lower }}.{{ element.name }}
+        {%- endfor %}
+    {%- endfor %}
+
     @classmethod
     def decode(cls, proto_obj) -> "{{ message.name }}":
     {%- for element in message.elements if element.__class__.__name__ == "Field" %}
@@ -145,10 +177,21 @@ class {{ message.name }}(BaseModel):
     {%- endif %}
     {%- endfor %}
 
+    {%- for element in message.elements if element.__class__.__name__ == "OneOf" %}
+        oneof_data = {}
+        {%- for field in element.elements %}
+        if proto_obj.HasField("{{ field.name }}"):
+            oneof_data["{{ element.name }}"] = proto_obj.{{ field.name }}
+        {%- endfor %}
+    {%- endfor %}
+
         return cls(
             {%- for element in message.elements if element.__class__.__name__ == "Field" %}
             {{ element.name }}=decoded_{{ element.name }}{{ "," if not loop.last else "" }}
             {%- endfor %}
+            {%- if message.elements | selectattr("__class__.__name__", "equalto", "OneOf") | list | length > 0 -%}
+            **oneof_data
+            {%- endif -%}
         )
 
 {%- endmacro %}
