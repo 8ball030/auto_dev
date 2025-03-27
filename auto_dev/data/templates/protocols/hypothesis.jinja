@@ -76,7 +76,7 @@ from {{ import_path }} import (
 
 {#- Generate strategies for inner messages first -#}
 {%- for element in message.elements if element.__class__.__name__ == "Message" %}
-{{ message_strategy(element, message.name + ".") }}
+{{ message_strategy(element, prefix + message.name + ".") }}
 {%- endfor %}
 
 {{ message.name|lower }}_strategy = st.builds(
@@ -94,7 +94,6 @@ from {{ import_path }} import (
     {%- endfor %}
 )
 {%- endmacro %}
-
 
 {# Define strategies for Enums at the top level #}
 {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
