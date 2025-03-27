@@ -31,6 +31,7 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["repeated_enum.proto"],
     PROTO_FILES["simple_message.proto"],
     PROTO_FILES["nested_message.proto"],
+    PROTO_FILES["deeply_nested_message.proto"],
 ])
 def test_protodantic(proto_path: Path):
 
