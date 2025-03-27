@@ -101,12 +101,12 @@ class {{ enum.name }}(Enum):
 {%- endfor %}
 {%- endfor %}
 
-{%- macro render_message(message, indent_level = 1) %}
+{%- macro render_message(message, indent_level=1, prefix="") %}
 class {{ message.name }}(BaseModel):
     {%- set indent = '    ' * indent_level -%}
     {# Handle nested messages recursively #}
     {%- for nested in message.elements if nested.__class__.__name__ == "Message" %}
-    {{indent}}{{ render_message(nested, indent_level + 1) | indent(indent_level * 4) }}
+    {{indent}}{{ render_message(nested, indent_level + 1) | indent(4, true) }}
     {% endfor %}
 
     {#- Handle fields of the message -#}
