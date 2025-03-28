@@ -32,12 +32,6 @@ class BaseConstrainedFloat(float, ABC):
     def max(cls) -> float:
         raise NotImplementedError(f"{cls.__name__}.max() is not implemented.")
 
-    def __new__(cls, value: float = 0.0, *args, **kwargs) -> "BaseConstrainedFloat":
-        schema = core_schema.float_schema(strict=True, ge=cls.min(), le=cls.max())
-        validator = SchemaValidator(schema)
-        validated_value = validator.validate_python(value)
-        return super().__new__(cls, validated_value)
-
     def __new__(cls, value: float = 0.0, *args, **kwargs) -> "BaseConstrainedInt":
         schema = core_schema.float_schema(strict=True, ge=cls.min(), le=cls.max())
         validator = SchemaValidator(schema)
@@ -52,6 +46,7 @@ class BaseConstrainedFloat(float, ABC):
 
 class BaseConstrainedInt(int, ABC):
     """Base class for constrained integer types."""
+
     @classmethod
     @abstractmethod
     def min(cls) -> int:
