@@ -2,20 +2,30 @@ import re
 import os
 import subprocess  # nosec: B404
 from pathlib import Path
-from pprint import pprint
-from collections import defaultdict
 
-from typing import Union
-from typing import Generic, TypeVar
 from jinja2 import Template, Environment, FileSystemLoader
-from pydantic import BaseModel
-
-from hypothesis import strategies as st
-
 from proto_schema_parser.parser import Parser
-from proto_schema_parser.ast import Message, Enum, OneOf, Field
 
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
+
+
+FLOAT_PRIMITIVES = [
+    "Double",
+    "Float",
+]
+
+INTEGER_PRIMITIVES = [
+    "Int32",
+    "Int64",
+    "UInt32",
+    "UInt64",
+    "SInt32",
+    "SInt64",
+    "Fixed32",
+    "Fixed64",
+    "SFixed32",
+    "SFixed64",
+]
 
 
 def get_repo_root() -> Path:
@@ -48,11 +58,22 @@ def create(
 
     content = proto_inpath.read_text()
 
+    primitives_template = env.get_template('protocols/primitives.jinja')
     protodantic_template = env.get_template('protocols/protodantic.jinja')
     hypothesis_template = env.get_template('protocols/hypothesis.jinja')
 
+    primitives = primitives_template.render()
+    primitives_outpath = code_outpath.parent / "primitives.py"
+    primitives_outpath.write_text(primitives)
+    primitives_import_path = _compute_import_path(primitives_outpath, repo_root)
+
     result = Parser().parse(content)
-    generated_code = protodantic_template.render(result=result)
+    code = generated_code = protodantic_template.render(
+        result=result,
+        float_primitives=FLOAT_PRIMITIVES,
+        integer_primitives=INTEGER_PRIMITIVES,
+        primitives_import_path=primitives_import_path,
+    )
     code_outpath.write_text(generated_code)
 
     subprocess.run(
@@ -66,8 +87,8 @@ def create(
         check=True
     )
 
-    import_path = _compute_import_path(code_outpath, repo_root)
-    message_path = str(Path(import_path).parent)
+    models_import_path = _compute_import_path(code_outpath, repo_root)
+    message_path = str(Path(models_import_path).parent)
 
     pb2_path = code_outpath.parent / f"{proto_inpath.stem}_pb2.py"
     pb2_content = pb2_path.read_text()
@@ -76,9 +97,12 @@ def create(
 
     messages_pb2 = pb2_path.with_suffix("").name
 
-    generated_tests = hypothesis_template.render(
+    tests = generated_tests = hypothesis_template.render(
         result=result,
-        import_path=import_path,
+        float_primitives=FLOAT_PRIMITIVES,
+        integer_primitives=INTEGER_PRIMITIVES,
+        primitives_import_path=primitives_import_path,
+        models_import_path=models_import_path,
         message_path=message_path,
         messages_pb2=messages_pb2,
     )
