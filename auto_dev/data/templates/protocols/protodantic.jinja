@@ -1,57 +1,32 @@
-import struct
 from enum import Enum
 
-from pydantic import BaseModel, confloat, conint
+from pydantic import BaseModel
 
+from {{ primitives_import_path }} import (
+    {%- for primitive in float_primitives %}
+    {{ primitive }},
+    {%- endfor %}
+    {%- for primitive in integer_primitives %}
+    {{ primitive }},
+    {%- endfor %}
+)
 
 MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
-min_int32 = -1 << 31
-max_int32 = (1 << 31) - 1
-min_uint32 = 0
-max_uint32 = (1 << 32) - 1
-
-min_int64 = -1 << 63
-max_int64 = (1 << 63) - 1
-min_uint64 = 0
-max_uint64 = (1 << 64) - 1
-
-min_float32 = struct.unpack('f', struct.pack('I', 0xFF7FFFFF))[0]
-max_float32 = struct.unpack('f', struct.pack('I', 0x7F7FFFFF))[0]
-min_float64 = struct.unpack('d', struct.pack('Q', 0xFFEFFFFFFFFFFFFF))[0]
-max_float64 = struct.unpack('d', struct.pack('Q', 0x7FEFFFFFFFFFFFFF))[0]
 {#-#}
 {%- set scalar_map = {
-    "double": "confloat(ge=min_float64, le=max_float64)",
-    "float": "confloat(ge=min_float32, le=max_float32)",
-    "int32": "conint(ge=min_int32, le=max_int32)",
-    "int64": "conint(ge=min_int64, le=max_int64)",
-    "uint32": "conint(ge=min_uint32, le=max_uint32)",
-    "uint64": "conint(ge=min_uint64, le=max_uint64)",
-    "sint32": "conint(ge=min_int32, le=max_int32)",
-    "sint64": "conint(ge=min_int64, le=max_int64)",
-    "fixed32": "conint(ge=min_uint32, le=max_uint32)",
-    "fixed64": "conint(ge=min_uint64, le=max_uint64)",
-    "sfixed32": "conint(ge=min_int32, le=max_int32)",
-    "sfixed64": "conint(ge=min_int64, le=max_int64)",
-    "bool": "bool",
-    "string": "str",
-    "bytes": "bytes",
-} %}
-{#-#}
-{%- set type_map = {
-    "double": "float",
-    "float": "float",
-    "int32": "int",
-    "int64": "int",
-    "uint32": "int",
-    "uint64": "int",
-    "sint32": "int",
-    "sint64": "int",
-    "fixed32": "int",
-    "fixed64": "int",
-    "sfixed32": "int",
-    "sfixed64": "int",
+    "double": "Double",
+    "float": "Float",
+    "int32": "Int32",
+    "int64": "Int64",
+    "uint32": "UInt32",
+    "uint64": "UInt64",
+    "sint32": "SInt32",
+    "sint64": "SInt64",
+    "fixed32": "Fixed32",
+    "fixed64": "Fixed64",
+    "sfixed32": "SFixed32",
+    "sfixed64": "SFixed64",
     "bool": "bool",
     "string": "str",
     "bytes": "bytes",
@@ -160,7 +135,7 @@ class {{ message.name }}(BaseModel):
 
     {%- for element in message.elements if element.__class__.__name__ == "OneOf" %}
         {%- for field in element.elements %}
-        if isinstance({{ message.name|lower }}.{{ element.name }}, {{ type_map.get(field.type, field.type) }}):
+        if isinstance({{ message.name|lower }}.{{ element.name }}, {{ scalar_map.get(field.type, field.type) }}):
             proto_obj.{{ field.name }} = {{ message.name|lower }}.{{ element.name }}
         {%- endfor %}
     {%- endfor %}
