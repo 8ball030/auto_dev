@@ -4,10 +4,10 @@ from pydantic import BaseModel
 
 from {{ primitives_import_path }} import (
     {%- for primitive in float_primitives %}
-    {{ primitive }},
+    {{ primitive.__name__ }},
     {%- endfor %}
     {%- for primitive in integer_primitives %}
-    {{ primitive }},
+    {{ primitive.__name__ }},
     {%- endfor %}
 )
 

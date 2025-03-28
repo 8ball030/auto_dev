@@ -1,31 +1,16 @@
 import re
 import os
+import sys
+import inspect
 import subprocess  # nosec: B404
+import importlib.util
 from pathlib import Path
+from types import ModuleType
 
-from jinja2 import Template, Environment, FileSystemLoader
 from proto_schema_parser.parser import Parser
+from jinja2 import Template, Environment, FileSystemLoader
 
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
-
-
-FLOAT_PRIMITIVES = [
-    "Double",
-    "Float",
-]
-
-INTEGER_PRIMITIVES = [
-    "Int32",
-    "Int64",
-    "UInt32",
-    "UInt64",
-    "SInt32",
-    "SInt64",
-    "Fixed32",
-    "Fixed64",
-    "SFixed32",
-    "SFixed64",
-]
 
 
 def get_repo_root() -> Path:
@@ -47,6 +32,23 @@ def _remove_runtime_version_code(pb2_content: str) -> str:
     return pb2_content
 
 
+def _dynamic_import(module_outpath: Path) -> ModuleType:
+    module_name = module_outpath.stem
+    spec = importlib.util.spec_from_file_location(module_name, module_outpath)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _get_locally_defined_classes(module: ModuleType) -> list[type]:
+
+    def locally_defined(obj):
+        return isinstance(obj, type) and obj.__module__ == module.__name__
+
+    return list(filter(locally_defined, vars(module).values()))
+
+
 def create(
     proto_inpath: Path,
     code_outpath: Path,
@@ -65,13 +67,19 @@ def create(
     primitives = primitives_template.render()
     primitives_outpath = code_outpath.parent / "primitives.py"
     primitives_outpath.write_text(primitives)
+    primitives_module = _dynamic_import(primitives_outpath)
     primitives_import_path = _compute_import_path(primitives_outpath, repo_root)
+
+    custom_primitives = _get_locally_defined_classes(primitives_module)
+    primitives = [cls for cls in custom_primitives if not inspect.isabstract(cls)]
+    float_primitives = [p for p in primitives if issubclass(p, float)]
+    integer_primitives = [p for p in primitives if issubclass(p, int)]
 
     result = Parser().parse(content)
     code = generated_code = protodantic_template.render(
         result=result,
-        float_primitives=FLOAT_PRIMITIVES,
-        integer_primitives=INTEGER_PRIMITIVES,
+        float_primitives=float_primitives,
+        integer_primitives=integer_primitives,
         primitives_import_path=primitives_import_path,
     )
     code_outpath.write_text(generated_code)
@@ -99,8 +107,8 @@ def create(
 
     tests = generated_tests = hypothesis_template.render(
         result=result,
-        float_primitives=FLOAT_PRIMITIVES,
-        integer_primitives=INTEGER_PRIMITIVES,
+        float_primitives=float_primitives,
+        integer_primitives=integer_primitives,
         primitives_import_path=primitives_import_path,
         models_import_path=models_import_path,
         message_path=message_path,
