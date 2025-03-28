@@ -4,19 +4,15 @@ import pytest
 
 from {{ message_path }} import {{ messages_pb2 }}
 
-from {{ import_path }} import ( 
-    min_int32,
-    max_int32,
-    min_uint32,
-    max_uint32,
-    min_int64,
-    max_int64,
-    min_uint64,
-    max_uint64,
-    min_float32,
-    max_float32,
-    min_float64,
-    max_float64,
+from {{ primitives_import_path }} import (
+    {%- for primitive in float_primitives %}
+    {{ primitive }},
+    {%- endfor %}
+    {%- for primitive in integer_primitives %}
+    {{ primitive }},
+    {%- endfor %}
+)
+from {{ models_import_path }} import (
     {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
     {{ enum.name }},
     {%- endfor %}
@@ -25,20 +21,36 @@ from {{ import_path }} import (
     {%- endfor %}
 )
 
+{# Register strategies for floating-point types #}
+{%- for primitive in float_primitives %}
+st.register_type_strategy(
+    {{ primitive }},
+    st.floats(min_value={{ primitive }}.min(), max_value={{ primitive }}.max(),  allow_nan=False, allow_infinity=False).map({{ primitive }})
+)
+{%- endfor %}
+{# Register strategies for integer types #}
+{%- for primitive in integer_primitives %}
+st.register_type_strategy(
+    {{ primitive }},
+    st.integers(min_value={{ primitive }}.min(), max_value={{ primitive }}.max()).map({{ primitive }})
+)
+{%- endfor %}
+
+
 {#- Primitive type mappings to hypothesis strategies #}
 {%- set scalar_map = {
-    "double": "st.floats(min_value=min_float64, max_value=max_float64, allow_nan=False, allow_infinity=False, width=64)",
-    "float": "st.floats(min_value=min_float32, max_value=max_float32, allow_nan=False, allow_infinity=False, width=32)",
-    "int32": "st.integers(min_value=min_int32, max_value=max_int32)",
-    "int64": "st.integers(min_value=min_int64, max_value=max_int64)",
-    "uint32": "st.integers(min_value=min_uint32, max_value=max_uint32)",
-    "uint64": "st.integers(min_value=min_uint64, max_value=max_uint64)",
-    "sint32": "st.integers(min_value=min_int32, max_value=max_int32)",
-    "sint64": "st.integers(min_value=min_int64, max_value=max_int64)",
-    "fixed32": "st.integers(min_value=min_uint32, max_value=max_uint32)",
-    "fixed64": "st.integers(min_value=min_uint64, max_value=max_uint64)",
-    "sfixed32": "st.integers(min_value=min_int32, max_value=max_int32)",
-    "sfixed64": "st.integers(min_value=min_int64, max_value=max_int64)",
+    "double": "st.builds(Double)",
+    "float": "st.builds(Float)",
+    "int32": "st.builds(Int32)",
+    "int64": "st.builds(Int64)",
+    "uint32": "st.builds(UInt32)",
+    "uint64": "st.builds(UInt64)",
+    "sint32": "st.builds(SInt32)",
+    "sint64": "st.builds(SInt64)",
+    "fixed32": "st.builds(Fixed32)",
+    "fixed64": "st.builds(Fixed64)",
+    "sfixed32": "st.builds(SFixed32)",
+    "sfixed64": "st.builds(SFixed64)",
     "bool": "st.booleans()",
     "string": "st.text()",
     "bytes": "st.binary()",
