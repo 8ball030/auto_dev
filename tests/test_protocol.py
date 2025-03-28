@@ -1,13 +1,10 @@
-import os
 import tempfile
-import subprocess
 import functools
 from pathlib import Path
 
 import pytest
 from jinja2 import Template, Environment, FileSystemLoader
 
-from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic
 
 
@@ -22,6 +19,7 @@ def _get_proto_files() -> dict[str, Path]:
 
 PROTO_FILES = _get_proto_files()
 
+
 @pytest.mark.parametrize("proto_path", [
     PROTO_FILES["primitives.proto"],
     PROTO_FILES["optional_primitives.proto"],
@@ -33,6 +31,7 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["nested_message.proto"],
     PROTO_FILES["deeply_nested_message.proto"],
     PROTO_FILES["oneof_value.proto"],
+    PROTO_FILES["map_primitive_values.proto"],
 ])
 def test_protodantic(proto_path: Path):
 
@@ -42,5 +41,5 @@ def test_protodantic(proto_path: Path):
         test_out = tmp_path / "test_models.py"
         (tmp_path / "__init__.py").touch()
         protodantic.create(proto_path, code_out, test_out)
-        exit_code = pytest.main([tmp_dir, "-v", "-s", "--tb=long", "-p", "no:warnings"])
+        exit_code = pytest.main([tmp_dir, "-vv", "-s", "--tb=long", "-p", "no:warnings"])
         assert exit_code == 0
