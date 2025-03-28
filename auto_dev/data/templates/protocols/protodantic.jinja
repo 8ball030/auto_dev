@@ -13,27 +13,13 @@ from {{ primitives_import_path }} import (
 
 MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
-{#-#}
-{%- set scalar_map = {
-    "double": "Double",
-    "float": "Float",
-    "int32": "Int32",
-    "int64": "Int64",
-    "uint32": "UInt32",
-    "uint64": "UInt64",
-    "sint32": "SInt32",
-    "sint64": "SInt64",
-    "fixed32": "Fixed32",
-    "fixed64": "Fixed64",
-    "sfixed32": "SFixed32",
-    "sfixed64": "SFixed64",
-    "bool": "bool",
-    "string": "str",
-    "bytes": "bytes",
-} %}
-{#-#}
+{#- Define a map of scalars -#}
+{%- set scalar_map = {"bool": "bool", "string": "str", "bytes": "bytes"} %}
+{%- for primitive in integer_primitives + float_primitives %}
+    {%- set scalar_map = scalar_map.update({primitive.__name__.lower(): primitive.__name__}) %}
+{%- endfor %}
 
-{# Define a list of enum names #}
+{#- Define a list of enum names -#}
 {%- set enum_names = [] %}
 {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
 {%- set enum_names = enum_names.append( enum.name ) %}

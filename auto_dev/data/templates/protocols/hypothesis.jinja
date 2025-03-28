@@ -35,26 +35,11 @@ st.register_type_strategy(
 )
 {%- endfor %}
 
-
-{#- Primitive type mappings to hypothesis strategies #}
-{%- set scalar_map = {
-    "double": "st.builds(Double)",
-    "float": "st.builds(Float)",
-    "int32": "st.builds(Int32)",
-    "int64": "st.builds(Int64)",
-    "uint32": "st.builds(UInt32)",
-    "uint64": "st.builds(UInt64)",
-    "sint32": "st.builds(SInt32)",
-    "sint64": "st.builds(SInt64)",
-    "fixed32": "st.builds(Fixed32)",
-    "fixed64": "st.builds(Fixed64)",
-    "sfixed32": "st.builds(SFixed32)",
-    "sfixed64": "st.builds(SFixed64)",
-    "bool": "st.booleans()",
-    "string": "st.text()",
-    "bytes": "st.binary()",
-} %}
-{#-#}
+{#- Define a map of scalars -#}
+{%- set scalar_map = {"bool": "bool", "string": "str", "bytes": "bytes"} %}
+{%- for primitive in integer_primitives + float_primitives %}
+    {%- set scalar_map = scalar_map.update({primitive.__name__.lower(): primitive.__name__}) %}
+{%- endfor %}
 
 {# Define a list of enum names #}
 {%- set enum_names = [] %}
@@ -66,7 +51,7 @@ st.register_type_strategy(
     {%- if field.type in enum_names -%}
         {{ field.type|lower }}_strategy
     {%- else -%}
-        {{ scalar_map.get(field.type, field.type) }}
+        st.builds({{ scalar_map.get(field.type, field.type) }})
     {%- endif -%}
 {%- endmacro -%}
 
