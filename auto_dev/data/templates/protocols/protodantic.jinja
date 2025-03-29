@@ -36,7 +36,7 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 {%- endmacro -%}
 
 {%- macro decode_scalar(element, message, full_name) -%}
-    decoded_{{ element.name }} = {% if element.type in enum_names -%}
+    {{ element.name }} = {% if element.type in enum_names -%}
         {{ element.type }}(proto_obj.{{ element.name }})
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
         {{ full_name }}{{ message.name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
@@ -66,9 +66,9 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
 {%- macro decode_repeated(element, message) -%}
     {%- if element.type in enum_names -%}
-    decoded_{{ element.name }} = [{{ element.type }}(item) for item in proto_obj.{{ element.name }}]
+    {{ element.name }} = [{{ element.type }}(item) for item in proto_obj.{{ element.name }}]
     {%- else -%}
-    decoded_{{ element.name }} = list(proto_obj.{{ element.name }})
+    {{ element.name }} = list(proto_obj.{{ element.name }})
     {%- endif -%}
 {%- endmacro -%}
 
@@ -83,11 +83,11 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
 {%- macro decode_map_field(map_field, message, full_name) -%}
     {%- if scalar_map.get(map_field.value_type) %}
-        decoded_{{ map_field.name }} = dict(proto_obj.{{ map_field.name }})
+        {{ map_field.name }} = dict(proto_obj.{{ map_field.name }})
     {%- else %}
-        decoded_{{ map_field.name }} = {}
+        {{ map_field.name }} = {}
         for key, item in proto_obj.{{ map_field.name }}.items():
-            decoded_{{ map_field.name }}[key] = {{ full_name }}{{ map_field.value_type }}.decode(item)
+            {{ map_field.name }}[key] = {{ full_name }}{{ map_field.value_type }}.decode(item)
     {%- endif %}
 {%- endmacro %}
 
@@ -192,10 +192,10 @@ class {{ message.name }}(BaseModel):
 
         return cls(
             {%- for element in message.elements if element.__class__.__name__ == "Field" %}
-            {{ element.name }}=decoded_{{ element.name }}{{ "," if not loop.last else "" }}
+            {{ element.name }}={{ element.name }}{{ "," if not loop.last else "" }}
             {%- endfor %}
             {%- for element in message.elements if element.__class__.__name__ == "MapField" %}
-            {{ element.name }}=decoded_{{ element.name }}{{ "," if not loop.last else "" }}
+            {{ element.name }}={{ element.name }}{{ "," if not loop.last else "" }}
             {%- endfor %}
             {%- if message.elements | selectattr("__class__.__name__", "equalto", "OneOf") | list | length > 0 -%}
             **oneof_data
