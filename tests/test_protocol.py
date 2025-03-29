@@ -33,6 +33,7 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["oneof_value.proto"],
     PROTO_FILES["map_primitive_values.proto"],
     PROTO_FILES["map_optional_primitive_values.proto"],
+    PROTO_FILES["map_repeated_primitive_values.proto"],
 ])
 def test_protodantic(proto_path: Path):
 
