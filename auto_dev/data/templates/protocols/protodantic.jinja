@@ -29,7 +29,7 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
     {%- if element.type in enum_names -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-    {{ full_name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
+    {{ full_name }}{{ message.name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
     {%- else -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
     {%- endif -%}
@@ -39,7 +39,7 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
     decoded_{{ element.name }} = {% if element.type in enum_names -%}
         {{ element.type }}(proto_obj.{{ element.name }})
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-        {{ full_name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
+        {{ full_name }}{{ message.name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
     {%- else -%}
         proto_obj.{{ element.name }}
     {%- endif -%}
@@ -72,22 +72,22 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
     {%- endif -%}
 {%- endmacro -%}
 
-{%- macro encode_map_field(map_field, message) -%}
+{%- macro encode_map_field(map_field, message, full_name) -%}
     for key, val in {{ message.name|lower }}.{{ map_field.name }}.items():
         {%- if scalar_map.get(map_field.value_type) %}
             proto_obj.{{ map_field.name }}[key] = val
         {%- else %}
-                {{message.name}}.{{ map_field.value_type }}.encode(proto_obj.{{ map_field.name }}[key], val)
+            {{ full_name }}{{ map_field.value_type }}.encode(proto_obj.{{ map_field.name }}[key], val)
         {%- endif %}
 {%- endmacro %}
 
-{%- macro decode_map_field(map_field, message) -%}
+{%- macro decode_map_field(map_field, message, full_name) -%}
     {%- if scalar_map.get(map_field.value_type) %}
         decoded_{{ map_field.name }} = dict(proto_obj.{{ map_field.name }})
     {%- else %}
         decoded_{{ map_field.name }} = {}
         for key, item in proto_obj.{{ map_field.name }}.items():
-            decoded_{{ map_field.name }}[key] = {{ message.name }}.{{ map_field.value_type }}.decode(item)
+            decoded_{{ map_field.name }}[key] = {{ full_name }}{{ map_field.value_type }}.decode(item)
     {%- endif %}
 {%- endmacro %}
 
@@ -100,13 +100,17 @@ class {{ enum.name }}(Enum):
 {%- endfor %}
 
 {%- macro render_message(message, prefix="", indent_level=1) %}
+{#- Define a list of directly nested mesasges -#}
+{%- set directly_nested = [] %}
+{%- for nested in message.elements if nested.__class__.__name__ == "Message" %}
+{%- set directly_nested = directly_nested.append(nested.name) %}
+{%- endfor %}
 class {{ message.name }}(BaseModel):
     {%- set indent = '    ' * indent_level -%}
-    {%- set prefix = (prefix + '.' if prefix else '') + message.name -%}
 
     {#- Handle nested messages recursively -#}
     {%- for nested in message.elements if nested.__class__.__name__ == "Message" %}
-    {{indent}}{{ render_message(nested, prefix, indent_level + 1) | indent(4, true) }}
+    {{indent}}{{ render_message(nested, prefix + message.name + ".", indent_level + 1) | indent(4, true) }}
     {% endfor %}
 
     {%- for map_field in message.elements if map_field.__class__.__name__ == "MapField" %}
@@ -144,7 +148,11 @@ class {{ message.name }}(BaseModel):
     {%- endfor %}
 
     {%- for map_field in message.elements if map_field.__class__.__name__ == "MapField" %}
-        {{ encode_map_field(map_field, message) }}
+        {%- if map_field.value_type in directly_nested %}
+        {{ encode_map_field(map_field, message, message.name + "." + prefix) }}
+        {%- else %}
+        {{ encode_map_field(map_field, message, prefix) }}
+        {%- endif %}
     {%- endfor %}
 
     {%- for element in message.elements if element.__class__.__name__ == "OneOf" %}
@@ -167,7 +175,11 @@ class {{ message.name }}(BaseModel):
     {%- endfor %}
 
     {%- for map_field in message.elements if map_field.__class__.__name__ == "MapField" %}
-        {{ decode_map_field(map_field, message) }}
+        {%- if map_field.value_type in directly_nested %}
+        {{ decode_map_field(map_field, message, message.name + "." + prefix) }}
+        {%- else %}
+        {{ decode_map_field(map_field, message, prefix) }}
+        {%- endif %}
     {%- endfor %}
 
     {%- for element in message.elements if element.__class__.__name__ == "OneOf" %}
