@@ -72,37 +72,32 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
     {%- endif -%}
 {%- endmacro -%}
 
-{%- macro encode_map_field(map_field, message, full_name) -%}
+{%- macro encode_map_field(map_field, message) -%}
     for key, val in {{ message.name|lower }}.{{ map_field.name }}.items():
         {%- if scalar_map.get(map_field.value_type) %}
             proto_obj.{{ map_field.name }}[key] = val
         {%- else %}
-            {{ full_name }}{{ map_field.value_type }}.encode(proto_obj.{{ map_field.name }}[key], val)
+            {{ message.qualified_type(map_field.value_type) }}.encode(proto_obj.{{ map_field.name }}[key], val)
         {%- endif %}
 {%- endmacro %}
 
-{%- macro decode_map_field(map_field, message, full_name) -%}
+{%- macro decode_map_field(map_field, message) -%}
     {%- if scalar_map.get(map_field.value_type) %}
         {{ map_field.name }} = dict(proto_obj.{{ map_field.name }})
     {%- else %}
         {{ map_field.name }} = {}
         for key, item in proto_obj.{{ map_field.name }}.items():
-            {{ map_field.name }}[key] = {{ full_name }}{{ map_field.value_type }}.decode(item)
+            {{ map_field.name }}[key] = {{ message.qualified_type(map_field.value_type) }}.decode(item)
     {%- endif %}
 {%- endmacro %}
 
-{%- macro render_message(message, prefix="", indent_level=1) %}
-{#- Define a list of directly nested mesasges -#}
-{%- set directly_nested = [] %}
-{%- for nested in message.elements if nested.__class__.__name__ == "Message" %}
-{%- set directly_nested = directly_nested.append(nested.name) %}
-{%- endfor %}
+{%- macro render_message(message, indent_level=1) %}
 class {{ message.name }}(BaseModel):
     {%- set indent = '    ' * indent_level -%}
 
     {#- Handle nested messages recursively -#}
     {%- for nested in message.messages %}
-    {{indent}}{{ render_message(nested, prefix + message.name + ".", indent_level + 1) | indent(4, true) }}
+    {{indent}}{{ render_message(nested, indent_level + 1) | indent(4, true) }}
     {% endfor %}
 
     {%- for map_field in message.map_fields %}
@@ -140,11 +135,7 @@ class {{ message.name }}(BaseModel):
     {%- endfor %}
 
     {%- for map_field in message.map_fields %}
-        {%- if map_field.value_type in directly_nested %}
-        {{ encode_map_field(map_field, message, message.name + "." + prefix) }}
-        {%- else %}
-        {{ encode_map_field(map_field, message, prefix) }}
-        {%- endif %}
+        {{ encode_map_field(map_field, message) }}
     {%- endfor %}
 
     {%- for oneof in message.oneofs %}
@@ -167,11 +158,7 @@ class {{ message.name }}(BaseModel):
     {%- endfor %}
 
     {%- for map_field in message.map_fields %}
-        {%- if map_field.value_type in directly_nested %}
-        {{ decode_map_field(map_field, message, message.name + "." + prefix) }}
-        {%- else %}
-        {{ decode_map_field(map_field, message, prefix) }}
-        {%- endif %}
+        {{ decode_map_field(map_field, message) }}
     {%- endfor %}
 
     {%- for oneof in message.oneofs %}
