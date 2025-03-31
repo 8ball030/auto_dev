@@ -51,6 +51,15 @@ class MessageAdapter:
     def __getattr__(self, name: str):
         return getattr(self.wrapped, name)
 
+    @property
+    def nested_names(self) -> set[str]:
+        return {m.name for m in self.messages} | {e.name for e in self.enums}
+
+    def qualified_type(self, type_name: str) -> str:
+        if type_name in self.nested_names:
+            return f"{self.fully_qualified_name}.{type_name}"
+        return type_name
+
     @classmethod
     def from_message(cls, message: Message, parent_prefix="") -> MessageAdapter:
         """Convert a `Message` into `MessageAdapter`, handling recursion."""
