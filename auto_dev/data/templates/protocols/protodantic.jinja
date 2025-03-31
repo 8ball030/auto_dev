@@ -171,10 +171,10 @@ class {{ message.name }}(BaseModel):
 
         return cls(
             {%- for element in message.fields %}
-            {{ element.name }}={{ element.name }}{{ "," if not loop.last else "" }}
+            {{ element.name }}={{ element.name }},
             {%- endfor %}
             {%- for element in message.map_fields %}
-            {{ element.name }}={{ element.name }}{{ "," if not loop.last else "" }}
+            {{ element.name }}={{ element.name }},
             {%- endfor %}
             {%- if message.oneofs -%}
             **oneof_data
