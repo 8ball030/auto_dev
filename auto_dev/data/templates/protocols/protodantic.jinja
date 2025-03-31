@@ -25,21 +25,21 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 {%- set enum_names = enum_names.append( enum.name ) %}
 {%- endfor %}
 
-{%- macro encode_scalar(element, message, full_name) -%}
+{%- macro encode_scalar(element, message) -%}
     {%- if element.type in enum_names -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-    {{ full_name }}{{ message.name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
+    {{ message.fully_qualified_name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
     {%- else -%}
     proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
     {%- endif -%}
 {%- endmacro -%}
 
-{%- macro decode_scalar(element, message, full_name) -%}
+{%- macro decode_scalar(element, message) -%}
     {{ element.name }} = {% if element.type in enum_names -%}
         {{ element.type }}(proto_obj.{{ element.name }})
     {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-        {{ full_name }}{{ message.name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
+        {{ message.fully_qualified_name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
     {%- else -%}
         proto_obj.{{ element.name }}
     {%- endif -%}
@@ -135,7 +135,7 @@ class {{ message.name }}(BaseModel):
     {%- elif element.cardinality == "OPTIONAL" %}
         {{ encode_optional(element, message) }}
     {%- else %}
-        {{ encode_scalar(element, message, prefix) }}
+        {{ encode_scalar(element, message) }}
     {%- endif %}
     {%- endfor %}
 
@@ -162,7 +162,7 @@ class {{ message.name }}(BaseModel):
     {%- elif field.cardinality == "OPTIONAL" %}
         {{ decode_optional(field, message) }}
     {%- else %}
-        {{ decode_scalar(field, message, prefix) }}
+        {{ decode_scalar(field, message) }}
     {%- endif %}
     {%- endfor %}
 
