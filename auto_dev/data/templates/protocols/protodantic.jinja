@@ -21,7 +21,7 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
 {#- Define a list of enum names -#}
 {%- set enum_names = [] %}
-{%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
+{%- for enum in file.enums %}
 {%- set enum_names = enum_names.append( enum.name ) %}
 {%- endfor %}
 
@@ -91,14 +91,6 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
     {%- endif %}
 {%- endmacro %}
 
-{#- First, generate Enums #}
-{%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
-class {{ enum.name }}(Enum):
-{%- for value in enum.elements %}
-    {{ value.name }} = {{ value.number }}
-{%- endfor %}
-{%- endfor %}
-
 {%- macro render_message(message, prefix="", indent_level=1) %}
 {#- Define a list of directly nested mesasges -#}
 {%- set directly_nested = [] %}
@@ -109,15 +101,15 @@ class {{ message.name }}(BaseModel):
     {%- set indent = '    ' * indent_level -%}
 
     {#- Handle nested messages recursively -#}
-    {%- for nested in message.elements if nested.__class__.__name__ == "Message" %}
+    {%- for nested in message.messages %}
     {{indent}}{{ render_message(nested, prefix + message.name + ".", indent_level + 1) | indent(4, true) }}
     {% endfor %}
 
-    {%- for map_field in message.elements if map_field.__class__.__name__ == "MapField" %}
+    {%- for map_field in message.map_fields %}
     {{ map_field.name }}: dict[{{ scalar_map.get(map_field.key_type) }}, {{ scalar_map.get(map_field.value_type, map_field.value_type) }}]
     {%- endfor %}
 
-    {%- for oneof in message.elements if oneof.__class__.__name__ == "OneOf" %}
+    {%- for oneof in message.oneofs %}
     {{ oneof.name }}:
         {%- for field in oneof.elements -%}
         {{ ' ' }}{{ scalar_map.get(field.type, field.type) }}{{ " | " if not loop.last else "" }}
@@ -125,7 +117,7 @@ class {{ message.name }}(BaseModel):
     {%- endfor %}
 
     {#- Handle fields of the message -#}
-    {%- for field in message.elements if field.__class__.__name__ == "Field" %}
+    {%- for field in message.fields %}
     {%- if field.cardinality == "REPEATED" %}
     {{ field.name }}: list[{{ scalar_map.get(field.type, field.type) }}]
     {%- elif field.cardinality == "OPTIONAL" %}
@@ -137,7 +129,7 @@ class {{ message.name }}(BaseModel):
 
     @staticmethod
     def encode(proto_obj, {{ message.name|lower }}: "{{ message.name }}") -> None:
-    {%- for element in message.elements if element.__class__.__name__ == "Field" %}
+    {%- for element in message.fields %}
     {%- if element.cardinality == "REPEATED" %}
         {{ encode_repeated(element, message) }}
     {%- elif element.cardinality == "OPTIONAL" %}
@@ -147,7 +139,7 @@ class {{ message.name }}(BaseModel):
     {%- endif %}
     {%- endfor %}
 
-    {%- for map_field in message.elements if map_field.__class__.__name__ == "MapField" %}
+    {%- for map_field in message.map_fields %}
         {%- if map_field.value_type in directly_nested %}
         {{ encode_map_field(map_field, message, message.name + "." + prefix) }}
         {%- else %}
@@ -155,26 +147,26 @@ class {{ message.name }}(BaseModel):
         {%- endif %}
     {%- endfor %}
 
-    {%- for element in message.elements if element.__class__.__name__ == "OneOf" %}
-        {%- for field in element.elements %}
-        if isinstance({{ message.name|lower }}.{{ element.name }}, {{ scalar_map.get(field.type, field.type) }}):
-            proto_obj.{{ field.name }} = {{ message.name|lower }}.{{ element.name }}
+    {%- for oneof in message.oneofs %}
+        {%- for element in oneof.elements %}
+        if isinstance({{ message.name|lower }}.{{ oneof.name }}, {{ scalar_map.get(element.type, element.type) }}):
+            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ oneof.name }}
         {%- endfor %}
     {%- endfor %}
 
     @classmethod
     def decode(cls, proto_obj) -> "{{ message.name }}":
-    {%- for element in message.elements if element.__class__.__name__ == "Field" %}
-    {%- if element.cardinality == "REPEATED" %}
-        {{ decode_repeated(element, message) }}
-    {%- elif element.cardinality == "OPTIONAL" %}
-        {{ decode_optional(element, message) }}
+    {%- for field in message.fields %}
+    {%- if field.cardinality == "REPEATED" %}
+        {{ decode_repeated(field, message) }}
+    {%- elif field.cardinality == "OPTIONAL" %}
+        {{ decode_optional(field, message) }}
     {%- else %}
-        {{ decode_scalar(element, message, prefix) }}
+        {{ decode_scalar(field, message, prefix) }}
     {%- endif %}
     {%- endfor %}
 
-    {%- for map_field in message.elements if map_field.__class__.__name__ == "MapField" %}
+    {%- for map_field in message.map_fields %}
         {%- if map_field.value_type in directly_nested %}
         {{ decode_map_field(map_field, message, message.name + "." + prefix) }}
         {%- else %}
@@ -182,29 +174,37 @@ class {{ message.name }}(BaseModel):
         {%- endif %}
     {%- endfor %}
 
-    {%- for element in message.elements if element.__class__.__name__ == "OneOf" %}
+    {%- for oneof in message.oneofs %}
         oneof_data = {}
-        {%- for field in element.elements %}
-        if proto_obj.HasField("{{ field.name }}"):
-            oneof_data["{{ element.name }}"] = proto_obj.{{ field.name }}
+        {%- for element in oneof.elements %}
+        if proto_obj.HasField("{{ element.name }}"):
+            oneof_data["{{ oneof.name }}"] = proto_obj.{{ element.name }}
         {%- endfor %}
     {%- endfor %}
 
         return cls(
-            {%- for element in message.elements if element.__class__.__name__ == "Field" %}
+            {%- for element in message.fields %}
             {{ element.name }}={{ element.name }}{{ "," if not loop.last else "" }}
             {%- endfor %}
-            {%- for element in message.elements if element.__class__.__name__ == "MapField" %}
+            {%- for element in message.map_fields %}
             {{ element.name }}={{ element.name }}{{ "," if not loop.last else "" }}
             {%- endfor %}
-            {%- if message.elements | selectattr("__class__.__name__", "equalto", "OneOf") | list | length > 0 -%}
+            {%- if message.oneofs -%}
             **oneof_data
             {%- endif %}
         )
 
 {%- endmacro %}
 
+{#- First, generate top-level Enums #}
+{%- for enum in file.enums %}
+class {{ enum.name }}(Enum):
+{%- for value in enum.elements %}
+    {{ value.name }} = {{ value.number }}
+{%- endfor %}
+{%- endfor %}
+
 {# Now generate all message classes #}
-{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
+{%- for message in file.messages %}
 {{ render_message(message) }}
 {%- endfor %}
