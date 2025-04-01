@@ -57,7 +57,8 @@ def render_attribute(element: MessageElement | MessageAdapter, prefix: str = "")
             elements = sorted(element.elements, key=lambda e: not isinstance(e, (MessageAdapter, ast.Enum)))
             body = inner = "\n".join(render_attribute(e, prefix + element.name + ".") for e in elements)
             encoder = render_encoder(element, prefix)
-            body = f"{inner}\n\n{encoder}"
+            decoder = render_decoder(element, prefix)
+            body = f"{inner}\n\n{encoder}#\n\n{decoder}"
             indented_body = textwrap.indent(body, "    ")
             return f"\nclass {element.name}(BaseModel):\n{indented_body}\n"
         case ast.Enum:
@@ -132,3 +133,60 @@ def render_encoder(message: MessageAdapter, prefix="") -> str:
     inner = "\n".join(encode_element(e, prefix) for e in elements)
     indented_inner = textwrap.indent(inner, "    ")
     return f"@staticmethod\ndef encode(proto_obj, {message.name.lower()}: \"{message.name}\") -> None:\n{indented_inner}"
+
+
+def decode_field(field: ast.Field, message: MessageAdapter, prefix="") -> str:
+    instance_field = f"proto_obj.{field.name}"
+    if field.type in PRIMITIVE_TYPE_MAP:
+        value = instance_field
+    elif field.type in message.enum_names:
+        value = instance_field
+    elif field.type in message.message_names:
+        value = f"{field.name} = {message.qualified_type(field.type)}.decode({instance_field})"
+    elif field.type in message.file.message_names:
+        value = f"{field.name} = {field.type}.decode({instance_field})"
+    else:
+        value = instance_field
+
+    match field.cardinality:
+        case FieldCardinality.REPEATED:
+            return f"{field.name} = list({value})"
+        case FieldCardinality.OPTIONAL:
+            return (f"{field.name} = {value} "
+                    f"if {instance_field} is not None and proto_obj.HasField(\"{field.name}\") "
+                    f"else None")
+        case FieldCardinality.REQUIRED | None:
+            return f"{field.name} = {value}"
+        case _:
+            raise TypeError(f"Unexpected cardinality: {field.cardinality}")
+
+
+def render_decoder(message: MessageAdapter, prefix="") -> str:
+
+    def decode_element(element, prefix) -> str:
+        match type(element):
+            case ast.Field:
+                return decode_field(element, message, prefix)
+            case ast.OneOf:
+                return "\n".join(
+                    f"if proto_obj.HasField(\"{e.name}\"):\n    {element.name} = proto_obj.{e.name}"
+                    for e in element.elements
+                )
+            case ast.MapField:
+                if element.value_type in PRIMITIVE_TYPE_MAP:
+                    return f"{element.name} = dict(proto_obj.{element.name})"
+                else:
+                    return (f"{element.name} = {{ key: {message.qualified_type(element.value_type)}.decode(item) "
+                            f"for key, item in proto_obj.{element.name}.items() }}")
+            case _:
+                raise TypeError(f"Unexpected message element type: {element}")
+
+    def constructor_kwargs(elements) -> str:
+        types = (ast.Field, ast.MapField, ast.OneOf)
+        return ",\n    ".join(f"{e.name}={e.name}" for e in elements if isinstance(e, types))
+
+    constructor = f"return cls(\n    {constructor_kwargs(message.elements)}\n)"
+    elements = filter(lambda e: not isinstance(e, (MessageAdapter, ast.Enum)), message.elements)
+    inner = "\n".join(decode_element(e, prefix) for e in elements) + "\n\n" + constructor
+    indented_inner = textwrap.indent(inner, "    ")
+    return (f"@classmethod\ndef decode(cls, proto_obj) -> \"{message.name}\":\n{indented_inner}")
