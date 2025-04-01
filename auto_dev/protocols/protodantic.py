@@ -11,7 +11,8 @@ from proto_schema_parser.parser import Parser
 from jinja2 import Template, Environment, FileSystemLoader
 
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
-from auto_dev.protocols.adapters import FileAdapter, MessageAdapter
+from auto_dev.protocols.adapters import FileAdapter
+from auto_dev.protocols import formatter
 
 
 def get_repo_root() -> Path:
@@ -77,9 +78,9 @@ def create(
     integer_primitives = [p for p in primitives if issubclass(p, int)]
 
     file = FileAdapter.from_file(Parser().parse(content))
-
     code = generated_code = protodantic_template.render(
         file=file,
+        formatter=formatter,
         float_primitives=float_primitives,
         integer_primitives=integer_primitives,
         primitives_import_path=primitives_import_path,
