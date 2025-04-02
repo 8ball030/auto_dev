@@ -121,6 +121,8 @@ def render_encoder(message: MessageAdapter) -> str:
 
     def encode_element(element) -> str:
         match type(element):
+            case ast.Comment:
+                return f"# {element.text}"
             case ast.Field:
                 return encode_field(element, message)
             case ast.OneOf:
@@ -175,6 +177,8 @@ def render_decoder(message: MessageAdapter) -> str:
 
     def decode_element(element) -> str:
         match type(element):
+            case ast.Comment:
+                return f"# {element.text}"
             case ast.Field:
                 return decode_field(element, message)
             case ast.OneOf:
