@@ -159,3 +159,30 @@ class SFixed64(BaseConstrainedInt):
     def min(cls): return min_int64
     @classmethod
     def max(cls): return max_int64
+
+
+FLOAT_PRIMITIVES = {
+    "double": "Double",
+    "float": "Float",
+}
+
+INTEGER_PRIMITIVES = {
+    "int32": "Int32",
+    "int64": "Int64",
+    "uint32": "UInt32",
+    "uint64": "UInt64",
+    "sint32": "SInt32",
+    "sint64": "SInt64",
+    "fixed32": "Fixed32",
+    "fixed64": "Fixed64",
+    "sfixed32": "SFixed32",
+    "sfixed64": "SFixed64",
+}
+
+PRIMITIVE_TYPE_MAP = {
+    "bool": "bool",
+    "string": "str",
+    "bytes": "bytes",
+    **FLOAT_PRIMITIVES,
+    **INTEGER_PRIMITIVES,
+}
