@@ -95,6 +95,11 @@ st.register_type_strategy(
         {{ element.name }}={{ scalar_strategy(element) }},
         {%- endif %}
     {%- endfor %}
+    {%- for element in message.map_fields %}
+        {%- if element.value_type in message.file.enum_names %}
+        {{ element.name }}=st.dictionaries(keys=st.text(), values=st.sampled_from({{ element.value_type }})),
+        {%- endif %}
+    {%- endfor %}
 )
 {%- endmacro %}
 
