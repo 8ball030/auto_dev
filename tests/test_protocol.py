@@ -27,6 +27,7 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["basic_enum.proto"],
     PROTO_FILES["optional_enum.proto"],
     PROTO_FILES["repeated_enum.proto"],
+    PROTO_FILES["nested_enum.proto"],
     PROTO_FILES["simple_message.proto"],
     PROTO_FILES["message_reference.proto"],
     PROTO_FILES["nested_message.proto"],
