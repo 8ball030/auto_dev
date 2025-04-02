@@ -144,7 +144,7 @@ def render_encoder(message: MessageAdapter) -> str:
     elements = filter(lambda e: not isinstance(e, (MessageAdapter, ast.Enum)), message.elements)
     inner = "\n".join(map(encode_element, elements))
     indented_inner = textwrap.indent(inner, "    ")
-    return f"@staticmethod\ndef encode(proto_obj, {message.name.lower()}: \"{message.name}\") -> None:\n{indented_inner}"
+    return f"@staticmethod\ndef encode(proto_obj, {message.name.lower()}: {message.name}) -> None:\n{indented_inner}"
 
 
 def decode_field(field: ast.Field, message: MessageAdapter) -> str:
@@ -204,4 +204,4 @@ def render_decoder(message: MessageAdapter) -> str:
     elements = filter(lambda e: not isinstance(e, (MessageAdapter, ast.Enum)), message.elements)
     inner = "\n".join(map(decode_element, elements)) + f"\n\n{constructor}"
     indented_inner = textwrap.indent(inner, "    ")
-    return (f"@classmethod\ndef decode(cls, proto_obj) -> \"{message.name}\":\n{indented_inner}")
+    return (f"@classmethod\ndef decode(cls, proto_obj) -> {message.name}:\n{indented_inner}")
