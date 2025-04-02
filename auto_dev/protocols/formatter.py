@@ -101,9 +101,9 @@ def encode_field(element, message):
     if element.type in PRIMITIVE_TYPE_MAP:
         value = instance_attr
     elif element.type in message.enum_names:
-        value = f"{message.name.lower()}.{element.name}"
+        value = instance_attr
     elif element.type in message.file.enum_names:
-        value = f"{message.name.lower()}.{element.name}"
+        value = instance_attr
     else:
         value = f"{qualified_type(message, element.type)}.encode(proto_obj.{element.name}, {instance_attr})"
         return value
@@ -153,12 +153,10 @@ def decode_field(field: ast.Field, message: MessageAdapter) -> str:
         value = instance_field
     elif field.type in message.enum_names:
         value = instance_field
-    elif field.type in message.message_names:
-        value = f"{field.name} = {qualified_type(message, field.type)}.decode({instance_field})"
-    elif field.type in message.file.message_names:
-        value = f"{field.name} = {field.type}.decode({instance_field})"
-    else:
+    elif field.type in message.file.enum_names:
         value = instance_field
+    else:
+        value = f"{qualified_type(message, field.type)}.decode({instance_field})"
 
     match field.cardinality:
         case FieldCardinality.REPEATED:
