@@ -72,6 +72,17 @@ def create(
     primitives_module = _dynamic_import(primitives_outpath)
     primitives_import_path = _compute_import_path(primitives_outpath, repo_root)
 
+    subprocess.run(
+        [
+            "protoc",
+            f"--python_out={code_outpath.parent}",
+            f"--proto_path={proto_inpath.parent}",
+            proto_inpath.name,
+        ],
+        cwd=proto_inpath.parent,
+        check=True
+    )
+
     custom_primitives = _get_locally_defined_classes(primitives_module)
     primitives = [cls for cls in custom_primitives if not inspect.isabstract(cls)]
     float_primitives = [p for p in primitives if issubclass(p, float)]
@@ -86,17 +97,6 @@ def create(
         primitives_import_path=primitives_import_path,
     )
     code_outpath.write_text(generated_code)
-
-    subprocess.run(
-        [
-            "protoc",
-            f"--python_out={code_outpath.parent}",
-            f"--proto_path={proto_inpath.parent}",
-            proto_inpath.name,
-        ],
-        cwd=proto_inpath.parent,
-        check=True
-    )
 
     models_import_path = _compute_import_path(code_outpath, repo_root)
     message_path = str(Path(models_import_path).parent)
