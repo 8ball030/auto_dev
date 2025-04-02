@@ -34,6 +34,7 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["deeply_nested_message.proto"],
     PROTO_FILES["oneof_value.proto"],
     PROTO_FILES["map_primitive_values.proto"],
+    PROTO_FILES["map_enum.proto"],
     PROTO_FILES["map_message.proto"],
     PROTO_FILES["map_optional_primitive_values.proto"],
     PROTO_FILES["map_repeated_primitive_values.proto"],
