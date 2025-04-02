@@ -3,7 +3,6 @@ import os
 import sys
 import inspect
 import subprocess  # nosec: B404
-import importlib.util
 from pathlib import Path
 from types import ModuleType
 
@@ -12,7 +11,7 @@ from jinja2 import Template, Environment, FileSystemLoader
 
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols.adapters import FileAdapter
-from auto_dev.protocols import formatter
+from auto_dev.protocols import formatter, primitives as primitives_module
 
 
 def get_repo_root() -> Path:
@@ -34,15 +33,6 @@ def _remove_runtime_version_code(pb2_content: str) -> str:
     return pb2_content
 
 
-def _dynamic_import(module_outpath: Path) -> ModuleType:
-    module_name = module_outpath.stem
-    spec = importlib.util.spec_from_file_location(module_name, module_outpath)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
 def _get_locally_defined_classes(module: ModuleType) -> list[type]:
 
     def locally_defined(obj):
@@ -62,14 +52,14 @@ def create(
 
     content = proto_inpath.read_text()
 
-    primitives_template = env.get_template('protocols/primitives.jinja')
+    primitives_py = repo_root / "auto_dev" / "protocols" / "primitives.py"
     protodantic_template = env.get_template('protocols/protodantic.jinja')
     hypothesis_template = env.get_template('protocols/hypothesis.jinja')
 
-    primitives = primitives_template.render()
-    primitives_outpath = code_outpath.parent / "primitives.py"
-    primitives_outpath.write_text(primitives)
-    primitives_module = _dynamic_import(primitives_outpath)
+    primitives_outpath = code_outpath.parent / primitives_py.name
+    primitives_outpath.write_text(primitives_py.read_text())
+
+    models_import_path = _compute_import_path(code_outpath, repo_root)
     primitives_import_path = _compute_import_path(primitives_outpath, repo_root)
 
     subprocess.run(
@@ -89,6 +79,7 @@ def create(
     integer_primitives = [p for p in primitives if issubclass(p, int)]
 
     file = FileAdapter.from_file(Parser().parse(content))
+
     code = generated_code = protodantic_template.render(
         file=file,
         formatter=formatter,
@@ -98,7 +89,6 @@ def create(
     )
     code_outpath.write_text(generated_code)
 
-    models_import_path = _compute_import_path(code_outpath, repo_root)
     message_path = str(Path(models_import_path).parent)
 
     pb2_path = code_outpath.parent / f"{proto_inpath.stem}_pb2.py"
@@ -118,3 +108,4 @@ def create(
         messages_pb2=messages_pb2,
     )
     test_outpath.write_text(generated_tests)
+    breakpoint()
