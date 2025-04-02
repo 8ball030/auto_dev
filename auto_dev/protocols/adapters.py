@@ -35,6 +35,7 @@ def camel_to_snake(name: str) -> str:
 @dataclass
 class MessageAdapter:
     file: FileAdapter | None = field(repr=False)
+    parent: FileAdapter | MessageAdapter | None = field(repr=False)
     wrapped: Message = field(repr=False)
     fully_qualified_name: str
     elements: list[MessageElement | MessageAdapter] = field(default_factory=list, repr=False)
@@ -73,7 +74,7 @@ class MessageAdapter:
 
         elements = []
         grouped_elements = {camel_to_snake(t.__name__): [] for t in MessageElement.__args__}
-        for i, element in enumerate(message.elements):
+        for element in message.elements:
             key = camel_to_snake(element.__class__.__name__)
             if isinstance(element, Message):
                 element = cls.from_message(element, parent_prefix=f"{parent_prefix}{message.name}.")
@@ -82,6 +83,7 @@ class MessageAdapter:
 
         return cls(
             file=None,
+            parent=None,
             wrapped=message,
             fully_qualified_name=f"{parent_prefix}{message.name}",
             elements=elements,
@@ -131,7 +133,7 @@ class FileAdapter:
 
         file_elements = []
         grouped_elements = {camel_to_snake(t.__name__): [] for t in FileElement.__args__}
-        for i, element in enumerate(file.file_elements):
+        for element in file.file_elements:
             key = camel_to_snake(element.__class__.__name__)
             if isinstance(element, Message):
                 element = MessageAdapter.from_message(element)
@@ -152,12 +154,13 @@ class FileAdapter:
             comments=grouped_elements["comment"]
         )
 
-        def set_file_adapter(message: MessageAdapter):
+        def set_parent(message: MessageAdapter, parent: FileAdapter | MessageAdapter):
             message.file = file_adapter
+            message.parent = parent
             for nested_message in message.messages:
-                set_file_adapter(nested_message)
+                set_parent(nested_message, message)
 
         for message in file_adapter.messages:
-            set_file_adapter(message)
+            set_parent(message, parent=file_adapter)
 
         return file_adapter
