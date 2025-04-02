@@ -42,7 +42,7 @@ def render_field(field: Field) -> str:
             raise TypeError(f"Unexpected cardinality: {field.cardinality}")
 
 
-def render_attribute(element: MessageElement | MessageAdapter, prefix: str = "") -> str:
+def render_attribute(element: MessageElement | MessageAdapter) -> str:
     match type(element):
         case ast.Comment:
             return f"# {element.text}"
@@ -55,9 +55,9 @@ def render_attribute(element: MessageElement | MessageAdapter, prefix: str = "")
             return f"{element.name}: {inner}"
         case adapters.MessageAdapter:
             elements = sorted(element.elements, key=lambda e: not isinstance(e, (MessageAdapter, ast.Enum)))
-            body = inner = "\n".join(render_attribute(e, prefix + element.name + ".") for e in elements)
-            encoder = render_encoder(element, prefix)
-            decoder = render_decoder(element, prefix)
+            body = inner = "\n".join(map(render_attribute, elements))
+            encoder = render_encoder(element)
+            decoder = render_decoder(element)
             body = f"{inner}\n\n{encoder}\n\n{decoder}"
             indented_body = textwrap.indent(body, "    ")
             return f"\nclass {element.name}(BaseModel):\n{indented_body}\n"
@@ -83,7 +83,7 @@ def render(file: FileAdapter):
     return f"{enums}\n{messages}"
 
 
-def encode_field(element, message, prefix):
+def encode_field(element, message):
     instance_attr = f"{message.name.lower()}.{element.name}"
     if element.type in PRIMITIVE_TYPE_MAP:
         value = instance_attr
@@ -92,7 +92,7 @@ def encode_field(element, message, prefix):
     elif element.type in message.file.enum_names:
         value = f"{message.name.lower()}.{element.name}"
     elif element.type in message.message_names:
-        value = f"{prefix}{message.name}.{element.type}.encode(proto_obj.{element.name}, {instance_attr})"
+        value = f"{message.qualified_type(element.type)}.encode(proto_obj.{element.name}, {instance_attr})"
         return value
     elif element.type in message.file.message_names:
         value = f"{element.type}.encode(proto_obj.{element.name}, {instance_attr})"
@@ -109,12 +109,12 @@ def encode_field(element, message, prefix):
             return f"proto_obj.{element.name} = {value}"
 
 
-def render_encoder(message: MessageAdapter, prefix="") -> str:
+def render_encoder(message: MessageAdapter) -> str:
 
-    def encode_element(element, prefix) -> str:
+    def encode_element(element) -> str:
         match type(element):
             case ast.Field:
-                return encode_field(element, message, prefix)
+                return encode_field(element, message)
             case ast.OneOf:
                 return "\n".join(
                     f"if isinstance({message.name.lower()}.{element.name}, {PRIMITIVE_TYPE_MAP.get(e.type, e.type)}):\n    proto_obj.{e.name} = {message.name.lower()}.{element.name}"
@@ -126,18 +126,20 @@ def render_encoder(message: MessageAdapter, prefix="") -> str:
                     return f"{iter_items}\n    proto_obj.{element.name}[key] = value"
                 elif element.value_type in message.file.enum_names:
                     return f"{iter_items}\n    proto_obj.{element.name}[key] = {element.value_type}(value)"
+                elif element.value_type in message.enum_names:
+                    return f"{iter_items}\n    proto_obj.{element.name}[key] = {message.name}.{element.value_type}(value)"
                 else:
                     return f"{iter_items}\n    {message.qualified_type(element.value_type)}.encode(proto_obj.{element.name}[key], value)"
             case _:
                 raise TypeError(f"Unexpected message type: {element}")
 
     elements = filter(lambda e: not isinstance(e, (MessageAdapter, ast.Enum)), message.elements)
-    inner = "\n".join(encode_element(e, prefix) for e in elements)
+    inner = "\n".join(map(encode_element, elements))
     indented_inner = textwrap.indent(inner, "    ")
     return f"@staticmethod\ndef encode(proto_obj, {message.name.lower()}: \"{message.name}\") -> None:\n{indented_inner}"
 
 
-def decode_field(field: ast.Field, message: MessageAdapter, prefix="") -> str:
+def decode_field(field: ast.Field, message: MessageAdapter) -> str:
     instance_field = f"proto_obj.{field.name}"
     if field.type in PRIMITIVE_TYPE_MAP:
         value = instance_field
@@ -163,12 +165,12 @@ def decode_field(field: ast.Field, message: MessageAdapter, prefix="") -> str:
             raise TypeError(f"Unexpected cardinality: {field.cardinality}")
 
 
-def render_decoder(message: MessageAdapter, prefix="") -> str:
+def render_decoder(message: MessageAdapter) -> str:
 
-    def decode_element(element, prefix) -> str:
+    def decode_element(element) -> str:
         match type(element):
             case ast.Field:
-                return decode_field(element, message, prefix)
+                return decode_field(element, message)
             case ast.OneOf:
                 return "\n".join(
                     f"if proto_obj.HasField(\"{e.name}\"):\n    {element.name} = proto_obj.{e.name}"
@@ -180,6 +182,8 @@ def render_decoder(message: MessageAdapter, prefix="") -> str:
                     return f"{element.name} = dict(proto_obj.{element.name})"
                 elif element.value_type in message.file.enum_names:
                     return f"{iter_items}\n    {element.name}[key] = {element.value_type}(value)"
+                elif element.value_type in message.enum_names:
+                    return f"{iter_items}\n    {element.name}[key] = {message.name}.{element.value_type}(value)"
                 else:
                     return (f"{element.name} = {{ key: {message.qualified_type(element.value_type)}.decode(item) "
                             f"for key, item in proto_obj.{element.name}.items() }}")
@@ -192,6 +196,6 @@ def render_decoder(message: MessageAdapter, prefix="") -> str:
 
     constructor = f"return cls(\n    {constructor_kwargs(message.elements)}\n)"
     elements = filter(lambda e: not isinstance(e, (MessageAdapter, ast.Enum)), message.elements)
-    inner = "\n".join(decode_element(e, prefix) for e in elements) + "\n\n" + constructor
+    inner = "\n".join(map(decode_element, elements)) + f"\n\n{constructor}"
     indented_inner = textwrap.indent(inner, "    ")
     return (f"@classmethod\ndef decode(cls, proto_obj) -> \"{message.name}\":\n{indented_inner}")
