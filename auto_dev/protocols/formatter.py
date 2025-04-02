@@ -58,7 +58,7 @@ def render_attribute(element: MessageElement | MessageAdapter, prefix: str = "")
             body = inner = "\n".join(render_attribute(e, prefix + element.name + ".") for e in elements)
             encoder = render_encoder(element, prefix)
             decoder = render_decoder(element, prefix)
-            body = f"{inner}\n\n{encoder}#\n\n{decoder}"
+            body = f"{inner}\n\n{encoder}\n\n{decoder}"
             indented_body = textwrap.indent(body, "    ")
             return f"\nclass {element.name}(BaseModel):\n{indented_body}\n"
         case ast.Enum:
@@ -124,6 +124,8 @@ def render_encoder(message: MessageAdapter, prefix="") -> str:
                 iter_items = f"for key, value in {message.name.lower()}.{element.name}.items():"
                 if element.value_type in PRIMITIVE_TYPE_MAP:
                     return f"{iter_items}\n    proto_obj.{element.name}[key] = value"
+                elif element.value_type in message.file.enum_names:
+                    return f"{iter_items}\n    proto_obj.{element.name}[key] = {element.value_type}(value)"
                 else:
                     return f"{iter_items}\n    {message.qualified_type(element.value_type)}.encode(proto_obj.{element.name}[key], value)"
             case _:
@@ -173,8 +175,11 @@ def render_decoder(message: MessageAdapter, prefix="") -> str:
                     for e in element.elements
                 )
             case ast.MapField:
+                iter_items = f"{element.name} = {{}}\nfor key, value in proto_obj.{element.name}.items():"
                 if element.value_type in PRIMITIVE_TYPE_MAP:
                     return f"{element.name} = dict(proto_obj.{element.name})"
+                elif element.value_type in message.file.enum_names:
+                    return f"{iter_items}\n    {element.name}[key] = {element.value_type}(value)"
                 else:
                     return (f"{element.name} = {{ key: {message.qualified_type(element.value_type)}.decode(item) "
                             f"for key, item in proto_obj.{element.name}.items() }}")
