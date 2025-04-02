@@ -63,14 +63,21 @@ st.register_type_strategy(
     st.lists({{ scalar_strategy(field) }})
 {%- endmacro -%}
 
+{%- macro enum_strategy(enum, prefix="") -%}
+{{ enum.name|lower }}_strategy = st.sampled_from({{ prefix + enum.name }})
+{%- endmacro -%}
+
 {%- macro message_strategy(message, prefix="") -%}
-{#- Build a list of nested message names in this message -#}
+{#- Build a list of nested enum and message names -#}
 {%- set nested_names = [] -%}
-{%- for m in message.elements if m.__class__.__name__ == "Message" %}
-{%- set enum_names = nested_names.append(m.name) %}
+{%- for m in message.enums + message.messages %}
+{%- set nested_names = nested_names.append(m.name) %}
 {%- endfor %}
 
-{#- Generate strategies for inner messages first -#}
+{%- for nested in message.enums %}
+{{ enum_strategy(nested, prefix + message.name + ".") }}
+{%- endfor %}
+
 {%- for nested in message.messages %}
 {{ message_strategy(nested, prefix + message.name + ".") }}
 {%- endfor %}
@@ -93,7 +100,7 @@ st.register_type_strategy(
 
 {# Define strategies for Enums at the top level #}
 {%- for enum in file.enums %}
-{{ enum.name|lower }}_strategy = st.sampled_from({{ enum.name }})
+{{ enum_strategy(enum) }}
 {%- endfor %}
 
 {# Define strategies for each message #}
