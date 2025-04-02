@@ -63,11 +63,6 @@ class MessageAdapter:
     def message_names(self) -> set[str]:
         return {m.name for m in self.messages}
 
-    def qualified_type(self, type_name: str) -> str:
-        if type_name in self.enum_names or type_name in self.message_names:
-            return f"{self.fully_qualified_name}.{type_name}"
-        return type_name
-
     @classmethod
     def from_message(cls, message: Message, parent_prefix="") -> MessageAdapter:
         """Convert a `Message` into `MessageAdapter`, handling recursion."""

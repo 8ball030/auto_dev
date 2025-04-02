@@ -29,8 +29,21 @@ from auto_dev.protocols.adapters import FileAdapter, MessageAdapter
 from auto_dev.protocols.primitives import PRIMITIVE_TYPE_MAP
 
 
-def render_field(field: Field) -> str:
-    field_type = PRIMITIVE_TYPE_MAP.get(field.type, field.type)
+def qualified_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> str:
+
+    def find_definition(scope):
+        if scope is None or isinstance(scope, FileAdapter):
+            return None
+        if type_name in scope.enum_names or type_name in scope.message_names:
+            return f"{scope.fully_qualified_name}.{type_name}"
+        return find_definition(scope.parent)
+
+    qualified_name = find_definition(adapter)
+    return qualified_name if qualified_name is not None else PRIMITIVE_TYPE_MAP.get(type_name, type_name)
+
+
+def render_field(field: Field, message: MessageAdapter) -> str:
+    field_type = qualified_type(message, field.type)
     match field.cardinality:
         case FieldCardinality.REQUIRED | None:
             return f"{field_type}"
@@ -42,20 +55,20 @@ def render_field(field: Field) -> str:
             raise TypeError(f"Unexpected cardinality: {field.cardinality}")
 
 
-def render_attribute(element: MessageElement | MessageAdapter) -> str:
+def render_attribute(element: MessageElement | MessageAdapter, message: MessageAdapter) -> str:
     match type(element):
         case ast.Comment:
             return f"# {element.text}"
         case ast.Field:
-            return f"{element.name}: {render_field(element)}"
+            return f"{element.name}: {render_field(element, message)}"
         case ast.OneOf:
             if not all(isinstance(e, Field) for e in element.elements):
                 raise NotImplementedError("Only implemented OneOf for Field")
-            inner = " | ".join(render_field(e) for e in element.elements)
+            inner = " | ".join(render_field(e, message) for e in element.elements)
             return f"{element.name}: {inner}"
         case adapters.MessageAdapter:
             elements = sorted(element.elements, key=lambda e: not isinstance(e, (MessageAdapter, ast.Enum)))
-            body = inner = "\n".join(map(render_attribute, elements))
+            body = inner = "\n".join(render_attribute(e, element) for e in elements)
             encoder = render_encoder(element)
             decoder = render_decoder(element)
             body = f"{inner}\n\n{encoder}\n\n{decoder}"
@@ -67,7 +80,7 @@ def render_attribute(element: MessageElement | MessageAdapter) -> str:
             return f"class {element.name}(IntEnum):\n{indented_members}\n"
         case ast.MapField:
             key_type = PRIMITIVE_TYPE_MAP.get(element.key_type, element.key_type)
-            value_type = PRIMITIVE_TYPE_MAP.get(element.value_type, element.value_type)
+            value_type = qualified_type(message, element.value_type)
             return f"{element.name}: dict[{key_type}, {value_type}]"
         case ast.Group | ast.Option | ast.ExtensionRange | ast.Reserved | ast.Extension:
             raise NotImplementedError(f"{element}")
@@ -77,8 +90,8 @@ def render_attribute(element: MessageElement | MessageAdapter) -> str:
 
 def render(file: FileAdapter):
 
-    enums = "\n".join(render_attribute(e) for e in file.enums)
-    messages = "\n".join(render_attribute(e) for e in file.messages)
+    enums = "\n".join(render_attribute(e, file) for e in file.enums)
+    messages = "\n".join(render_attribute(e, file) for e in file.messages)
 
     return f"{enums}\n{messages}"
 
@@ -91,14 +104,9 @@ def encode_field(element, message):
         value = f"{message.name.lower()}.{element.name}"
     elif element.type in message.file.enum_names:
         value = f"{message.name.lower()}.{element.name}"
-    elif element.type in message.message_names:
-        value = f"{message.qualified_type(element.type)}.encode(proto_obj.{element.name}, {instance_attr})"
-        return value
-    elif element.type in message.file.message_names:
-        value = f"{element.type}.encode(proto_obj.{element.name}, {instance_attr})"
-        return value
     else:
-        raise ValueError(f"Unexpected element: {element}")
+        value = f"{qualified_type(message, element.type)}.encode(proto_obj.{element.name}, {instance_attr})"
+        return value
 
     match element.cardinality:
         case FieldCardinality.REPEATED:
@@ -129,7 +137,7 @@ def render_encoder(message: MessageAdapter) -> str:
                 elif element.value_type in message.enum_names:
                     return f"{iter_items}\n    proto_obj.{element.name}[key] = {message.name}.{element.value_type}(value)"
                 else:
-                    return f"{iter_items}\n    {message.qualified_type(element.value_type)}.encode(proto_obj.{element.name}[key], value)"
+                    return f"{iter_items}\n    {qualified_type(message, element.value_type)}.encode(proto_obj.{element.name}[key], value)"
             case _:
                 raise TypeError(f"Unexpected message type: {element}")
 
@@ -146,7 +154,7 @@ def decode_field(field: ast.Field, message: MessageAdapter) -> str:
     elif field.type in message.enum_names:
         value = instance_field
     elif field.type in message.message_names:
-        value = f"{field.name} = {message.qualified_type(field.type)}.decode({instance_field})"
+        value = f"{field.name} = {qualified_type(message, field.type)}.decode({instance_field})"
     elif field.type in message.file.message_names:
         value = f"{field.name} = {field.type}.decode({instance_field})"
     else:
@@ -185,7 +193,7 @@ def render_decoder(message: MessageAdapter) -> str:
                 elif element.value_type in message.enum_names:
                     return f"{iter_items}\n    {element.name}[key] = {message.name}.{element.value_type}(value)"
                 else:
-                    return (f"{element.name} = {{ key: {message.qualified_type(element.value_type)}.decode(item) "
+                    return (f"{element.name} = {{ key: {qualified_type(message, element.value_type)}.decode(item) "
                             f"for key, item in proto_obj.{element.name}.items() }}")
             case _:
                 raise TypeError(f"Unexpected message element type: {element}")
