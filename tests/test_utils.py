@@ -19,6 +19,7 @@ from auto_dev.utils import (
     remove_prefix,
     remove_suffix,
     write_to_file,
+    file_swapper,
     folder_swapper,
     has_package_code_changed,
 )
@@ -153,6 +154,27 @@ def test_remove_suffix():
     assert remove_suffix("abcdef", "xyz") == "abcdef"
     assert remove_suffix("abc", "") == "abc"
     assert remove_suffix("", "xyz") == ""
+
+
+def test_file_swapper():
+    """Test file_swapper"""
+
+    content_a = "AAA"
+    content_b = "BBB"
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        file_a = tmp_path / "file_a.txt"
+        file_b = tmp_path / "file_b.txt"
+        file_a.write_text(content_a)
+        file_b.write_text(content_b)
+
+        with file_swapper(file_a, file_b):
+            assert file_a.read_text() == content_b
+            assert file_b.read_text() == content_a
+
+        assert file_a.read_text() == content_a
+        assert file_b.read_text() == content_b
 
 
 class TestFolderSwapper:
