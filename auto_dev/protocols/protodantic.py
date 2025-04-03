@@ -108,4 +108,3 @@ def create(
         messages_pb2=messages_pb2,
     )
     test_outpath.write_text(generated_tests)
-    breakpoint()
