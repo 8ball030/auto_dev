@@ -46,7 +46,7 @@ new_env:
 
 
 PROTOCOLS_URL = https://github.com/StationsStation/capitalisation_station/archive/main.zip
-PROTOCOLS_DIR = ${ROOT_DIR}tests/data/protocols/capitalisation_station
+PROTOCOLS_DIR = ${ROOT_DIR}tests/data/protocols/.capitalisation_station
 TEMP_ZIP = .capitalisation_station.zip
 
 update_protocol_tests:
