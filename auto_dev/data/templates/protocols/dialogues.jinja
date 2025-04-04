@@ -27,21 +27,21 @@ class {{ camel_name }}Dialogue(Dialogue):
 
     INITIAL_PERFORMATIVES: FrozenSet[Message.Performative] = frozenset({
         {%- for performative in initial_performatives %}
-        {{ camel_name }}Message.Performative.{{ performative }},
+        {{ camel_name }}Message.Performative.{{ performative|upper }},
         {%- endfor %}
     })
     TERMINAL_PERFORMATIVES: FrozenSet[Message.Performative] = frozenset({
         {%- for performative in terminal_performatives %}
-        {{ camel_name }}Message.Performative.{{ performative }},
+        {{ camel_name }}Message.Performative.{{ performative|upper }},
         {%- endfor %}
     })
     VALID_REPLIES: Dict[Message.Performative, FrozenSet[Message.Performative]] = {
         {%- for performative, replies in valid_replies.items() %}
-        {{ camel_name }}Message.Performative.{{ performative }}: {% if replies|length > 0 %}frozenset({
+        {{ camel_name }}Message.Performative.{{ performative|upper }}: {% if replies|length > 0 %}frozenset({
             {%- for reply in replies %}
-            {{ camel_name }}Message.Performative.{{ reply }},
+            {{ camel_name }}Message.Performative.{{ reply|upper }},
             {%- endfor %}
-        }){% else %}frozenset({}){% endif %},
+        }){% else %}frozenset(){% endif %},
         {%- endfor %}
     }
 
@@ -86,7 +86,7 @@ class Base{{ camel_name }}Dialogues(Dialogues, ABC):
 
     END_STATES = frozenset({
         {%- for state in end_states %}
-        {{ camel_name }}Message.EndState.{{ state.name }}{{ "," if not loop.last }}
+        {{ camel_name }}Dialogue.EndState.{{ state.name }},
         {%- endfor %}
     })        
     _keep_terminal_state_dialogues = {{ keep_terminal_state_dialogues }}
@@ -107,7 +107,7 @@ class Base{{ camel_name }}Dialogues(Dialogues, ABC):
         Dialogues.__init__(
             self,
             self_address=self_address,
-            end_states=cast(FrozenSet[Dialogue.EndState], self.END_STATES),
+            end_states=cast(frozenset[Dialogue.EndState], self.END_STATES),
             message_class={{ camel_name }}Message,
             dialogue_class=dialogue_class,
             role_from_first_message=role_from_first_message,
