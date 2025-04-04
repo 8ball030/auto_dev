@@ -89,13 +89,12 @@ def create(
     )
     code_outpath.write_text(generated_code)
 
-    message_path = str(Path(models_import_path).parent)
-
     pb2_path = code_outpath.parent / f"{proto_inpath.stem}_pb2.py"
     pb2_content = pb2_path.read_text()
     pb2_content = _remove_runtime_version_code(pb2_content)
     pb2_path.write_text(pb2_content)
 
+    message_import_path = ".".join(models_import_path.split(".")[:-1]) or "."
     messages_pb2 = pb2_path.with_suffix("").name
 
     tests = generated_tests = hypothesis_template.render(
@@ -104,7 +103,7 @@ def create(
         integer_primitives=integer_primitives,
         primitives_import_path=primitives_import_path,
         models_import_path=models_import_path,
-        message_path=message_path,
+        message_import_path=message_import_path,
         messages_pb2=messages_pb2,
     )
     test_outpath.write_text(generated_tests)

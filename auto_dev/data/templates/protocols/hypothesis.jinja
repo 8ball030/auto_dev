@@ -1,7 +1,7 @@
 from hypothesis import given
 from hypothesis import strategies as st
 
-from {{ message_path }} import {{ messages_pb2 }}
+from {{ message_import_path }} import {{ messages_pb2 }}
 
 from {{ primitives_import_path }} import (
     {%- for primitive in float_primitives %}
