@@ -73,11 +73,19 @@ def render_attribute(element: MessageElement | MessageAdapter, message: MessageA
             decoder = render_decoder(element)
             body = f"{inner}\n\n{encoder}\n\n{decoder}"
             indented_body = textwrap.indent(body, "    ")
-            return f"\nclass {element.name}(BaseModel):\n{indented_body}\n"
+            return (
+                f"\nclass {element.name}(BaseModel):\n"
+                f"    \"\"\"{element.name}\"\"\"\n\n"
+                f"{indented_body}\n"
+            )
         case ast.Enum:
             members = "\n".join(f"{val.name} = {val.number}" for val in element.elements)
             indented_members = textwrap.indent(members, "    ")
-            return f"class {element.name}(IntEnum):\n{indented_members}\n"
+            return (
+                f"class {element.name}(IntEnum):\n"
+                f"    \"\"\"{element.name}\"\"\"\n\n"
+                f"{indented_members}\n"
+            )
         case ast.MapField:
             key_type = PRIMITIVE_TYPE_MAP.get(element.key_type, element.key_type)
             value_type = qualified_type(message, element.value_type)
@@ -146,8 +154,12 @@ def render_encoder(message: MessageAdapter) -> str:
     elements = filter(lambda e: not isinstance(e, (MessageAdapter, ast.Enum)), message.elements)
     inner = "\n".join(map(encode_element, elements))
     indented_inner = textwrap.indent(inner, "    ")
-    return f"@staticmethod\ndef encode(proto_obj, {message.name.lower()}: {message.name}) -> None:\n{indented_inner}"
-
+    return (
+        "@staticmethod\n"
+        f"def encode(proto_obj, {message.name.lower()}: {message.name}) -> None:\n"
+        f"    \"\"\"Encode {message.name} to protobuf.\"\"\"\n\n"
+        f"{indented_inner}\n"
+    )
 
 def decode_field(field: ast.Field, message: MessageAdapter) -> str:
     instance_field = f"proto_obj.{field.name}"
@@ -208,4 +220,9 @@ def render_decoder(message: MessageAdapter) -> str:
     elements = filter(lambda e: not isinstance(e, (MessageAdapter, ast.Enum)), message.elements)
     inner = "\n".join(map(decode_element, elements)) + f"\n\n{constructor}"
     indented_inner = textwrap.indent(inner, "    ")
-    return (f"@classmethod\ndef decode(cls, proto_obj) -> {message.name}:\n{indented_inner}")
+    return (
+        "@classmethod\n"
+        f"def decode(cls, proto_obj) -> {message.name}:\n"
+        f"    \"\"\"Decode proto_obj to {message.name}.\"\"\"\n\n"
+        f"{indented_inner}\n"
+    )
