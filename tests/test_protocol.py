@@ -6,6 +6,7 @@ import pytest
 from jinja2 import Template, Environment, FileSystemLoader
 
 from auto_dev.protocols import protodantic
+from auto_dev.protocols import performatives
 
 
 @functools.lru_cache()
@@ -52,3 +53,17 @@ def test_protodantic(proto_path: Path):
         protodantic.create(proto_path, code_out, test_out)
         exit_code = pytest.main([tmp_dir, "-vv", "-s", "--tb=long", "-p", "no:warnings"])
         assert exit_code == 0
+
+
+@pytest.mark.parametrize("annotation, expected",
+    [
+        ("pt:int", "Int64"),
+        ("pt:float", "Double"),
+        ("pt:list[pt:int]", "list[Int64]"),
+        ("pt:optional[pt:int]", "Int64 | None"),
+        ("pt:dict[pt:str, pt:int]", "dict[str, Int64]"),
+    ]
+)
+def test_parse_performative_annotation(annotation: str, expected: str):
+    """Test parse_performative_annotation"""
+    assert performatives.parse_annotation(annotation) == expected
