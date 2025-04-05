@@ -122,7 +122,9 @@ def encode_field(element, message):
         elif element.cardinality == FieldCardinality.OPTIONAL:
             return (
                 f"if {instance_attr} is not None:\n"
-                f"    {qualified}.encode(proto_obj.{element.name}, {instance_attr})"
+                f"    temp = proto_obj.{element.name}.__class__()\n"
+                f"    {qualified}.encode(temp, {instance_attr})\n"
+                f"    proto_obj.{element.name}.CopyFrom(temp)"
             )
         else:
             return f"{qualified}.encode(proto_obj.{element.name}, {instance_attr})"
