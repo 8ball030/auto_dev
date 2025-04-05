@@ -1,0 +1,12 @@
+// repeated_message.proto
+
+syntax = "proto3";
+
+message OuterMessage {}
+
+message RepeatedMessage {
+  message InnerMessage {}
+
+  repeated OuterMessage outer_message = 1;
+  repeated InnerMessage inner_message = 2;
+}
