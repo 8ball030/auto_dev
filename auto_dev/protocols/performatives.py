@@ -9,6 +9,25 @@ SCALAR_MAP = {
 }
 
 
+def _split_top_level(s: str, sep: str = ",") -> list[str]:
+    parts = []
+    current = []
+    depth = 0
+    for c in s:
+        if c == "[":
+            depth += 1
+        elif c == "]":
+            depth -= 1
+        if c == sep and depth == 0:
+            parts.append("".join(current).strip())
+            current = []
+        else:
+            current.append(c)
+    if current:
+        parts.append("".join(current).strip())
+    return parts
+
+
 def parse_annotation(annotation: str) -> str:
     """Parse Performative annotation"""
 
@@ -27,11 +46,11 @@ def parse_annotation(annotation: str) -> str:
         return f"list[{parse_annotation(inner)}]"
     elif core.startswith("dict[") and core.endswith("]"):
         inner = core[len("dict["):-1]
-        key_str, value_str = (part.strip() for part in inner.split(",", 1))
+        key_str, value_str = _split_top_level(inner)
         return f"dict[{parse_annotation(key_str)}, {parse_annotation(value_str)}]"
     elif core.startswith("union[") and core.endswith("]"):
         inner = core[len("union["):-1]
-        parts = (parse_annotation(p.strip()) for p in inner.split(","))
-        return " | ".join(parts)
+        parts = _split_top_level(inner)
+        return " | ".join(parse_annotation(p) for p in parts)
     else:
         return SCALAR_MAP[core]
