@@ -62,6 +62,8 @@ def test_protodantic(proto_path: Path):
         ("pt:list[pt:int]", "list[Int64]"),
         ("pt:optional[pt:int]", "Int64 | None"),
         ("pt:dict[pt:str, pt:int]", "dict[str, Int64]"),
+        ("pt:list[pt:union[pt:dict[pt:str, pt:int], pt:list[pt:bytes]]]", "list[dict[str, Int64] | list[bytes]]"),
+        ("pt:optional[pt:dict[pt:union[pt:str, pt:int], pt:list[pt:union[pt:float, pt:bool]]]]", "dict[str | Int64, list[Double | bool]] | None")
     ]
 )
 def test_parse_performative_annotation(annotation: str, expected: str):
