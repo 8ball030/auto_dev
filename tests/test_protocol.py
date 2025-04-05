@@ -31,6 +31,7 @@ PROTO_FILES = _get_proto_files()
     PROTO_FILES["empty_message.proto"],
     PROTO_FILES["simple_message.proto"],
     PROTO_FILES["repeated_message.proto"],
+    PROTO_FILES["optional_message.proto"],
     PROTO_FILES["message_reference.proto"],
     PROTO_FILES["nested_message.proto"],
     PROTO_FILES["deeply_nested_message.proto"],
