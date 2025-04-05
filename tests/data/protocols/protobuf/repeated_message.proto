@@ -2,11 +2,11 @@
 
 syntax = "proto3";
 
-message OuterMessage {}
+message RepeatedOuterMessage {}
 
 message RepeatedMessage {
-  message InnerMessage {}
+  message RepeatedInnerMessage {}
 
-  repeated OuterMessage outer_message = 1;
-  repeated InnerMessage inner_message = 2;
+  repeated RepeatedOuterMessage repeated_outer_message = 1;
+  repeated RepeatedInnerMessage repeated_inner_message = 2;
 }
