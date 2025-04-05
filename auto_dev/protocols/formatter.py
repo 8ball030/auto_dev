@@ -112,13 +112,25 @@ def encode_field(element, message):
         value = instance_attr
     elif element.type in message.file.enum_names:
         value = instance_attr
-    else:
-        value = f"{qualified_type(message, element.type)}.encode(proto_obj.{element.name}, {instance_attr})"
-        return value
+    else:  # Message
+        qualified = qualified_type(message, element.type)
+        if element.cardinality == FieldCardinality.REPEATED:
+            return (
+                f"for item in {instance_attr}:\n"
+                f"    {qualified}.encode(proto_obj.{element.name}.add(), item)"
+            )
+        elif element.cardinality == FieldCardinality.OPTIONAL:
+            return (
+                f"if {instance_attr} is not None:\n"
+                f"    {qualified}.encode(proto_obj.{element.name}, {instance_attr})"
+            )
+        else:
+            return f"{qualified}.encode(proto_obj.{element.name}, {instance_attr})"
 
     match element.cardinality:
         case FieldCardinality.REPEATED:
-            return f"proto_obj.{element.name}.extend({value})"
+            iter_items = f"for item in {value}:\n"
+            return f"{iter_items}    proto_obj.{element.name}.append(item)"
         case FieldCardinality.OPTIONAL:
             return f"if {instance_attr} is not None:\n    proto_obj.{element.name} = {instance_attr}"
         case _:
@@ -170,7 +182,15 @@ def decode_field(field: ast.Field, message: MessageAdapter) -> str:
     elif field.type in message.file.enum_names:
         value = instance_field
     else:
-        value = f"{qualified_type(message, field.type)}.decode({instance_field})"
+        qualified = qualified_type(message, field.type)
+        if field.cardinality == FieldCardinality.REPEATED:
+            return f"{field.name} = [{qualified}.decode(item) for item in {instance_field}]"
+        elif field.cardinality == FieldCardinality.OPTIONAL:
+            return (f"{field.name} = {qualified}.decode({instance_field}) "
+                    f"if {instance_field} is not None and proto_obj.HasField(\"{field.name}\") "
+                    f"else None")
+        else:
+            return f"{field.name} = {qualified}.decode({instance_field})"
 
     match field.cardinality:
         case FieldCardinality.REPEATED:
