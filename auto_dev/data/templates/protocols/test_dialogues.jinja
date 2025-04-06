@@ -4,9 +4,10 @@
 
 from unittest.mock import MagicMock
 
-from pydantic import BaseModel
-from hypothesis import strategies as st
+from pydantic import BaseModel, conint, confloat
 from hypothesis import given
+from hypothesis import strategies as st
+from aea.configurations.data_types import PublicId
 
 from packages.{{ author }}.protocols.{{ snake_name }}.dialogues import (
     {{ camel_name }}Dialogue,
@@ -33,9 +34,15 @@ def shallow_dump(model: BaseModel) -> dict:
 def validate_dialogue(performative, model):
     """Validate successful dialogue instantiation."""
 
+    skill_context = MagicMock()
+    skill_context.skill_id = PublicId(
+        name="mock_name",
+        author="mock_author",
+    )
+
     dialogues = {{ camel_name }}Dialogues(
         name="test_{{ snake_name }}_dialogues",
-        skill_context=MagicMock(),
+        skill_context=skill_context,
     )
 
     dialogue = dialogues.create(
