@@ -6,7 +6,7 @@ import pytest
 from jinja2 import Template, Environment, FileSystemLoader
 
 from auto_dev.protocols import protodantic
-from auto_dev.protocols import performatives
+from auto_dev.protocols import performatives 
 
 
 @functools.lru_cache()
@@ -57,13 +57,13 @@ def test_protodantic(proto_path: Path):
 
 @pytest.mark.parametrize("annotation, expected",
     [
-        ("pt:int", "Int64"),
-        ("pt:float", "Double"),
-        ("pt:list[pt:int]", "list[Int64]"),
-        ("pt:optional[pt:int]", "Int64 | None"),
-        ("pt:dict[pt:str, pt:int]", "dict[str, Int64]"),
-        ("pt:list[pt:union[pt:dict[pt:str, pt:int], pt:list[pt:bytes]]]", "list[dict[str, Int64] | list[bytes]]"),
-        ("pt:optional[pt:dict[pt:union[pt:str, pt:int], pt:list[pt:union[pt:float, pt:bool]]]]", "dict[str | Int64, list[Double | bool]] | None")
+        ("pt:int", "conint(ge=Int32.min(), le=Int32.max())"),
+        ("pt:float", "confloat(ge=Double.min(), le=Double.max())"),
+        ("pt:list[pt:int]", "tuple[conint(ge=Int32.min(), le=Int32.max())]"),
+        ("pt:optional[pt:int]", "conint(ge=Int32.min(), le=Int32.max()) | None"),
+        ("pt:dict[pt:str, pt:int]", "dict[str, conint(ge=Int32.min(), le=Int32.max())]"),
+        ("pt:list[pt:union[pt:dict[pt:str, pt:int], pt:list[pt:bytes]]]", "tuple[dict[str, conint(ge=Int32.min(), le=Int32.max())] | tuple[bytes]]"),
+        ("pt:optional[pt:dict[pt:union[pt:str, pt:int], pt:list[pt:union[pt:float, pt:bool]]]]", "dict[str | conint(ge=Int32.min(), le=Int32.max()), tuple[confloat(ge=Double.min(), le=Double.max()) | bool]] | None"),
     ]
 )
 def test_parse_performative_annotation(annotation: str, expected: str):
