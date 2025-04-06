@@ -1,0 +1,66 @@
+{{ header }}
+
+"""Test dialogues module for the {{ snake_name }} protocol."""
+
+from unittest.mock import MagicMock
+
+from pydantic import BaseModel
+from hypothesis import strategies as st
+from hypothesis import given
+
+from packages.{{ author }}.protocols.{{ snake_name }}.dialogues import (
+    {{ camel_name }}Dialogue,
+    {{ camel_name }}Dialogues,
+)
+from packages.{{ author }}.protocols.{{ snake_name }}.message import {{ camel_name }}Message
+from packages.{{ author }}.protocols.{{ snake_name }}.primitives import (
+    Int64,
+    Double,
+)
+from packages.{{ author }}.protocols.{{ snake_name }}.custom_types import (
+    {%- for custom_type in custom_types %}
+    {{ custom_type }},
+    {%- endfor %}
+)
+
+
+def shallow_dump(model: BaseModel) -> dict:
+    """Shallow dump pydantic model."""
+
+    return {name: getattr(model, name) for name in model.__fields__}
+
+
+def validate_dialogue(performative, model):
+    """Validate successful dialogue instantiation."""
+
+    dialogues = {{ camel_name }}Dialogues(
+        name="test_{{ snake_name }}_dialogues",
+        skill_context=MagicMock(),
+    )
+
+    dialogue = dialogues.create(
+        counterparty="dummy_counterparty",
+        performative=performative,
+        **shallow_dump(model),
+    )
+
+    assert dialogue is not None
+
+{# Define strategies for each performative #}
+{%- for initial_performative, fields in initial_performative_types.items() %}
+class {{ snake_to_camel(initial_performative) }}(BaseModel):
+    """Model for the `{{ initial_performative|upper }}` initial speech act performative."""
+    {%- for field_name, field_type in fields.items() %}
+    {{ field_name }}: {{ field_type }}
+    {%- endfor %}
+
+{% endfor %}
+
+
+{%- for initial_performative in initial_performative_types %}
+@given(st.from_type({{ snake_to_camel(initial_performative) }}))
+def test_{{ initial_performative }}_dialogues(model):
+    """Test for the '{{ initial_performative|upper }}' protocol."""
+    validate_dialogue({{ camel_name }}Message.Performative.{{ initial_performative|upper }}, model)
+
+{% endfor %}
