@@ -17,7 +17,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
-autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.150"}}
+autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.151"}}
 
 [tool.poetry.dev-dependencies]
 
