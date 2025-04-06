@@ -23,4 +23,4 @@ st.register_type_strategy(
     {{ primitive.__name__ }},
     st.integers(min_value={{ primitive.__name__ }}.min(), max_value={{ primitive.__name__ }}.max()).map({{ primitive.__name__ }})
 )
-{%- endfor %}
+{% endfor %}

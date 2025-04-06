@@ -53,6 +53,7 @@ def create(
     content = proto_inpath.read_text()
 
     primitives_py = repo_root / "auto_dev" / "protocols" / "primitives.py"
+    strategies_template = env.get_template('protocols/primitive_strategies.jinja')
     protodantic_template = env.get_template('protocols/protodantic.jinja')
     hypothesis_template = env.get_template('protocols/hypothesis.jinja')
 
@@ -97,11 +98,20 @@ def create(
     message_import_path = ".".join(models_import_path.split(".")[:-1]) or "."
     messages_pb2 = pb2_path.with_suffix("").name
 
+    generated_strategies = strategies_template.render(
+        float_primitives=float_primitives,
+        integer_primitives=integer_primitives,
+        primitives_import_path=primitives_import_path,
+    )
+    strategies_outpath = test_outpath.parent / "primitive_strategies.py"
+    strategies_outpath.write_text(generated_strategies)
+
+    strategies_import_path = _compute_import_path(strategies_outpath, repo_root)
     tests = generated_tests = hypothesis_template.render(
         file=file,
         float_primitives=float_primitives,
         integer_primitives=integer_primitives,
-        primitives_import_path=primitives_import_path,
+        strategies_import_path=strategies_import_path,
         models_import_path=models_import_path,
         message_import_path=message_import_path,
         messages_pb2=messages_pb2,
