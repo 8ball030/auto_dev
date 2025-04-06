@@ -1,8 +1,6 @@
-
-
 SCALAR_MAP = {
-    "int": "Int64",
-    "float": "Double",
+    "int": "conint(ge=Int32.min(), le=Int32.max())",
+    "float": "confloat(ge=Double.min(), le=Double.max())",
     "bool": "bool",
     "str": "str",
     "bytes": "bytes",
@@ -43,7 +41,7 @@ def parse_annotation(annotation: str) -> str:
         return f"{parse_annotation(inner)} | None"
     elif core.startswith("list[") and core.endswith("]"):
         inner = core[len("list["):-1]
-        return f"list[{parse_annotation(inner)}]"
+        return f"tuple[{parse_annotation(inner)}]"  # quirk of the framework!
     elif core.startswith("dict[") and core.endswith("]"):
         inner = core[len("dict["):-1]
         key_str, value_str = _split_top_level(inner)
