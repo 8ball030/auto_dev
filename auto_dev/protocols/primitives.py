@@ -1,3 +1,7 @@
+"""Module containing custom primitives."""
+
+# ruff: noqa: D101, D102, D105, ARG003, PLW3201
+
 import struct
 from abc import ABC, abstractmethod
 from pydantic_core import SchemaValidator, core_schema

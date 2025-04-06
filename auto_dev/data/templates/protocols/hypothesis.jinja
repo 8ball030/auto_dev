@@ -1,3 +1,5 @@
+"""Module containing tests for the pydantic models generated from the .proto file."""
+
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -29,6 +31,7 @@ from {{ models_import_path }} import (
 {%- for message in file.messages %}
 @given({{ message.name|lower }}_strategy)
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
+    """Test {{ message.name }}"""
     assert isinstance({{ message.name|lower }}, {{ message.name }})
     proto_obj = {{ messages_pb2 }}.{{ message.name }}()
     {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})

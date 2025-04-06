@@ -40,7 +40,7 @@ def perform_message_test(performative, model) -> None:
     )
 
     msg.to = "receiver"
-    assert msg._is_consistent()  # pylint: disable=protected-access
+    assert msg._is_consistent()  # noqa: SLF001
     envelope = Envelope(to=msg.to, sender="sender", message=msg)
     envelope_bytes = envelope.encode()
 
