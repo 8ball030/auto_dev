@@ -236,17 +236,18 @@ def restore_directory():
 def file_swapper(file_a: str | Path, file_b: str | Path):
     """Temporarily swap the location of two files."""
 
-    def swap(swap_file: str):
+    def swap(swap_file: Path):
         shutil.move(file_a, swap_file)
         shutil.move(file_b, file_a)
         shutil.move(swap_file, file_b)
 
-    with tempfile.NamedTemporaryFile() as tmp_file:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir) / "swapfile"
+        swap(tmp_path)
         try:
-            swap(tmp_file.name)
             yield
         finally:
-            swap(tmp_file.name)
+            swap(tmp_path)
 
 
 @contextmanager
