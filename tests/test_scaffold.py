@@ -16,7 +16,7 @@ from auto_dev.utils import get_logger
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.dao.scaffolder import DAOScaffolder
 from auto_dev.handler.scaffolder import HandlerScaffolder, HandlerScaffoldBuilder
-from auto_dev.protocols.scaffolder import read_protocol
+from auto_dev.protocols.scaffolder import read_protocol_spec
 from auto_dev.handler.openapi_models import (
     Schema,
     OpenAPI,
@@ -101,9 +101,9 @@ def test_scaffold_protocol(cli_runner, dummy_agent_tim):
     assert runner.return_code == 0, result.output
     assert "New protocol scaffolded" in runner.output
 
-    protocol = read_protocol(str(path))
+    protocol = read_protocol_spec(str(path))
     original_content = path.read_text(encoding=DEFAULT_ENCODING)
-    readme_path = dummy_agent_tim / "protocols" / protocol.metadata["name"] / "README.md"
+    readme_path = dummy_agent_tim / "protocols" / protocol.metadata.name / "README.md"
     assert original_content in readme_path.read_text(encoding=DEFAULT_ENCODING)
 
 
