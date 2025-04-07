@@ -274,6 +274,21 @@ def update_yaml(protocol, dependencies: dict[str, dict[str, str]]) -> None:
     protocol_yaml.write_text(yaml.dump(content, sort_keys=False))
 
 
+def run_adev_fmt(protocol) -> None:
+    command = ["adev", "-v", "fmt", "-p", str(protocol.outpath)]
+    run_cli_cmd(command)
+
+
+def run_adev_lint(protocol) -> None:
+    command = ["adev", "-v", "lint", "-p", str(protocol.outpath)]
+    run_cli_cmd(command)
+
+
+def run_aea_fingerprint(protocol) -> None:
+    command = ["aea", "fingerprint", "protocol", protocol.metadata.protocol_specification_id]
+    run_cli_cmd(command)
+
+
 def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):
     """Scaffolding protocol components.
 
@@ -331,3 +346,15 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     # 10. Update YAML
     dependencies = {"pydantic": {}, "hypothesis": {}}
     update_yaml(protocol, dependencies)
+
+    # 11. fmt
+    run_adev_fmt(protocol)
+
+    # 12. lint
+    run_adev_lint(protocol)
+
+    # 13. Fingerprint
+    run_aea_fingerprint(protocol)
+
+    # Hurray's are in order
+    logger.info(f"New protocol scaffolded at {protocol.outpath}")
