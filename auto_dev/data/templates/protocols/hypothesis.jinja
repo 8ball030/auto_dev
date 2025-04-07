@@ -1,9 +1,11 @@
+"""Module containing tests for the pydantic models generated from the .proto file."""
+
 from hypothesis import given
 from hypothesis import strategies as st
 
-from {{ message_path }} import {{ messages_pb2 }}
+from {{ message_import_path }} import {{ messages_pb2 }}
 
-from {{ primitives_import_path }} import (
+from {{ strategies_import_path }} import (
     {%- for primitive in float_primitives %}
     {{ primitive.__name__ }},
     {%- endfor %}
@@ -20,107 +22,20 @@ from {{ models_import_path }} import (
     {%- endfor %}
 )
 
-{# Register strategies for floating-point types #}
-{%- for primitive in float_primitives %}
-st.register_type_strategy(
-    {{ primitive.__name__ }},
-    st.floats(min_value={{ primitive.__name__ }}.min(), max_value={{ primitive.__name__ }}.max(),  allow_nan=False, allow_infinity=False).map({{ primitive.__name__ }})
-)
-{%- endfor %}
-{# Register strategies for integer types #}
-{%- for primitive in integer_primitives %}
-st.register_type_strategy(
-    {{ primitive.__name__ }},
-    st.integers(min_value={{ primitive.__name__ }}.min(), max_value={{ primitive.__name__ }}.max()).map({{ primitive.__name__ }})
-)
-{%- endfor %}
-
-{#- Define a map of scalars -#}
-{%- set scalar_map = {"bool": "bool", "string": "str", "bytes": "bytes"} %}
-{%- for primitive in integer_primitives + float_primitives %}
-    {%- set scalar_map = scalar_map.update({primitive.__name__.lower(): primitive.__name__}) %}
-{%- endfor %}
-
-{# Define a list of enum names #}
-{%- set enum_names = [] %}
-{%- for enum in file.enums %}
-{%- set enum_names = enum_names.append( enum.name ) %}
-{%- endfor %}
-
-{%- macro scalar_strategy(field) -%}
-    {%- if field.type in enum_names -%}
-        {{ field.type|lower }}_strategy
-    {%- else -%}
-        st.builds({{ scalar_map.get(field.type, field.type) }})
-    {%- endif -%}
-{%- endmacro -%}
-
-{%- macro optional_strategy(field) -%}
-    st.one_of(st.none(), {{ scalar_strategy(field) }})
-{%- endmacro -%}
-
-{%- macro repeated_strategy(field) -%}
-    st.lists({{ scalar_strategy(field) }})
-{%- endmacro -%}
-
-{%- macro enum_strategy(enum, prefix="") -%}
-{{ enum.name|lower }}_strategy = st.sampled_from({{ prefix + enum.name }})
-{%- endmacro -%}
-
-{%- macro message_strategy(message, prefix="") -%}
-{#- Build a list of nested enum and message names -#}
-{%- set nested_names = [] -%}
-{%- for m in message.enums + message.messages %}
-{%- set nested_names = nested_names.append(m.name) %}
-{%- endfor %}
-
-{%- for nested in message.enums %}
-{{ enum_strategy(nested, prefix + message.name + ".") }}
-{%- endfor %}
-
-{%- for nested in message.messages %}
-{{ message_strategy(nested, prefix + message.name + ".") }}
-{%- endfor %}
-
-{{ message.name|lower }}_strategy = st.builds(
-    {{ prefix }}{{ message.name }},
-    {%- for element in message.fields %}
-        {%- if element.type in nested_names %}
-        {{ element.name }}={{ element.type|lower }}_strategy,
-        {%- elif element.cardinality == "OPTIONAL" %}
-        {{ element.name }}={{ optional_strategy(element) }},
-        {%- elif element.cardinality == "REPEATED" %}
-        {{ element.name }}={{ repeated_strategy(element) }},
-        {%- else %}
-        {{ element.name }}={{ scalar_strategy(element) }},
-        {%- endif %}
-    {%- endfor %}
-    {%- for element in message.map_fields %}
-        {%- if element.value_type in message.file.enum_names %}
-        {{ element.name }}=st.dictionaries(keys=st.text(), values=st.sampled_from({{ element.value_type }})),
-        {%- endif %}
-    {%- endfor %}
-)
-{%- endmacro %}
-
-{# Define strategies for Enums at the top level #}
-{%- for enum in file.enums %}
-{{ enum_strategy(enum) }}
-{%- endfor %}
-
 {# Define strategies for each message #}
 {%- for message in file.messages %}
-{{ message_strategy(message) }}
+{{ message.name|lower }}_strategy = st.from_type({{ message.name }})
 {%- endfor %}
 
 {# Define tests for each message #}
 {%- for message in file.messages %}
 @given({{ message.name|lower }}_strategy)
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
+    """Test {{ message.name }}"""
     assert isinstance({{ message.name|lower }}, {{ message.name }})
     proto_obj = {{ messages_pb2 }}.{{ message.name }}()
     {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})
     result = {{ message.name }}.decode(proto_obj)
     assert id({{ message.name|lower }}) != id(result)
     assert {{ message.name|lower }} == result
-{%- endfor %}
+{% endfor %}
