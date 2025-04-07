@@ -200,6 +200,13 @@ def generate_custom_types(protocol: ProtocolSpecification):
     tmp_proto_path.unlink()
 
 
+def rewrite_test_custom_types(protocol: ProtocolSpecification) -> None:
+    content = protocol.test_outpath.read_text()
+    a = f"packages.{protocol.author}.protocols.{protocol.name} import {protocol.name}_pb2"
+    b = f"packages.{protocol.author}.protocols.{protocol.name}.{protocol.name}_pb2 import {protocol.camel_name}Message as {protocol.name}_pb2  # noqa: N813"
+    protocol.test_outpath.write_text(content.replace(a, b))
+
+
 def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):
     """Scaffolding protocol components.
 
@@ -235,3 +242,6 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
 
     # 4. Generate custom_types.py and test_custom_types.py
     generate_custom_types(protocol)
+
+    # 5. rewrite test_custom_types to patch the import
+    rewrite_test_custom_types(protocol)
