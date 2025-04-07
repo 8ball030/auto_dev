@@ -2,12 +2,12 @@
 
 syntax = "proto3";
 
-enum Status {
-  UNKNOWN = 0;
-  ACTIVE = 1;
-  INACTIVE = 2;
+enum State {
+  STATE_UNKNOWN = 0;
+  STATE_ACTIVE = 1;
+  STATE_INACTIVE = 2;
 }
 
 message MapEnum {
-  map<string, Status> status_map = 1;
+  map<string, State> status_map = 1;
 }

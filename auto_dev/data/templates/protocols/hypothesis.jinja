@@ -1,130 +1,41 @@
+"""Module containing tests for the pydantic models generated from the .proto file."""
+
 from hypothesis import given
 from hypothesis import strategies as st
-import pytest
 
-from {{ message_path }} import {{ messages_pb2 }}
+from {{ message_import_path }} import {{ messages_pb2 }}
 
-from {{ primitives_import_path }} import (
+from {{ strategies_import_path }} import (
     {%- for primitive in float_primitives %}
-    {{ primitive }},
+    {{ primitive.__name__ }},
     {%- endfor %}
     {%- for primitive in integer_primitives %}
-    {{ primitive }},
+    {{ primitive.__name__ }},
     {%- endfor %}
 )
 from {{ models_import_path }} import (
-    {%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
+    {%- for enum in file.enums %}
     {{ enum.name }},
     {%- endfor %}
-    {%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
+    {%- for message in file.messages %}
     {{ message.name }},
     {%- endfor %}
 )
 
-{# Register strategies for floating-point types #}
-{%- for primitive in float_primitives %}
-st.register_type_strategy(
-    {{ primitive }},
-    st.floats(min_value={{ primitive }}.min(), max_value={{ primitive }}.max(),  allow_nan=False, allow_infinity=False).map({{ primitive }})
-)
-{%- endfor %}
-{# Register strategies for integer types #}
-{%- for primitive in integer_primitives %}
-st.register_type_strategy(
-    {{ primitive }},
-    st.integers(min_value={{ primitive }}.min(), max_value={{ primitive }}.max()).map({{ primitive }})
-)
-{%- endfor %}
-
-
-{#- Primitive type mappings to hypothesis strategies #}
-{%- set scalar_map = {
-    "double": "st.builds(Double)",
-    "float": "st.builds(Float)",
-    "int32": "st.builds(Int32)",
-    "int64": "st.builds(Int64)",
-    "uint32": "st.builds(UInt32)",
-    "uint64": "st.builds(UInt64)",
-    "sint32": "st.builds(SInt32)",
-    "sint64": "st.builds(SInt64)",
-    "fixed32": "st.builds(Fixed32)",
-    "fixed64": "st.builds(Fixed64)",
-    "sfixed32": "st.builds(SFixed32)",
-    "sfixed64": "st.builds(SFixed64)",
-    "bool": "st.booleans()",
-    "string": "st.text()",
-    "bytes": "st.binary()",
-} %}
-{#-#}
-
-{# Define a list of enum names #}
-{%- set enum_names = [] %}
-{%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
-{%- set enum_names = enum_names.append( enum.name ) %}
-{%- endfor %}
-
-{%- macro scalar_strategy(field) -%}
-    {%- if field.type in enum_names -%}
-        {{ field.type|lower }}_strategy
-    {%- else -%}
-        {{ scalar_map.get(field.type, field.type) }}
-    {%- endif -%}
-{%- endmacro -%}
-
-{%- macro optional_strategy(field) -%}
-    st.one_of(st.none(), {{ scalar_strategy(field) }})
-{%- endmacro -%}
-
-{%- macro repeated_strategy(field) -%}
-    st.lists({{ scalar_strategy(field) }})
-{%- endmacro -%}
-
-{%- macro message_strategy(message, prefix="") -%}
-{#- Build a list of nested message names in this message -#}
-{%- set nested_names = [] -%}
-{%- for m in message.elements if m.__class__.__name__ == "Message" %}
-{%- set enum_names = nested_names.append(m.name) %}
-{%- endfor %}
-
-{#- Generate strategies for inner messages first -#}
-{%- for element in message.elements if element.__class__.__name__ == "Message" %}
-{{ message_strategy(element, prefix + message.name + ".") }}
-{%- endfor %}
-
-{{ message.name|lower }}_strategy = st.builds(
-    {{ prefix }}{{ message.name }},
-    {%- for element in message.elements if element.__class__.__name__ == "Field" %}
-        {%- if element.type in nested_names %}
-        {{ element.name }}={{ element.type|lower }}_strategy,
-        {%- elif element.cardinality == "OPTIONAL" %}
-        {{ element.name }}={{ optional_strategy(element) }},
-        {%- elif element.cardinality == "REPEATED" %}
-        {{ element.name }}={{ repeated_strategy(element) }},
-        {%- else %}
-        {{ element.name }}={{ scalar_strategy(element) }},
-        {%- endif %}
-    {%- endfor %}
-)
-{%- endmacro %}
-
-{# Define strategies for Enums at the top level #}
-{%- for enum in result.file_elements if enum.__class__.__name__ == "Enum" %}
-{{ enum.name|lower }}_strategy = st.sampled_from({{ enum.name }})
-{%- endfor %}
-
 {# Define strategies for each message #}
-{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
-{{ message_strategy(message) }}
+{%- for message in file.messages %}
+{{ message.name|lower }}_strategy = st.from_type({{ message.name }})
 {%- endfor %}
 
 {# Define tests for each message #}
-{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
+{%- for message in file.messages %}
 @given({{ message.name|lower }}_strategy)
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
+    """Test {{ message.name }}"""
     assert isinstance({{ message.name|lower }}, {{ message.name }})
     proto_obj = {{ messages_pb2 }}.{{ message.name }}()
     {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})
     result = {{ message.name }}.decode(proto_obj)
     assert id({{ message.name|lower }}) != id(result)
     assert {{ message.name|lower }} == result
-{%- endfor %}
+{% endfor %}
