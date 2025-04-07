@@ -1,9 +1,9 @@
 import tempfile
 from pathlib import Path
-from collections import namedtuple
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from pydantic import BaseModel
 from aea.protocols.generator.base import ProtocolGenerator
 
 from auto_dev.utils import remove_prefix
@@ -11,7 +11,37 @@ from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic
 
 
-ProtocolSpecification = namedtuple("ProtocolSpecification", ["metadata", "custom_types", "speech_acts"])
+class Metadata(BaseModel):
+    """Metadata."""
+
+    name: str
+    author: str
+    version: str
+    description: str
+    license: str
+    aea_version: str
+    protocol_specification_id: str
+    speech_acts: dict[str, dict[str, str]] | None = None
+
+
+class InteractionModel(BaseModel):
+    """InteractionModel."""
+
+    initiation: list[str]
+    reply: dict[str, list[str]]
+    termination: list[str]
+    roles: dict[str, None]
+    end_states: list[str]
+    keep_terminal_state_dialogues: bool
+
+
+class ProtocolSpecification(BaseModel):
+    """ProtocolSpecification."""
+
+    path: Path
+    metadata: Metadata
+    custom_definitions: dict[str, str] | None = None
+    interaction_model: InteractionModel
 
 
 def read_protocol_spec(filepath: str) -> ProtocolSpecification:

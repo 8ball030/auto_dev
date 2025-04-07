@@ -1,3 +1,6 @@
+"""Module for parsing protocol performatives."""
+
+
 SCALAR_MAP = {
     "int": "conint(ge=Int32.min(), le=Int32.max())",
     "float": "confloat(ge=Double.min(), le=Double.max())",
