@@ -1,4 +1,5 @@
 import tempfile
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -121,6 +122,36 @@ def read_protocol_spec(filepath: str) -> ProtocolSpecification:
     )
 
 
+def run_cli_cmd(command: list[str], cwd: Path | None = None):
+    result = subprocess.run(
+            command,
+            shell=False,
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=cwd or Path.cwd(),
+        )
+    if result.returncode != 0:
+        msg = f"Failed: {command}:\n{result.stderr}"
+        raise ValueError(msg)
+
+
+def initialize_packages(repo_root: Path) -> None:
+    packages_dir = repo_root / "packages"
+    if not packages_dir.exists():
+        run_cli_cmd(["aea", "packages", "init"], cwd=repo_root)
+
+
+def run_aea_generate_protocol(protocol_path: Path, language: str, agent_dir: Path) -> None:
+    command = ["aea", "-s", "generate", "protocol", str(protocol_path), "--l", language]
+    run_cli_cmd(command, cwd=agent_dir)
+
+
+def run_aea_publish(agent_dir: Path) -> None:
+    command = ["aea", "publish", "--local", "--push-missing"]
+    run_cli_cmd(command, cwd=agent_dir)
+
+
 def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):
     """Scaffolding protocol components.
 
@@ -133,9 +164,19 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
 
     """
 
-    Path.cwd()
-    protodantic.get_repo_root()
+    agent_dir = Path.cwd()
+    repo_root = protodantic.get_repo_root()
     env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
 
     # 0. Read spec data
-    read_protocol_spec(protocol_specification_path)
+    protocol = read_protocol_spec(protocol_specification_path)
+
+    # 1. initialize packages folder if non-existent
+    initialize_packages(repo_root)
+
+    # 2. AEA generate protocol
+    run_aea_generate_protocol(protocol.path, language=language, agent_dir=agent_dir)
+
+    # Ensures `protocol.outpath` exists, required for correct import path generation
+    # TODO: on error during any part of this process, clean up (remove) `protocol.outpath`
+    run_aea_publish(agent_dir)
