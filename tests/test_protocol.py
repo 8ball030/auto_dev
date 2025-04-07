@@ -115,14 +115,7 @@ def test_scaffold_protocol(protocol_spec: Path):
     """Test `adev scaffold protocol` command."""
 
     protocol = read_protocol_spec(protocol_spec)
-
     repo_root = protodantic.get_repo_root()
-    packages_dir = repo_root / "packages"
-    if packages_dir.exists():
-        msg = "Test assumes no packages directory exists in this repo"
-        raise ValueError(msg)
-
-    packages_dir.mkdir(exist_ok=False)
     tmp_test_agent = repo_root / "tmp_test_agent"
     original_cwd = os.getcwd()
     try:
@@ -141,5 +134,5 @@ def test_scaffold_protocol(protocol_spec: Path):
         assert exit_code == 0
     finally:
         shutil.rmtree(tmp_test_agent)
-        shutil.rmtree(packages_dir)
+        shutil.rmtree(protocol.outpath)
         os.chdir(original_cwd)

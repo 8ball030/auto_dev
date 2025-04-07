@@ -167,9 +167,9 @@ def run_aea_generate_protocol(protocol_path: Path, language: str, agent_dir: Pat
     run_cli_cmd(command, cwd=agent_dir)
 
 
-def run_aea_publish(agent_dir: Path) -> None:
-    """Run `aea publish --local --push-missing`."""
-    command = ["aea", "publish", "--local", "--push-missing"]
+def run_push_local_protocol(protocol: ProtocolSpecification, agent_dir: Path) -> None:
+    """Run `aea push --local protocol`."""
+    command = ["aea", "push", "--local", "protocol", protocol.metadata.protocol_specification_id]
     run_cli_cmd(command, cwd=agent_dir)
 
 
@@ -346,7 +346,7 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
 
     # Ensures `protocol.outpath` exists, required for correct import path generation
     # TODO: on error during any part of this process, clean up (remove) `protocol.outpath`  # noqa: FIX002, TD002, TD003
-    run_aea_publish(agent_dir)
+    run_push_local_protocol(protocol, agent_dir)
 
     # 3. create README.md
     template = env.get_template("protocols/README.jinja")
