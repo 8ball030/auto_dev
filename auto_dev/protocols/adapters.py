@@ -1,40 +1,42 @@
+"""Module containing adapter classes for proto_schema_parser."""
+
 from __future__ import annotations
 
 import re
-from typing_extensions import TypeAliasType
-from dataclasses import dataclass, field
+from dataclasses import field, dataclass
 
 from proto_schema_parser.ast import (
-    FileElement,
+    Enum,
     File,
-    Import,
-    Package,
-    Option,
-    Extension,
-    Service,
-    MessageElement,
-    Comment,
     Field,
     Group,
     OneOf,
-    ExtensionRange,
-    Reserved,
+    Import,
+    Option,
+    Comment,
     Message,
-    Enum,
+    Package,
+    Service,
     MapField,
-    MessageValue,
-    EnumElement,
+    Reserved,
+    Extension,
+    FileElement,
+    ExtensionRange,
+    MessageElement,
 )
 
 
 def camel_to_snake(name: str) -> str:
     """Convert CamelCase to snake_case."""
-    return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
 
 
 @dataclass
 class MessageAdapter:
+    """MessageAdapter for proto_schema_parser ast.Message."""
+
     file: FileAdapter | None = field(repr=False)
+    parent: FileAdapter | MessageAdapter | None = field(repr=False)
     wrapped: Message = field(repr=False)
     fully_qualified_name: str
     elements: list[MessageElement | MessageAdapter] = field(default_factory=list, repr=False)
@@ -52,20 +54,21 @@ class MessageAdapter:
     map_fields: list[MapField] = field(default_factory=list)
 
     def __getattr__(self, name: str):
+        """Access wrapped ast.Message instance attributes."""
+
         return getattr(self.wrapped, name)
 
     @property
     def enum_names(self) -> set[str]:
+        """Enum names referenced in this ast.Message."""
+
         return {m.name for m in self.enums}
 
     @property
     def message_names(self) -> set[str]:
-        return {m.name for m in self.messages}
+        """Message names referenced in this ast.Message."""
 
-    def qualified_type(self, type_name: str) -> str:
-        if type_name in self.enum_names or type_name in self.message_names:
-            return f"{self.fully_qualified_name}.{type_name}"
-        return type_name
+        return {m.name for m in self.messages}
 
     @classmethod
     def from_message(cls, message: Message, parent_prefix="") -> MessageAdapter:
@@ -73,7 +76,7 @@ class MessageAdapter:
 
         elements = []
         grouped_elements = {camel_to_snake(t.__name__): [] for t in MessageElement.__args__}
-        for i, element in enumerate(message.elements):
+        for element in message.elements:
             key = camel_to_snake(element.__class__.__name__)
             if isinstance(element, Message):
                 element = cls.from_message(element, parent_prefix=f"{parent_prefix}{message.name}.")
@@ -82,6 +85,7 @@ class MessageAdapter:
 
         return cls(
             file=None,
+            parent=None,
             wrapped=message,
             fully_qualified_name=f"{parent_prefix}{message.name}",
             elements=elements,
@@ -95,12 +99,14 @@ class MessageAdapter:
             messages=grouped_elements["message"],
             enums=grouped_elements["enum"],
             extensions=grouped_elements["extension"],
-            map_fields=grouped_elements["map_field"]
+            map_fields=grouped_elements["map_field"],
         )
 
 
 @dataclass
 class FileAdapter:
+    """FileAdapter for proto_schema_parser ast.File."""
+
     wrapped: File = field(repr=False)
     file_elements: list[FileElement | MessageAdapter] = field(repr=False)
 
@@ -115,14 +121,20 @@ class FileAdapter:
     comments: list[Comment] = field(default_factory=list)
 
     def __getattr__(self, name: str):
+        """Access wrapped ast.File instance attributes."""
+
         return getattr(self.wrapped, name)
 
     @property
     def enum_names(self) -> set[str]:
+        """Top-level Enum names in ast.File."""
+
         return {m.name for m in self.enums}
 
     @property
     def message_names(self) -> set[str]:
+        """Top-level Message names in ast.File."""
+
         return {m.name for m in self.messages}
 
     @classmethod
@@ -131,7 +143,7 @@ class FileAdapter:
 
         file_elements = []
         grouped_elements = {camel_to_snake(t.__name__): [] for t in FileElement.__args__}
-        for i, element in enumerate(file.file_elements):
+        for element in file.file_elements:
             key = camel_to_snake(element.__class__.__name__)
             if isinstance(element, Message):
                 element = MessageAdapter.from_message(element)
@@ -149,15 +161,16 @@ class FileAdapter:
             enums=grouped_elements["enum"],
             extensions=grouped_elements["extension"],
             services=grouped_elements["service"],
-            comments=grouped_elements["comment"]
+            comments=grouped_elements["comment"],
         )
 
-        def set_file_adapter(message: MessageAdapter):
+        def set_parent(message: MessageAdapter, parent: FileAdapter | MessageAdapter):
             message.file = file_adapter
+            message.parent = parent
             for nested_message in message.messages:
-                set_file_adapter(nested_message)
+                set_parent(nested_message, message)
 
         for message in file_adapter.messages:
-            set_file_adapter(message)
+            set_parent(message, parent=file_adapter)
 
         return file_adapter
