@@ -16,7 +16,6 @@ from auto_dev.utils import get_logger
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.dao.scaffolder import DAOScaffolder
 from auto_dev.handler.scaffolder import HandlerScaffolder, HandlerScaffoldBuilder
-from auto_dev.protocols.scaffolder import read_protocol_spec
 from auto_dev.handler.openapi_models import (
     Schema,
     OpenAPI,
