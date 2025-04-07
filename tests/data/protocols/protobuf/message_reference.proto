@@ -1,0 +1,16 @@
+// message_reference.proto
+
+syntax = "proto3";
+
+message Message1 {
+  string message1_label = 1;
+  optional string optional_message1_label = 2;
+  repeated string repeated_message1_label = 3;
+}
+
+message Message2 {
+  Message1 message1 = 1;
+  string message2_label = 2;
+  optional string optional_message2_label = 3;
+  repeated string repeated_message2_label = 4;
+}
