@@ -1,74 +1,41 @@
+"""Module containing tests for the pydantic models generated from the .proto file."""
+
 from hypothesis import given
 from hypothesis import strategies as st
-import pytest
 
-from {{ message_path }} import {{ messages_pb2 }}
+from {{ message_import_path }} import {{ messages_pb2 }}
 
-from {{ import_path }} import ( 
-    min_int32,
-    max_int32,
-    min_uint32,
-    max_uint32,
-    min_int64,
-    max_int64,
-    min_uint64,
-    max_uint64,
-    min_float32,
-    max_float32,
-    min_float64,
-    max_float64,
-    {%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
+from {{ strategies_import_path }} import (
+    {%- for primitive in float_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+    {%- for primitive in integer_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+)
+from {{ models_import_path }} import (
+    {%- for enum in file.enums %}
+    {{ enum.name }},
+    {%- endfor %}
+    {%- for message in file.messages %}
     {{ message.name }},
     {%- endfor %}
 )
-
-{#- Primitive type mappings to hypothesis strategies #}
-{%- set scalar_map = {
-    "double": "st.floats(min_value=min_float64, max_value=max_float64, allow_nan=False, allow_infinity=False, width=64)",
-    "float": "st.floats(min_value=min_float32, max_value=max_float32, allow_nan=False, allow_infinity=False, width=32)",
-    "int32": "st.integers(min_value=min_int32, max_value=max_int32)",
-    "int64": "st.integers(min_value=min_int64, max_value=max_int64)",
-    "uint32": "st.integers(min_value=min_uint32, max_value=max_uint32)",
-    "uint64": "st.integers(min_value=min_uint64, max_value=max_uint64)",
-    "sint32": "st.integers(min_value=min_int32, max_value=max_int32)",
-    "sint64": "st.integers(min_value=min_int64, max_value=max_int64)",
-    "fixed32": "st.integers(min_value=min_uint32, max_value=max_uint32)",
-    "fixed64": "st.integers(min_value=min_uint64, max_value=max_uint64)",
-    "sfixed32": "st.integers(min_value=min_int32, max_value=max_int32)",
-    "sfixed64": "st.integers(min_value=min_int64, max_value=max_int64)",
-    "bool": "st.booleans()",
-    "string": "st.text()",
-    "bytes": "st.binary()",
-} %}
-{#-#}
 
 {# Define strategies for each message #}
-{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
-{{ message.name|lower }}_strategy = st.builds(
-    {{ message.name }},
-    {%- for element in message.elements %}
-        {%- if element.__class__.__name__ == "Message" %}
-    {{ element.name|lower }}=st.builds(
-        {{ message.name }}.{{ element.name }},
-        {%- for field in element.elements %}
-        {{ field.name }}={% if field.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ scalar_map.get(field.type, field.type) }}){% else %}{{ scalar_map.get(field.type, field.type) }}{% endif %},
-        {%- endfor %}
-    ),
-        {%- elif element.__class__.__name__ == "Field" %}
-    {{ element.name }}={% if element.cardinality == 'REPEATED' %}st.lists({{ scalar_map.get(element.type, element.type) }}){% elif element.cardinality == "OPTIONAL" %}st.one_of(st.none(), {{ scalar_map.get(element.type, element.type) }}){% else %}{{ scalar_map.get(element.type, element.type) }}{% endif %},
-        {%- endif %}
-    {%- endfor %}
-)
+{%- for message in file.messages %}
+{{ message.name|lower }}_strategy = st.from_type({{ message.name }})
 {%- endfor %}
 
 {# Define tests for each message #}
-{%- for message in result.file_elements if message.__class__.__name__ == "Message" %}
+{%- for message in file.messages %}
 @given({{ message.name|lower }}_strategy)
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
+    """Test {{ message.name }}"""
     assert isinstance({{ message.name|lower }}, {{ message.name }})
     proto_obj = {{ messages_pb2 }}.{{ message.name }}()
     {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})
     result = {{ message.name }}.decode(proto_obj)
     assert id({{ message.name|lower }}) != id(result)
     assert {{ message.name|lower }} == result
-{%- endfor %}
+{% endfor %}
