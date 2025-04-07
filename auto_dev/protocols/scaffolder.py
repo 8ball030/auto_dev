@@ -6,9 +6,9 @@ from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
 from aea.protocols.generator.base import ProtocolGenerator
 
-from auto_dev.utils import remove_prefix
+from auto_dev.utils import remove_prefix, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
-from auto_dev.protocols import protodantic
+from auto_dev.protocols import protodantic, performatives
 
 
 class Metadata(BaseModel):
@@ -42,6 +42,48 @@ class ProtocolSpecification(BaseModel):
     metadata: Metadata
     custom_definitions: dict[str, str] | None = None
     interaction_model: InteractionModel
+
+    @property
+    def name(self) -> str:
+        return self.metadata.name
+
+    @property
+    def author(self) -> str:
+        return self.metadata.author
+
+    @property
+    def camel_name(self) -> str:
+        return snake_to_camel(self.metadata.name)
+
+    @property
+    def custom_types(self) -> list[str]:
+        return [custom_type.removeprefix("ct:") for custom_type in self.custom_definitions]
+
+    @property
+    def performative_types(self) -> dict[str, dict[str, str]]:
+        performative_types = {}
+        for performative, message_fields in self.metadata.speech_acts.items():
+            field_types = {}
+            for field_name, value_type in message_fields.items():
+                field_types[field_name] = performatives.parse_annotation(value_type)
+            performative_types[performative] = field_types
+        return performative_types
+
+    @property
+    def initial_performative_types(self) -> dict[str, dict[str, str]]:
+        return {k: v for k, v in self.performative_types.items() if k in self.interaction_model.initiation}
+
+    @property
+    def outpath(self) -> Path:
+        return protodantic.get_repo_root() / "packages" / self.author / "protocols" / self.name
+
+    @property
+    def code_outpath(self) -> Path:
+        return self.outpath / "custom_types.py"
+
+    @property
+    def test_outpath(self) -> Path:
+        return self.outpath / "tests" / "test_custom_types.py"
 
 
 def read_protocol_spec(filepath: str) -> ProtocolSpecification:
