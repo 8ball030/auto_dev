@@ -154,13 +154,6 @@ def run_cli_cmd(command: list[str], cwd: Path | None = None):
         raise ValueError(msg)
 
 
-def initialize_packages(repo_root: Path) -> None:
-    """Initialize packages directory with packages.json file."""
-    packages_dir = repo_root / "packages"
-    if not packages_dir.exists():
-        run_cli_cmd(["aea", "packages", "init"], cwd=repo_root)
-
-
 def run_aea_generate_protocol(protocol_path: Path, language: str, agent_dir: Path) -> None:
     """Run `aea generate protocol`."""
     command = ["aea", "-s", "generate", "protocol", str(protocol_path), "--l", language]
@@ -332,14 +325,10 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     """
 
     agent_dir = Path.cwd()
-    repo_root = protodantic.get_repo_root()
     env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
 
-    # 0. Read spec data
+    # 1. Read spec data
     protocol = read_protocol_spec(protocol_specification_path)
-
-    # 1. initialize packages folder if non-existent
-    initialize_packages(repo_root)
 
     # 2. AEA generate protocol
     run_aea_generate_protocol(protocol.path, language=language, agent_dir=agent_dir)

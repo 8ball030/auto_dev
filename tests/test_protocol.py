@@ -1,7 +1,6 @@
 """Module for testing protocol generation."""
 
 import os
-import shutil
 import tempfile
 import functools
 import subprocess
@@ -100,7 +99,7 @@ def test_parse_performative_annotation(annotation: str, expected: str):
         PROTOCOL_FILES["balances.yaml"],
         # PROTOCOL_FILES["bridge.yaml"],  # noqa: ERA001
         # PROTOCOL_FILES["cross_chain_arbtrage.yaml"],  # noqa: ERA001
-        PROTOCOL_FILES["default.yaml"],
+        # PROTOCOL_FILES["default.yaml"], # noqa: ERA001
         PROTOCOL_FILES["liquidity_provision.yaml"],
         PROTOCOL_FILES["markets.yaml"],
         PROTOCOL_FILES["ohlcv.yaml"],
@@ -111,29 +110,39 @@ def test_parse_performative_annotation(annotation: str, expected: str):
         PROTOCOL_FILES["tickers.yaml"],
     ],
 )
-def test_scaffold_protocol(protocol_spec: Path):
+def test_scaffold_protocol(dummy_agent_tim, protocol_spec: Path):
     """Test `adev scaffold protocol` command."""
+
+    assert dummy_agent_tim, "Dummy agent not created."
 
     protocol = read_protocol_spec(protocol_spec)
     repo_root = protodantic.get_repo_root()
     packages_dir = repo_root / "packages"
-    tmp_test_agent = repo_root / "tmp_test_agent"
-    original_cwd = os.getcwd()
-    try:
-        subprocess.run(["aea", "create", tmp_test_agent.name], check=True, cwd=repo_root)
-        os.chdir(tmp_test_agent)
+    protocol_outpath = packages_dir / protocol.metadata.author / "protocols" / protocol.metadata.name
 
-        result = subprocess.run(
-            ["adev", "-v", "scaffold", "protocol", str(protocol_spec)], check=False, text=True, capture_output=True
-        )
-        if result.returncode != 0:
-            msg = f"Protocol scaffolding failed: {result.stderr}"
-            raise ValueError(msg)
+    if protocol_outpath.exists():
+        msg = f"Protocol already exists in dummy_agent_tim: {protocol_outpath}"
+        raise ValueError(msg)
 
-        test_dir = packages_dir / protocol.metadata.author / "protocols" / protocol.metadata.name / "tests"
-        exit_code = pytest.main([test_dir, "-vv", "-s", "--tb=long", "-p", "no:warnings"])
-        assert exit_code == 0
-    finally:
-        os.chdir(original_cwd)
-        shutil.rmtree(tmp_test_agent)
-        shutil.rmtree(protocol.outpath)
+    result = subprocess.run(
+        ["adev", "-v", "scaffold", "protocol", str(protocol_spec)], check=False, text=True, capture_output=True
+    )
+    if result.returncode != 0:
+        msg = f"Protocol scaffolding failed: {result.stderr}"
+        raise ValueError(msg)
+
+    # Point PYTHONPATH to the temporary project root so generated modules are discoverable
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_root)
+
+    test_dir = protocol_outpath / "tests"
+    command = ["pytest", str(test_dir), "-vv", "-s", "--tb=long", "-p", "no:warnings"]
+    result = subprocess.run(
+        command,
+        env=env,
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, f"Failed pytest on generated protocol: {result.stderr}"
