@@ -5,6 +5,7 @@ It is used by the lint and test functions.
 
 """
 
+import threading
 import subprocess
 
 from .utils import get_logger
@@ -20,6 +21,17 @@ class CommandExecutor:
 
     """
 
+    @property
+    def output(self):
+        """Return the output."""
+        fmt = f"Command: {' '.join(self.command)}\n"
+        fmt += f"Return Code: {self.return_code}\n"
+        fmt += "Stdout:\n"
+        fmt += "\n\t".join(self.stdout)
+        fmt += "\nStderr:\n"
+        fmt += "\n\t".join(self.stderr)
+        return fmt
+
     def __init__(self, command: str | list[str], cwd: str | None = None, logger=None):
         self.command = command
         self.cwd = str(cwd) if cwd else "."
@@ -33,8 +45,10 @@ class CommandExecutor:
         """Execute the command."""
         if stream:
             return self._execute_stream(verbose, shell, env_vars)
+
         if verbose:
             self.logger.debug(f"Executing command:\n\"\"\n{' '.join(self.command)}\n\"\"\n")
+
         try:
             result = subprocess.run(
                 self.command,
@@ -44,30 +58,37 @@ class CommandExecutor:
                 env=env_vars,
                 shell=shell,
             )
-            if verbose:
-                if len(result.stdout) > 0:
-                    self.logger.info(result.stdout.decode("utf-8"))
-                if len(result.stderr) > 0:
-                    self.logger.error(result.stderr.decode("utf-8"))
 
+            # Store output without logging
             self.stdout = result.stdout.decode("utf-8").splitlines()
             self.stderr = result.stderr.decode("utf-8").splitlines()
             self.return_code = result.returncode
-            if result.returncode != 0:
-                if verbose:
-                    self.logger.error("Command failed with return code: %s", result.returncode)
-                return False
-            return True
+
+            # Only log if there's actual output and verbose is enabled
+            if verbose and result.stdout:
+                self.logger.info(result.stdout.decode("utf-8"))
+            if verbose and result.stderr:
+                self.logger.error(result.stderr.decode("utf-8"))
+            if verbose and result.returncode != 0:
+                self.logger.error("Command failed with return code: %s", result.returncode)
+
+            return result.returncode == 0
         except Exception as error:  # pylint: disable=broad-except
-            self.logger.exception("Command failed: %s", error)
+            if verbose:
+                self.logger.exception("Command failed: %s", error)
             self.exception = error
             return False
 
     def _execute_stream(self, verbose: bool = True, shell: bool = False, env_vars: dict | None = None) -> bool | None:
         """Stream the command output. Especially useful for long running commands."""
-        self.logger.debug(f"Executing command:\n\"\"\n{' '.join(self.command)}\n\"\"")
+        if verbose:
+            self.logger.debug(f"Executing command:\n\"\"\n{' '.join(self.command)}\n\"\"")
+
+        self.stdout = []
+        self.stderr = []
+
         try:
-            with subprocess.Popen(
+            process = subprocess.Popen(
                 self.command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -75,39 +96,70 @@ class CommandExecutor:
                 universal_newlines=True,
                 shell=shell,
                 env=env_vars,
-            ) as process:
-                for stdout_line in iter(process.stdout.readline, ""):  # type: ignore
-                    self.stdout.append(stdout_line.strip())
-                    if verbose:
-                        self.logger.info(stdout_line.strip())
-                for stderr_line in iter(process.stderr.readline, ""):
-                    self.stderr.append(stderr_line.strip())
-                    if verbose:
-                        self.logger.error(stderr_line.strip())
-                process.stdout.close()  # type: ignore
-                self.return_code = process.wait()
-                if self.return_code != 0:
-                    if verbose:
-                        self.logger.error("Command failed with return code: %s", self.return_code)
-                    return False
-                return True
+                bufsize=1,  # Line buffering
+            )
+
+            # Process output from both streams
+            self._handle_process_output(process, verbose)
+
+            # Get return code and log if needed
+            self.return_code = process.returncode
+            if self.return_code != 0 and verbose:
+                self.logger.error("Command failed with return code: %s", self.return_code)
+
+            return self.return_code == 0
+
         except KeyboardInterrupt:
-            self.logger.info("Command execution interrupted by user.")
-            process.terminate()
+            if verbose:
+                self.logger.info("Command execution interrupted by user.")
+            if "process" in locals():
+                process.terminate()
             self.exception = KeyboardInterrupt
             return None
         except Exception as error:  # pylint: disable=broad-except
-            self.logger.exception("Command failed: %s", error)
+            if verbose:
+                self.logger.exception("Command failed: %s", error)
             self.exception = error
             return False
 
-    @property
-    def output(self):
-        """Return the output."""
-        fmt = f"Command: {' '.join(self.command)}\n"
-        fmt += f"Return Code: {self.return_code}\n"
-        fmt += "Stdout:\n"
-        fmt += "\n\t".join(self.stdout)
-        fmt += "\nStderr:\n"
-        fmt += "\n\t".join(self.stderr)
-        return fmt
+    def _handle_process_output(self, process, verbose):
+        """Handle output streams from a subprocess using threads."""
+
+        # Create thread to process stdout
+        def process_stdout():
+            if process.stdout:
+                for line in iter(process.stdout.readline, ""):
+                    stripped_line = line.strip()
+                    if stripped_line:
+                        self.stdout.append(stripped_line)
+                        if verbose:
+                            self.logger.info(stripped_line)
+                process.stdout.close()
+
+        # Create thread to process stderr
+        def process_stderr():
+            if process.stderr:
+                for line in iter(process.stderr.readline, ""):
+                    stripped_line = line.strip()
+                    if stripped_line:
+                        self.stderr.append(stripped_line)
+                        if verbose:
+                            self.logger.error(stripped_line)
+                process.stderr.close()
+
+        # Start output processing threads
+        stdout_thread = threading.Thread(target=process_stdout)
+        stderr_thread = threading.Thread(target=process_stderr)
+
+        stdout_thread.daemon = True
+        stderr_thread.daemon = True
+
+        stdout_thread.start()
+        stderr_thread.start()
+
+        # Wait for process to complete
+        process.wait()
+
+        # Wait for output processing to complete
+        stdout_thread.join()
+        stderr_thread.join()

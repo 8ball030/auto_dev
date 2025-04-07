@@ -1,4 +1,8 @@
-from enum import Enum
+"""Module containing the pydantic models generated from the .proto file."""
+
+from __future__ import annotations
+
+from enum import IntEnum
 
 from pydantic import BaseModel
 
@@ -11,187 +15,17 @@ from {{ primitives_import_path }} import (
     {%- endfor %}
 )
 
+# ruff: noqa: N806, C901, PLR0912, PLR0914, PLR0915, A001
+# N806     - variable should be lowercase
+# C901     - function is too complex
+# PLR0912  - too many branches
+# PLR0914  - too many local variables
+# PLR0915  - too many statements
+# A001     - shadowing builtin names like `id` and `type`
+
 MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
-{#- Define a map of scalars -#}
-{%- set scalar_map = {"bool": "bool", "string": "str", "bytes": "bytes"} %}
-{%- for primitive in integer_primitives + float_primitives %}
-    {%- set scalar_map = scalar_map.update({primitive.__name__.lower(): primitive.__name__}) %}
-{%- endfor %}
+{{ formatter.render(file) }}
 
-{#- Define a list of enum names -#}
-{%- set enum_names = [] %}
-{%- for enum in file.enums %}
-{%- set enum_names = enum_names.append( enum.name ) %}
-{%- endfor %}
-
-{%- macro encode_scalar(element, message) -%}
-    {%- if element.type in enum_names -%}
-    proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}.value
-    {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-    {{ message.fully_qualified_name }}.{{ element.type }}.encode(proto_obj.{{ element.name }}, {{ message.name|lower }}.{{ element.name }})
-    {%- else -%}
-    proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ element.name }}
-    {%- endif -%}
-{%- endmacro -%}
-
-{%- macro decode_scalar(element, message) -%}
-    {{ element.name }} = {% if element.type in enum_names -%}
-        {{ element.type }}(proto_obj.{{ element.name }})
-    {%- elif scalar_map.get(element.type) not in scalar_map.values() -%}
-        {{ message.fully_qualified_name }}.{{ element.type }}.decode(proto_obj.{{ element.name }})
-    {%- else -%}
-        proto_obj.{{ element.name }}
-    {%- endif -%}
-{%- endmacro -%}
-
-{%- macro encode_optional(element, message, indent_level=2) -%}
-    {%- set indent = '    ' * indent_level -%}
-    if {{ message.name|lower }}.{{ element.name }} is not None:
-    {{ indent }}{{ encode_scalar(element, message) }}
-{%- endmacro -%}
-
-{%- macro decode_optional(element, message) -%}
-    {{ decode_scalar(element, message) }} if proto_obj.HasField("{{ element.name }}") else None
-{%- endmacro -%}
-
-{%- macro encode_repeated(element, message) -%}
-    proto_obj.{{ element.name }}.extend({%- if element.type in enum_names -%}
-        item.value
-    {%- else -%}
-        item
-    {%- endif -%}
-        {{ ' ' }}for item in {{ message.name|lower }}.{{ element.name }})
-{%- endmacro -%}
-
-{%- macro decode_repeated(element, message) -%}
-    {%- if element.type in enum_names -%}
-    {{ element.name }} = [{{ element.type }}(item) for item in proto_obj.{{ element.name }}]
-    {%- else -%}
-    {{ element.name }} = list(proto_obj.{{ element.name }})
-    {%- endif -%}
-{%- endmacro -%}
-
-{%- macro encode_map_field(map_field, message) -%}
-    for key, val in {{ message.name|lower }}.{{ map_field.name }}.items():
-        {%- if scalar_map.get(map_field.value_type) %}
-            proto_obj.{{ map_field.name }}[key] = val
-        {%- else %}
-            {{ message.qualified_type(map_field.value_type) }}.encode(proto_obj.{{ map_field.name }}[key], val)
-        {%- endif %}
-{%- endmacro %}
-
-{%- macro decode_map_field(map_field, message) -%}
-    {%- if scalar_map.get(map_field.value_type) %}
-        {{ map_field.name }} = dict(proto_obj.{{ map_field.name }})
-    {%- else %}
-        {{ map_field.name }} = {}
-        for key, item in proto_obj.{{ map_field.name }}.items():
-            {{ map_field.name }}[key] = {{ message.qualified_type(map_field.value_type) }}.decode(item)
-    {%- endif %}
-{%- endmacro %}
-
-{%- macro render_message(message, indent_level=1) %}
-class {{ message.name }}(BaseModel):
-    {%- set indent = '    ' * indent_level -%}
-
-    {#- Handle nested messages recursively -#}
-    {%- for nested in message.messages %}
-    {{indent}}{{ render_message(nested, indent_level + 1) | indent(4, true) }}
-    {% endfor %}
-
-    {%- for map_field in message.map_fields %}
-    {{ map_field.name }}: dict[{{ scalar_map.get(map_field.key_type) }}, {{ scalar_map.get(map_field.value_type, map_field.value_type) }}]
-    {%- endfor %}
-
-    {%- for oneof in message.oneofs %}
-    {{ oneof.name }}:
-        {%- for field in oneof.elements -%}
-        {{ ' ' }}{{ scalar_map.get(field.type, field.type) }}{{ " | " if not loop.last else "" }}
-        {%- endfor %}
-    {%- endfor %}
-
-    {#- Handle fields of the message -#}
-    {%- for field in message.fields %}
-    {%- if field.cardinality == "REPEATED" %}
-    {{ field.name }}: list[{{ scalar_map.get(field.type, field.type) }}]
-    {%- elif field.cardinality == "OPTIONAL" %}
-    {{ field.name }}: {{ scalar_map.get(field.type, field.type) }} | None
-    {%- else %}
-    {{ field.name }}: {{ scalar_map.get(field.type, field.type) }}
-    {%- endif %}
-    {%- endfor %}
-
-    @staticmethod
-    def encode(proto_obj, {{ message.name|lower }}: "{{ message.name }}") -> None:
-    {%- for element in message.fields %}
-    {%- if element.cardinality == "REPEATED" %}
-        {{ encode_repeated(element, message) }}
-    {%- elif element.cardinality == "OPTIONAL" %}
-        {{ encode_optional(element, message) }}
-    {%- else %}
-        {{ encode_scalar(element, message) }}
-    {%- endif %}
-    {%- endfor %}
-
-    {%- for map_field in message.map_fields %}
-        {{ encode_map_field(map_field, message) }}
-    {%- endfor %}
-
-    {%- for oneof in message.oneofs %}
-        {%- for element in oneof.elements %}
-        if isinstance({{ message.name|lower }}.{{ oneof.name }}, {{ scalar_map.get(element.type, element.type) }}):
-            proto_obj.{{ element.name }} = {{ message.name|lower }}.{{ oneof.name }}
-        {%- endfor %}
-    {%- endfor %}
-
-    @classmethod
-    def decode(cls, proto_obj) -> "{{ message.name }}":
-    {%- for field in message.fields %}
-    {%- if field.cardinality == "REPEATED" %}
-        {{ decode_repeated(field, message) }}
-    {%- elif field.cardinality == "OPTIONAL" %}
-        {{ decode_optional(field, message) }}
-    {%- else %}
-        {{ decode_scalar(field, message) }}
-    {%- endif %}
-    {%- endfor %}
-
-    {%- for map_field in message.map_fields %}
-        {{ decode_map_field(map_field, message) }}
-    {%- endfor %}
-
-    {%- for oneof in message.oneofs %}
-        oneof_data = {}
-        {%- for element in oneof.elements %}
-        if proto_obj.HasField("{{ element.name }}"):
-            oneof_data["{{ oneof.name }}"] = proto_obj.{{ element.name }}
-        {%- endfor %}
-    {%- endfor %}
-
-        return cls(
-            {%- for element in message.fields %}
-            {{ element.name }}={{ element.name }},
-            {%- endfor %}
-            {%- for element in message.map_fields %}
-            {{ element.name }}={{ element.name }},
-            {%- endfor %}
-            {%- if message.oneofs -%}
-            **oneof_data
-            {%- endif %}
-        )
-
-{%- endmacro %}
-
-{#- First, generate top-level Enums #}
-{%- for enum in file.enums %}
-class {{ enum.name }}(Enum):
-{%- for value in enum.elements %}
-    {{ value.name }} = {{ value.number }}
-{%- endfor %}
-{%- endfor %}
-
-{# Now generate all message classes #}
-{%- for message in file.messages %}
-{{ render_message(message) }}
-{%- endfor %}
+for cls in BaseModel.__subclasses__():
+    cls.model_rebuild()
