@@ -1,11 +1,15 @@
+import os
+import shutil
 import tempfile
 import functools
+import subprocess
 from pathlib import Path
 
 import pytest
 from jinja2 import Template, Environment, FileSystemLoader
 
 from auto_dev.protocols import protodantic
+from auto_dev.protocols.scaffolder import read_protocol
 from auto_dev.protocols import performatives 
 
 
@@ -18,7 +22,17 @@ def _get_proto_files() -> dict[str, Path]:
     return proto_files
 
 
+@functools.lru_cache()
+def _get_capitalization_station_protocols() -> dict[str, Path]:
+    repo_root = protodantic.get_repo_root()
+    path = repo_root / "tests" / "data" / "protocols" / ".capitalisation_station"
+    assert path.exists()
+    yaml_files = {file.name: file for file in path.glob("*.yaml")}
+    return yaml_files
+
+
 PROTO_FILES = _get_proto_files()
+PROTOCOL_FILES = _get_capitalization_station_protocols()
 
 
 @pytest.mark.parametrize("proto_path", [
@@ -69,3 +83,47 @@ def test_protodantic(proto_path: Path):
 def test_parse_performative_annotation(annotation: str, expected: str):
     """Test parse_performative_annotation"""
     assert performatives.parse_annotation(annotation) == expected
+
+
+@pytest.mark.parametrize("protocol_spec", [
+    PROTOCOL_FILES["balances.yaml"],
+    PROTOCOL_FILES["bridge.yaml"],
+    PROTOCOL_FILES["cross_chain_arbtrage.yaml"],
+    PROTOCOL_FILES["default.yaml"],
+    PROTOCOL_FILES["liquidity_provision.yaml"],
+    PROTOCOL_FILES["markets.yaml"],
+    PROTOCOL_FILES["ohlcv.yaml"],
+    PROTOCOL_FILES["order_book.yaml"],
+    PROTOCOL_FILES["orders.yaml"],
+    PROTOCOL_FILES["positions.yaml"],
+    PROTOCOL_FILES["spot_asset.yaml"],
+    PROTOCOL_FILES["tickers.yaml"],
+])
+def test_scaffold_protocol(protocol_spec: Path):
+    """Test `adev scaffold protocol` command"""
+
+    protocol = read_protocol(protocol_spec)
+
+    repo_root = protodantic.get_repo_root()
+    packages_dir = repo_root / "packages"
+    if packages_dir.exists():
+        raise Exception("Test assumes no packages directory exists in this repo")
+
+    packages_dir.mkdir(exist_ok=False)
+    tmp_test_agent = repo_root / "tmp_test_agent"
+    original_cwd = os.getcwd()
+    try:
+        subprocess.run(["aea", "create", tmp_test_agent.name], check=True, cwd=repo_root)
+        os.chdir(tmp_test_agent)
+
+        result = subprocess.run(["adev", "-v", "scaffold", "protocol", str(protocol_spec)], check=False, text=True, capture_output=True)
+        if result.returncode != 0:
+            raise ValueError(f"Protocol scaffolding failed: {result.stderr}")
+
+        test_dir = packages_dir / protocol.metadata.author / "protocols" / protocol.metadata.name / "tests"
+        exit_code = pytest.main([test_dir, "-vv", "-s", "--tb=long", "-p", "no:warnings"])
+        assert exit_code == 0
+    finally:
+        shutil.rmtree(tmp_test_agent)
+        shutil.rmtree(packages_dir)
+        os.chdir(original_cwd)
