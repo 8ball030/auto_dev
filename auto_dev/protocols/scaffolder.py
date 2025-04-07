@@ -265,6 +265,15 @@ def generate_test_messages(protocol: ProtocolSpecification, template) -> None:
     test_messages.write_text(output)
 
 
+def update_yaml(protocol, dependencies: dict[str, dict[str, str]]) -> None:
+    protocol_yaml = protocol.outpath / "protocol.yaml"
+    content = yaml.safe_load(protocol_yaml.read_text())
+    for package_name, package_info in dependencies.items():
+        content["dependencies"][package_name] = package_info
+        content["dependencies"][package_name] = package_info
+    protocol_yaml.write_text(yaml.dump(content, sort_keys=False))
+
+
 def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):
     """Scaffolding protocol components.
 
@@ -318,3 +327,7 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     # 9. Test messages
     template = env.get_template("protocols/test_messages.jinja")
     generate_test_messages(protocol, template)
+
+    # 10. Update YAML
+    dependencies = {"pydantic": {}, "hypothesis": {}}
+    update_yaml(protocol, dependencies)
