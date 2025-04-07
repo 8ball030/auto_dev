@@ -1,3 +1,4 @@
+import shutil
 import tempfile
 import subprocess
 from pathlib import Path
@@ -5,9 +6,12 @@ from pathlib import Path
 import yaml
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
+from proto_schema_parser import ast
+from proto_schema_parser.parser import Parser
 from aea.protocols.generator.base import ProtocolGenerator
+from proto_schema_parser.generator import Generator
 
-from auto_dev.utils import remove_prefix, snake_to_camel
+from auto_dev.utils import file_swapper, remove_prefix, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic, performatives
 
@@ -163,6 +167,39 @@ def generate_readme(protocol, template):
     readme.write_text(content.strip())
 
 
+def generate_custom_types(protocol: ProtocolSpecification):
+    """Generate custom_types.py and tests/test_custom_types.py."""
+
+    proto_inpath = protocol.outpath / f"{protocol.name}.proto"
+    file = Parser().parse(proto_inpath.read_text())
+
+    # extract custom type messages from AEA framework "wrapper" message
+    main_message = file.file_elements.pop(1)
+    custom_type_names = {name.removeprefix("ct:") for name in protocol.custom_definitions}
+    for element in main_message.elements:
+        if isinstance(element, ast.Message) and element.name in custom_type_names:
+            file.file_elements.append(element)
+
+    proto = Generator().generate(file)
+    tmp_proto_path = protocol.outpath / f"tmp_{proto_inpath.name}"
+    tmp_proto_path.write_text(proto)
+
+    proto_pb2 = protocol.outpath / f"{protocol.name}_pb2.py"
+    backup_pb2 = proto_pb2.with_suffix(".bak")
+    shutil.move(str(proto_pb2), str(backup_pb2))
+    with file_swapper(proto_inpath, tmp_proto_path):
+        protodantic.create(
+            proto_inpath=proto_inpath,
+            code_outpath=protocol.code_outpath,
+            test_outpath=protocol.test_outpath,
+        )
+    shutil.move(str(backup_pb2), str(proto_pb2))
+    pb2_content = proto_pb2.read_text()
+    pb2_content = protodantic._remove_runtime_version_code(pb2_content)
+    proto_pb2.write_text(pb2_content)
+    tmp_proto_path.unlink()
+
+
 def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):
     """Scaffolding protocol components.
 
@@ -195,3 +232,6 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     # 3. create README.md
     template = env.get_template("protocols/README.jinja")
     generate_readme(protocol, template)
+
+    # 4. Generate custom_types.py and test_custom_types.py
+    generate_custom_types(protocol)
