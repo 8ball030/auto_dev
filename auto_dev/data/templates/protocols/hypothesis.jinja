@@ -1,9 +1,11 @@
+"""Module containing tests for the pydantic models generated from the .proto file."""
+
 from hypothesis import given
 from hypothesis import strategies as st
 
 from {{ message_import_path }} import {{ messages_pb2 }}
 
-from {{ primitives_import_path }} import (
+from {{ strategies_import_path }} import (
     {%- for primitive in float_primitives %}
     {{ primitive.__name__ }},
     {%- endfor %}
@@ -20,21 +22,6 @@ from {{ models_import_path }} import (
     {%- endfor %}
 )
 
-{# Register strategies for floating-point types #}
-{%- for primitive in float_primitives %}
-st.register_type_strategy(
-    {{ primitive.__name__ }},
-    st.floats(min_value={{ primitive.__name__ }}.min(), max_value={{ primitive.__name__ }}.max(),  allow_nan=False, allow_infinity=False).map({{ primitive.__name__ }})
-)
-{%- endfor %}
-{# Register strategies for integer types #}
-{%- for primitive in integer_primitives %}
-st.register_type_strategy(
-    {{ primitive.__name__ }},
-    st.integers(min_value={{ primitive.__name__ }}.min(), max_value={{ primitive.__name__ }}.max()).map({{ primitive.__name__ }})
-)
-{%- endfor %}
-
 {# Define strategies for each message #}
 {%- for message in file.messages %}
 {{ message.name|lower }}_strategy = st.from_type({{ message.name }})
@@ -44,6 +31,7 @@ st.register_type_strategy(
 {%- for message in file.messages %}
 @given({{ message.name|lower }}_strategy)
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
+    """Test {{ message.name }}"""
     assert isinstance({{ message.name|lower }}, {{ message.name }})
     proto_obj = {{ messages_pb2 }}.{{ message.name }}()
     {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})

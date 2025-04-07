@@ -14,12 +14,12 @@ from auto_dev.enums import FileType
 from auto_dev.utils import (
     get_paths,
     get_logger,
+    file_swapper,
     get_packages,
     load_aea_ctx,
     remove_prefix,
     remove_suffix,
     write_to_file,
-    file_swapper,
     folder_swapper,
     has_package_code_changed,
 )
@@ -157,7 +157,7 @@ def test_remove_suffix():
 
 
 def test_file_swapper():
-    """Test file_swapper"""
+    """Test file_swapper."""
 
     content_a = "AAA"
     content_b = "BBB"

@@ -17,7 +17,7 @@ from aea.protocols.dialogue.base import Dialogue, Dialogues, DialogueLabel
 from packages.{{ author }}.protocols.{{ snake_name }}.message import {{ camel_name }}Message
 
 
-def _role_from_first_message(message: Message, sender: Address) -> Dialogue.Role:
+def _role_from_first_message(message: Message, sender: Address) -> Dialogue.Role:  # noqa: ARG001
     """Infer the role of the agent from an incoming/outgoing first message"""
     return {{ camel_name }}Dialogue.Role.{{ role }}
 
