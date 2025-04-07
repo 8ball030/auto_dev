@@ -152,6 +152,17 @@ def run_aea_publish(agent_dir: Path) -> None:
     run_cli_cmd(command, cwd=agent_dir)
 
 
+def generate_readme(protocol, template):
+    readme = protocol.outpath / "README.md"
+    protocol_definition = Path(protocol.path).read_text(encoding="utf-8")
+    content = template.render(
+        name=" ".join(map(str.capitalize, protocol.name.split("_"))),
+        description=protocol.metadata.description,
+        protocol_definition=protocol_definition,
+    )
+    readme.write_text(content.strip())
+
+
 def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):
     """Scaffolding protocol components.
 
@@ -180,3 +191,7 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     # Ensures `protocol.outpath` exists, required for correct import path generation
     # TODO: on error during any part of this process, clean up (remove) `protocol.outpath`
     run_aea_publish(agent_dir)
+
+    # 3. create README.md
+    template = env.get_template("protocols/README.jinja")
+    generate_readme(protocol, template)
