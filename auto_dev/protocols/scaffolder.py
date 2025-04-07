@@ -1,3 +1,5 @@
+"""Module for generating protocols from a protocol.yaml specification."""
+
 import shutil
 import tempfile
 import subprocess
@@ -50,22 +52,28 @@ class ProtocolSpecification(BaseModel):
 
     @property
     def name(self) -> str:
+        """Protocol name."""
         return self.metadata.name
 
     @property
     def author(self) -> str:
+        """Protocol author."""
         return self.metadata.author
 
     @property
     def camel_name(self) -> str:
+        """Protocol name in camel case."""
         return snake_to_camel(self.metadata.name)
 
     @property
     def custom_types(self) -> list[str]:
+        """Top-level custom type names in protocol specification."""
         return [custom_type.removeprefix("ct:") for custom_type in self.custom_definitions]
 
     @property
     def performative_types(self) -> dict[str, dict[str, str]]:
+        """Python type annotation for performatives."""
+
         performative_types = {}
         for performative, message_fields in self.metadata.speech_acts.items():
             field_types = {}
@@ -76,18 +84,22 @@ class ProtocolSpecification(BaseModel):
 
     @property
     def initial_performative_types(self) -> dict[str, dict[str, str]]:
+        """Python type annotation for initial performatives."""
         return {k: v for k, v in self.performative_types.items() if k in self.interaction_model.initiation}
 
     @property
     def outpath(self) -> Path:
+        """Protocol expected outpath after `aea create` and `aea publish --local`."""
         return protodantic.get_repo_root() / "packages" / self.author / "protocols" / self.name
 
     @property
     def code_outpath(self) -> Path:
+        """Outpath for custom_types.py."""
         return self.outpath / "custom_types.py"
 
     @property
     def test_outpath(self) -> Path:
+        """Outpath for tests/test_custom_types.py."""
         return self.outpath / "tests" / "test_custom_types.py"
 
 
@@ -127,36 +139,43 @@ def read_protocol_spec(filepath: str) -> ProtocolSpecification:
 
 
 def run_cli_cmd(command: list[str], cwd: Path | None = None):
+    """Run CLI command helper function."""
+
     result = subprocess.run(
-            command,
-            shell=False,
-            capture_output=True,
-            text=True,
-            check=False,
-            cwd=cwd or Path.cwd(),
-        )
+        command,
+        shell=False,
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=cwd or Path.cwd(),
+    )
     if result.returncode != 0:
         msg = f"Failed: {command}:\n{result.stderr}"
         raise ValueError(msg)
 
 
 def initialize_packages(repo_root: Path) -> None:
+    """Initialize packages directory with packages.json file."""
     packages_dir = repo_root / "packages"
     if not packages_dir.exists():
         run_cli_cmd(["aea", "packages", "init"], cwd=repo_root)
 
 
 def run_aea_generate_protocol(protocol_path: Path, language: str, agent_dir: Path) -> None:
+    """Run `aea generate protocol`."""
     command = ["aea", "-s", "generate", "protocol", str(protocol_path), "--l", language]
     run_cli_cmd(command, cwd=agent_dir)
 
 
 def run_aea_publish(agent_dir: Path) -> None:
+    """Run `aea publish --local --push-missing`."""
     command = ["aea", "publish", "--local", "--push-missing"]
     run_cli_cmd(command, cwd=agent_dir)
 
 
 def generate_readme(protocol, template):
+    """Generate protocol README.md file."""
+
     readme = protocol.outpath / "README.md"
     protocol_definition = Path(protocol.path).read_text(encoding="utf-8")
     content = template.render(
@@ -195,15 +214,17 @@ def generate_custom_types(protocol: ProtocolSpecification):
         )
     shutil.move(str(backup_pb2), str(proto_pb2))
     pb2_content = proto_pb2.read_text()
-    pb2_content = protodantic._remove_runtime_version_code(pb2_content)
+    pb2_content = protodantic._remove_runtime_version_code(pb2_content)  # noqa: SLF001
     proto_pb2.write_text(pb2_content)
     tmp_proto_path.unlink()
 
 
 def rewrite_test_custom_types(protocol: ProtocolSpecification) -> None:
+    """Rewrite custom_types.py import to accomodate aea message wrapping during .proto generation."""
+
     content = protocol.test_outpath.read_text()
     a = f"packages.{protocol.author}.protocols.{protocol.name} import {protocol.name}_pb2"
-    b = f"packages.{protocol.author}.protocols.{protocol.name}.{protocol.name}_pb2 import {protocol.camel_name}Message as {protocol.name}_pb2  # noqa: N813"
+    b = f"packages.{protocol.author}.protocols.{protocol.name}.{protocol.name}_pb2 import {protocol.camel_name}Message as {protocol.name}_pb2  # noqa: N813"  # noqa: E501
     protocol.test_outpath.write_text(content.replace(a, b))
 
 
@@ -233,11 +254,14 @@ def generate_dialogues(protocol: ProtocolSpecification, template):
 
 
 def generate_tests_init(protocol: ProtocolSpecification) -> None:
+    """Generate tests/__init__.py."""
     test_init_file = protocol.outpath / "tests" / "__init__.py"
     test_init_file.write_text(f'"""Test module for the {protocol.name}"""')
 
 
 def generate_test_dialogues(protocol: ProtocolSpecification, template) -> None:
+    """Generate tests/test_dialogue.py."""
+
     output = template.render(
         header="# Auto-generated by tool",
         author=protocol.author,
@@ -252,6 +276,8 @@ def generate_test_dialogues(protocol: ProtocolSpecification, template) -> None:
 
 
 def generate_test_messages(protocol: ProtocolSpecification, template) -> None:
+    """Generate tests/test_messages.py."""
+
     output = template.render(
         header="# Auto-generated by tool",
         author=protocol.author,
@@ -266,6 +292,7 @@ def generate_test_messages(protocol: ProtocolSpecification, template) -> None:
 
 
 def update_yaml(protocol, dependencies: dict[str, dict[str, str]]) -> None:
+    """Update protocol.yaml dependencies."""
     protocol_yaml = protocol.outpath / "protocol.yaml"
     content = yaml.safe_load(protocol_yaml.read_text())
     for package_name, package_info in dependencies.items():
@@ -275,21 +302,24 @@ def update_yaml(protocol, dependencies: dict[str, dict[str, str]]) -> None:
 
 
 def run_adev_fmt(protocol) -> None:
+    """Run `adev -v fmt`."""
     command = ["adev", "-v", "fmt", "-p", str(protocol.outpath)]
     run_cli_cmd(command)
 
 
 def run_adev_lint(protocol) -> None:
+    """Run `adev -v lint`."""
     command = ["adev", "-v", "lint", "-p", str(protocol.outpath)]
     run_cli_cmd(command)
 
 
 def run_aea_fingerprint(protocol) -> None:
+    """Run `aea fingerprint protocol`."""
     command = ["aea", "fingerprint", "protocol", protocol.metadata.protocol_specification_id]
     run_cli_cmd(command)
 
 
-def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):
+def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):  # noqa: ARG001
     """Scaffolding protocol components.
 
     Args:
@@ -315,7 +345,7 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     run_aea_generate_protocol(protocol.path, language=language, agent_dir=agent_dir)
 
     # Ensures `protocol.outpath` exists, required for correct import path generation
-    # TODO: on error during any part of this process, clean up (remove) `protocol.outpath`
+    # TODO: on error during any part of this process, clean up (remove) `protocol.outpath`  # noqa: FIX002, TD002, TD003
     run_aea_publish(agent_dir)
 
     # 3. create README.md

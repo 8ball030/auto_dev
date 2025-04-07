@@ -1,6 +1,5 @@
 """Module for parsing protocol performatives."""
 
-
 SCALAR_MAP = {
     "int": "conint(ge=Int32.min(), le=Int32.max())",
     "float": "confloat(ge=Double.min(), le=Double.max())",
@@ -30,28 +29,28 @@ def _split_top_level(s: str, sep: str = ",") -> list[str]:
 
 
 def parse_annotation(annotation: str) -> str:
-    """Parse Performative annotation"""
+    """Parse Performative annotation."""
 
     if annotation.startswith("pt:"):
         core = annotation[3:]
     elif annotation.startswith("ct:"):
         return annotation[3:]
     else:
-        raise ValueError(f"Unknown annotation prefix in: {annotation}")
+        msg = f"Unknown annotation prefix in: {annotation}"
+        raise ValueError(msg)
 
     if core.startswith("optional[") and core.endswith("]"):
-        inner = core[len("optional["):-1]
+        inner = core[len("optional[") : -1]
         return f"{parse_annotation(inner)} | None"
-    elif core.startswith("list[") and core.endswith("]"):
-        inner = core[len("list["):-1]
+    if core.startswith("list[") and core.endswith("]"):
+        inner = core[len("list[") : -1]
         return f"tuple[{parse_annotation(inner)}]"  # quirk of the framework!
-    elif core.startswith("dict[") and core.endswith("]"):
-        inner = core[len("dict["):-1]
+    if core.startswith("dict[") and core.endswith("]"):
+        inner = core[len("dict[") : -1]
         key_str, value_str = _split_top_level(inner)
         return f"dict[{parse_annotation(key_str)}, {parse_annotation(value_str)}]"
-    elif core.startswith("union[") and core.endswith("]"):
-        inner = core[len("union["):-1]
+    if core.startswith("union[") and core.endswith("]"):
+        inner = core[len("union[") : -1]
         parts = _split_top_level(inner)
         return " | ".join(parse_annotation(p) for p in parts)
-    else:
-        return SCALAR_MAP[core]
+    return SCALAR_MAP[core]
