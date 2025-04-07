@@ -116,6 +116,7 @@ def test_scaffold_protocol(protocol_spec: Path):
 
     protocol = read_protocol_spec(protocol_spec)
     repo_root = protodantic.get_repo_root()
+    packages_dir = repo_root / "packages"
     tmp_test_agent = repo_root / "tmp_test_agent"
     original_cwd = os.getcwd()
     try:
@@ -133,6 +134,6 @@ def test_scaffold_protocol(protocol_spec: Path):
         exit_code = pytest.main([test_dir, "-vv", "-s", "--tb=long", "-p", "no:warnings"])
         assert exit_code == 0
     finally:
+        os.chdir(original_cwd)
         shutil.rmtree(tmp_test_agent)
         shutil.rmtree(protocol.outpath)
-        os.chdir(original_cwd)
