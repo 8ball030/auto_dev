@@ -8,7 +8,7 @@ from auto_dev.workflow_manager import WorkflowManager
 
 def test_eject_metrics_skill_workflow(test_filesystem):
     """Test the complete workflow of creating an agent and ejecting the metrics skill."""
-    assert str(Path.cwd()) == test_filesystem
+    assert Path.cwd() == test_filesystem
     # 1. Create agent with eightballer/base template
     wf_manager: WorkflowManager = WorkflowManager().from_yaml(
         file_path=Path(AUTO_DEV_FOLDER) / "data" / "workflows" / "eject_component.yaml"
@@ -20,7 +20,7 @@ def test_eject_metrics_skill_workflow(test_filesystem):
     assert all([task.is_done, not task.is_failed]), f"Task failed: {task.client.output}"
     task_2 = wf_manager.workflows[0].tasks[1].work()
     assert all([task_2.is_done, not task_2.is_failed]), f"Task failed: {task_2.client.output}"
-    assert str(Path.cwd()) == test_filesystem
+    assert Path.cwd() == test_filesystem
     ejected_skill_path = Path(DEFAULT_AGENT_NAME) / "skills" / "simple_fsm"
     assert ejected_skill_path.exists(), "Ejected skill directory not found"
     # Verify the original vendor skill was removed
@@ -30,7 +30,7 @@ def test_eject_metrics_skill_workflow(test_filesystem):
 
 def test_eject_metrics_skill_skip_deps(test_filesystem):
     """Test ejecting the metrics skill with skip-dependencies flag."""
-    assert str(Path.cwd()) == test_filesystem
+    assert Path.cwd() == test_filesystem
     # 1. Create agent with eightballer/base template
     wf_manager: WorkflowManager = WorkflowManager().from_yaml(
         file_path=Path(AUTO_DEV_FOLDER) / "data" / "workflows" / "eject_component.yaml"
@@ -62,7 +62,7 @@ def test_eject_metrics_skill_skip_deps(test_filesystem):
 
 def test_eject_http_protocol(test_filesystem):
     """Test ejecting the metrics skill with skip-dependencies flag."""
-    assert str(Path.cwd()) == test_filesystem
+    assert Path.cwd() == test_filesystem
     # 1. Create agent with eightballer/base template
     wf_manager: WorkflowManager = WorkflowManager().from_yaml(
         file_path=Path(AUTO_DEV_FOLDER) / "data" / "workflows" / "eject_component.yaml"

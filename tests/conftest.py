@@ -2,11 +2,13 @@
 # pylint: disable=W0135
 
 import os
+import tempfile
 from pathlib import Path
+from contextlib import chdir
 
 import pytest
 
-from auto_dev.utils import isolated_filesystem
+from auto_dev.utils import rollback
 from auto_dev.constants import (
     DEFAULT_PUBLIC_ID,
 )
@@ -68,15 +70,17 @@ def openapi_test_case(request):
 @pytest.fixture
 def test_filesystem():
     """Fixture for invoking command-line interfaces."""
-    with isolated_filesystem(copy_cwd=True) as directory:
-        yield directory
+    with rollback.on_exit(Path.cwd()):
+        yield Path.cwd()
 
 
 @pytest.fixture
 def test_clean_filesystem():
     """Fixture for invoking command-line interfaces."""
-    with isolated_filesystem() as directory:
-        yield directory
+    with tempfile.TemporaryDirectory(dir=tempfile.gettempdir()) as temp_dir:
+        temp_dir_path = Path(temp_dir).resolve()
+        with chdir(temp_dir_path):
+            yield temp_dir_path
 
 
 @pytest.fixture
