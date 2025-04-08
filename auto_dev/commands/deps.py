@@ -116,11 +116,11 @@ def from_key_to_path(key: str) -> Path:
     return Path(*path_list)
 
 
-def remove_old_package(repo: Path, proposed_dependency_updates: dict[str, str]) -> None:
+def remove_old_package(package_path: Path, proposed_dependency_updates: dict[str, str]) -> None:
     """We remove the old package directories."""
+    del package_path
     for package_name in proposed_dependency_updates:
         path = from_key_to_path(package_name)
-        path = repo / path
         if path.exists():
             shutil.rmtree(path, ignore_errors=True)
 
@@ -155,7 +155,7 @@ def main(
     logger.info("Updating the packages json... 📝")
     update_package_json(repo=child_repo, proposed_dependency_updates=proposed)
     logger.info("Removing the old packages directories... 🗑")
-    remove_old_package(repo=child_repo, proposed_dependency_updates=proposed)
+    remove_old_package(package_path=child_repo, proposed_dependency_updates=proposed)
     # we now copy the new packages over.
     logger.info("Copying the new packages over... 📝")
     for package_name in proposed:
@@ -744,7 +744,7 @@ def bump(
                 if not auto_approve:
                     click.confirm("Do you want to update all the packages?\n", abort=True)
                 update_package_json(repo=packages_dir, proposed_dependency_updates=diffs)
-                remove_old_package(repo=packages_dir, proposed_dependency_updates=diffs)
+                remove_old_package(package_path=packages_dir, proposed_dependency_updates=diffs)
                 changes.append(dependency.name)
     else:
         click.echo("No packages.json file found. Skipping autonomy packages verification.")
