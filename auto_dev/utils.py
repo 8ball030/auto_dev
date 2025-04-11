@@ -233,6 +233,24 @@ def restore_directory():
 
 
 @contextmanager
+def file_swapper(file_a: str | Path, file_b: str | Path):
+    """Temporarily swap the location of two files."""
+
+    def swap(swap_file: Path):
+        shutil.move(file_a, swap_file)
+        shutil.move(file_b, file_a)
+        shutil.move(swap_file, file_b)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir) / "swapfile"
+        swap(tmp_path)
+        try:
+            yield
+        finally:
+            swap(tmp_path)
+
+
+@contextmanager
 def folder_swapper(dir_a: str | Path, dir_b: str | Path):
     """A custom context manager that swaps the contents of two folders, allows the execution of logic
     within the context, and ensures the original folder contents are restored on exit, whether due

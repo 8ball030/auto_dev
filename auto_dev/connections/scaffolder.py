@@ -16,7 +16,7 @@ from auto_dev.enums import FileType
 from auto_dev.utils import get_logger, write_to_file, folder_swapper
 from auto_dev.constants import AEA_CONFIG, DEFAULT_ENCODING
 from auto_dev.cli_executor import CommandExecutor
-from auto_dev.protocols.scaffolder import ProtocolSpecification, read_protocol
+from auto_dev.protocols.scaffolder import ProtocolSpecification, read_protocol_spec
 from auto_dev.data.connections.template import HEADER, CONNECTION_TEMPLATE
 from auto_dev.data.connections.test_template import TEST_CONNECTION_TEMPLATE
 
@@ -137,10 +137,10 @@ class ConnectionFolderTemplate:  # pylint: disable=R0902  # Too many instance at
     @property
     def kwargs(self) -> dict:
         """Template formatting kwargs."""
-        protocol_name = self.protocol.metadata["name"]
-        protocol_author = self.protocol.metadata["author"]
-        speech_acts = list(self.protocol.metadata["speech_acts"])
-        roles = list(self.protocol.speech_acts["roles"])
+        protocol_name = self.protocol.metadata.name
+        protocol_author = self.protocol.metadata.author
+        speech_acts = list(self.protocol.metadata.speech_acts)
+        roles = list(self.protocol.interaction_model.roles)
 
         handlers = get_handlers(self.protocol)
         handler_mapping = get_handler_mapping(self.protocol)
@@ -205,7 +205,7 @@ class ConnectionScaffolder:
         self.logger = ctx.obj["LOGGER"] or get_logger()
         self.verbose = ctx.obj["VERBOSE"]
         self.protocol_id = protocol_id
-        self.protocol = read_protocol(protocol_specification_path)
+        self.protocol = read_protocol_spec(protocol_specification_path)
         self.logger.info(f"Read protocol specification: {protocol_specification_path}")
         self.public_id = PublicId.from_str(self.name)
 
@@ -217,7 +217,7 @@ class ConnectionScaffolder:
             connection_config = self.ctx.aea_ctx.connection_loader.load(infile)
         connection_config.protocols.add(self.protocol_id)
         connection_config.class_name = f"{to_camel(self.name)}Connection"
-        connection_config.description = self.protocol.metadata["description"].replace("protocol", "connection")
+        connection_config.description = self.protocol.metadata.description.replace("protocol", "connection")
         with open(connection_yaml, "w", encoding=DEFAULT_ENCODING) as outfile:  # # pylint: disable=R1732
             yaml_dump(connection_config.ordered_json, outfile)
         self.logger.info(f"Updated {connection_yaml}")

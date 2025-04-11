@@ -13,7 +13,7 @@ from auto_dev.utils import currenttz, get_logger, snake_to_camel
 from auto_dev.fsm.fsm import FsmSpec
 from auto_dev.constants import JINJA_TEMPLATE_FOLDER
 from auto_dev.exceptions import UserInputError
-from auto_dev.protocols.scaffolder import ProtocolScaffolder
+from auto_dev.behaviours.protocol_scaffolder import ProtocolScaffolder
 
 
 ProtocolSpecification = namedtuple("ProtocolSpecification", ["metadata", "custom_types", "speech_acts"])

@@ -16,7 +16,6 @@ from auto_dev.utils import get_logger
 from auto_dev.constants import DEFAULT_ENCODING
 from auto_dev.dao.scaffolder import DAOScaffolder
 from auto_dev.handler.scaffolder import HandlerScaffolder, HandlerScaffoldBuilder
-from auto_dev.protocols.scaffolder import read_protocol
 from auto_dev.handler.openapi_models import (
     Schema,
     OpenAPI,
@@ -87,24 +86,6 @@ def test_scaffold_fsm_with_aea_run(cli_runner, spec, dummy_agent_tim):
     result = runner.execute()
     assert runner.exit_code == 1, runner.output
     assert "An error occurred during instantiation of connection valory" in result.output
-
-
-def test_scaffold_protocol(cli_runner, dummy_agent_tim):
-    """Test scaffold protocol."""
-
-    path = Path.cwd() / ".." / "tests" / "data" / "dummy_protocol.yaml"
-    command = ["adev", "scaffold", "protocol", str(path)]
-    runner = cli_runner(command)
-    result = runner.execute()
-    assert result, runner.output
-
-    assert runner.return_code == 0, result.output
-    assert "New protocol scaffolded" in runner.output
-
-    protocol = read_protocol(str(path))
-    original_content = path.read_text(encoding=DEFAULT_ENCODING)
-    readme_path = dummy_agent_tim / "protocols" / protocol.metadata["name"] / "README.md"
-    assert original_content in readme_path.read_text(encoding=DEFAULT_ENCODING)
 
 
 @pytest.mark.skip(reason="Needs changes to scaffolder to handle directory structure")

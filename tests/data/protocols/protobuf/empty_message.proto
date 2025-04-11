@@ -1,0 +1,5 @@
+// empty_messages.proto
+
+syntax = "proto3";
+
+message EmptyMessage {}

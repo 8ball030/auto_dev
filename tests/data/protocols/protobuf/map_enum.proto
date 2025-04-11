@@ -1,0 +1,13 @@
+// map_enum.proto
+
+syntax = "proto3";
+
+enum State {
+  STATE_UNKNOWN = 0;
+  STATE_ACTIVE = 1;
+  STATE_INACTIVE = 2;
+}
+
+message MapEnum {
+  map<string, State> status_map = 1;
+}

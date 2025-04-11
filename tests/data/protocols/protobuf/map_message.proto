@@ -1,0 +1,12 @@
+// map_message.proto
+
+syntax = "proto3";
+
+message ValueMessage {
+  string name = 1;
+  int32 count = 2;
+}
+
+message MapMessage {
+  map<string, ValueMessage> map_value = 1;
+}
