@@ -110,10 +110,10 @@ def test_parse_performative_annotation(annotation: str, expected: str):
         PROTOCOL_FILES["tickers.yaml"],
     ],
 )
-def test_scaffold_protocol(dummy_agent_tim, protocol_spec: Path):
+def test_scaffold_protocol(module_scoped_dummy_agent_tim, protocol_spec: Path):
     """Test `adev scaffold protocol` command."""
 
-    assert dummy_agent_tim, "Dummy agent not created."
+    assert module_scoped_dummy_agent_tim
 
     protocol = read_protocol_spec(protocol_spec)
     repo_root = protodantic.get_repo_root()
@@ -124,9 +124,8 @@ def test_scaffold_protocol(dummy_agent_tim, protocol_spec: Path):
         msg = f"Protocol already exists in dummy_agent_tim: {protocol_outpath}"
         raise ValueError(msg)
 
-    result = subprocess.run(
-        ["adev", "-v", "scaffold", "protocol", str(protocol_spec)], check=False, text=True, capture_output=True
-    )
+    command = ["adev", "-v", "scaffold", "protocol", str(protocol_spec)]
+    result = subprocess.run(command, check=False, text=True, capture_output=True)
     if result.returncode != 0:
         msg = f"Protocol scaffolding failed: {result.stderr}"
         raise ValueError(msg)
