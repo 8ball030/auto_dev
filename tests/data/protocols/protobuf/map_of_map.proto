@@ -8,4 +8,9 @@ message MapOfMap {
   message InnerMap {
     map<string, int32> inner = 1;
   }
+
+  message AnotherInnerMap {
+    map<string, int32> inner = 1;
+    map<string, InnerMap> inner_map = 2;
+  }
 }
