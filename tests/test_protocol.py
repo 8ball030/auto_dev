@@ -57,6 +57,7 @@ PROTOCOL_FILES = _get_capitalization_station_protocols()
         PROTO_FILES["map_repeated_primitive_values.proto"],
         PROTO_FILES["map_nested.proto"],
         PROTO_FILES["map_of_map.proto"],
+        PROTO_FILES["map_scalar_keys.proto"],
     ],
 )
 def test_protodantic(proto_path: Path):
