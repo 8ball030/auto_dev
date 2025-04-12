@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import field, dataclass
+from functools import cached_property
 
 from proto_schema_parser.ast import (
     Enum,
@@ -58,14 +59,14 @@ class MessageAdapter:
 
         return getattr(self.wrapped, name)
 
-    @property
-    def enum_names(self) -> dict[str, ast.Enum]:
+    @cached_property
+    def enums_by_name(self) -> dict[str, ast.Enum]:
         """Enum names referenced in this ast.Message."""
 
         return {m.name: m for m in self.enums}
 
-    @property
-    def message_names(self) -> dict[str, MessageAdapter]:
+    @cached_property
+    def messages_by_name(self) -> dict[str, MessageAdapter]:
         """Message names referenced in this ast.Message."""
 
         return {m.name: m for m in self.messages}
@@ -125,14 +126,14 @@ class FileAdapter:
 
         return getattr(self.wrapped, name)
 
-    @property
-    def enum_names(self) -> dict[str, ast.Enum]:
+    @cached_property
+    def enums_by_name(self) -> dict[str, ast.Enum]:
         """Top-level Enum names in ast.File."""
 
         return {m.name: m for m in self.enums}
 
-    @property
-    def message_names(self) -> dict[str, MessageAdapter]:
+    @cached_property
+    def messages_by_name(self) -> dict[str, MessageAdapter]:
         """Top-level Message names in ast.File."""
 
         return {m.name: m for m in self.messages}

@@ -34,20 +34,20 @@ class ResolvedType(NamedTuple):
         return self.fully_qualified_name
 
 
-def qualified_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> ResolvedType:
+def resolve_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> ResolvedType:
     """Fully qualified type for a type reference."""
 
     if (scalar_type := PRIMITIVE_TYPE_MAP.get(type_name)) is not None:
         return ResolvedType(scalar_type)
 
-    node = adapter.enum_names.get(type_name) or adapter.message_names.get(type_name)
+    node = adapter.enums_by_name.get(type_name) or adapter.messages_by_name.get(type_name)
     match adapter, node:
         case FileAdapter(), None:
             raise ValueError(f"Could not resolve {type_name}")
         case FileAdapter(), _:
             return ResolvedType(type_name, node)
         case MessageAdapter(), None:
-            return qualified_type(adapter.parent, type_name)
+            return resolve_type(adapter.parent, type_name)
         case MessageAdapter(), _:
             return ResolvedType(f"{adapter.fully_qualified_name}.{type_name}", node)
         case _:
@@ -57,14 +57,14 @@ def qualified_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> Res
 def render_field(field: Field, message: MessageAdapter) -> str:
     """Render Field."""
 
-    field_type = qualified_type(message, field.type)
+    resolved_type = resolve_type(message, field.type)
     match field.cardinality:
         case FieldCardinality.REQUIRED | None:
-            return f"{field_type}"
+            return f"{resolved_type}"
         case FieldCardinality.OPTIONAL:
-            return f"{field_type} | None"
+            return f"{resolved_type} | None"
         case FieldCardinality.REPEATED:
-            return f"list[{field_type}]"
+            return f"list[{resolved_type}]"
         case _:
             msg = f"Unexpected cardinality: {field.cardinality}"
             raise TypeError(msg)
@@ -98,7 +98,7 @@ def render_attribute(element: MessageElement | MessageAdapter, message: MessageA
             return f"class {element.name}(IntEnum):\n" f'    """{element.name}"""\n\n' f"{indented_members}\n"
         case ast.MapField:
             key_type = PRIMITIVE_TYPE_MAP.get(element.key_type, element.key_type)
-            value_type = qualified_type(message, element.value_type)
+            value_type = resolve_type(message, element.value_type)
             return f"{element.name}: dict[{key_type}, {value_type}]"
         case ast.Group | ast.Option | ast.ExtensionRange | ast.Reserved | ast.Extension:
             msg = f"{element}"
@@ -121,20 +121,20 @@ def encode_field(element, message):
     """Render pydantic model field encoding."""
 
     instance_attr = f"{message.name.lower()}.{element.name}"
-    qualified = qualified_type(message, element.type)
-    if element.type in PRIMITIVE_TYPE_MAP or qualified.is_enum:
+    resolved_type = resolve_type(message, element.type)
+    if element.type in PRIMITIVE_TYPE_MAP or resolved_type.is_enum:
         value = instance_attr
     else:  # Message
         if element.cardinality == FieldCardinality.REPEATED:
-            return f"for item in {instance_attr}:\n" f"    {qualified}.encode(proto_obj.{element.name}.add(), item)"
+            return f"for item in {instance_attr}:\n" f"    {resolved_type}.encode(proto_obj.{element.name}.add(), item)"
         if element.cardinality == FieldCardinality.OPTIONAL:
             return (
                 f"if {instance_attr} is not None:\n"
                 f"    temp = proto_obj.{element.name}.__class__()\n"
-                f"    {qualified}.encode(temp, {instance_attr})\n"
+                f"    {resolved_type}.encode(temp, {instance_attr})\n"
                 f"    proto_obj.{element.name}.CopyFrom(temp)"
             )
-        return f"{qualified}.encode(proto_obj.{element.name}, {instance_attr})"
+        return f"{resolved_type}.encode(proto_obj.{element.name}, {instance_attr})"
 
     match element.cardinality:
         case FieldCardinality.REPEATED:
@@ -164,13 +164,13 @@ def render_encoder(message: MessageAdapter) -> str:
                 iter_items = f"for key, value in {message.name.lower()}.{element.name}.items():"
                 if element.value_type in PRIMITIVE_TYPE_MAP:
                     return f"{iter_items}\n    proto_obj.{element.name}[key] = value"
-                if element.value_type in message.file.enum_names:
+                if element.value_type in message.file.enums_by_name:
                     return f"{iter_items}\n    proto_obj.{element.name}[key] = {element.value_type}(value)"
-                if element.value_type in message.enum_names:
+                if element.value_type in message.enums_by_name:
                     return (
                         f"{iter_items}\n    proto_obj.{element.name}[key] = {message.name}.{element.value_type}(value)"
                     )
-                return f"{iter_items}\n    {qualified_type(message, element.value_type)}.encode(proto_obj.{element.name}[key], value)"
+                return f"{iter_items}\n    {resolve_type(message, element.value_type)}.encode(proto_obj.{element.name}[key], value)"
             case _:
                 msg = f"Unexpected message type: {element}"
                 raise TypeError(msg)
@@ -190,20 +190,20 @@ def decode_field(field: ast.Field, message: MessageAdapter) -> str:
     """Render pydantic model field decoding."""
 
     instance_field = f"proto_obj.{field.name}"
-    qualified = qualified_type(message, field.type)
-    if field.type in PRIMITIVE_TYPE_MAP or qualified.is_enum:
+    resolved_type = resolve_type(message, field.type)
+    if field.type in PRIMITIVE_TYPE_MAP or resolved_type.is_enum:
         value = instance_field
     else:
-        qualified = qualified_type(message, field.type)
+        resolved_type = resolve_type(message, field.type)
         if field.cardinality == FieldCardinality.REPEATED:
-            return f"{field.name} = [{qualified}.decode(item) for item in {instance_field}]"
+            return f"{field.name} = [{resolved_type}.decode(item) for item in {instance_field}]"
         if field.cardinality == FieldCardinality.OPTIONAL:
             return (
-                f"{field.name} = {qualified}.decode({instance_field}) "
+                f"{field.name} = {resolved_type}.decode({instance_field}) "
                 f'if {instance_field} is not None and proto_obj.HasField("{field.name}") '
                 f"else None"
             )
-        return f"{field.name} = {qualified}.decode({instance_field})"
+        return f"{field.name} = {resolved_type}.decode({instance_field})"
 
     match field.cardinality:
         case FieldCardinality.REPEATED:
@@ -239,12 +239,12 @@ def render_decoder(message: MessageAdapter) -> str:
                 iter_items = f"{element.name} = {{}}\nfor key, value in proto_obj.{element.name}.items():"
                 if element.value_type in PRIMITIVE_TYPE_MAP:
                     return f"{element.name} = dict(proto_obj.{element.name})"
-                if element.value_type in message.file.enum_names:
+                if element.value_type in message.file.enums_by_name:
                     return f"{iter_items}\n    {element.name}[key] = {element.value_type}(value)"
-                if element.value_type in message.enum_names:
+                if element.value_type in message.enums_by_name:
                     return f"{iter_items}\n    {element.name}[key] = {message.name}.{element.value_type}(value)"
                 return (
-                    f"{element.name} = {{ key: {qualified_type(message, element.value_type)}.decode(item) "
+                    f"{element.name} = {{ key: {resolve_type(message, element.value_type)}.decode(item) "
                     f"for key, item in proto_obj.{element.name}.items() }}"
                 )
             case _:
