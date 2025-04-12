@@ -59,16 +59,16 @@ class MessageAdapter:
         return getattr(self.wrapped, name)
 
     @property
-    def enum_names(self) -> set[str]:
+    def enum_names(self) -> dict[str, ast.Enum]:
         """Enum names referenced in this ast.Message."""
 
-        return {m.name for m in self.enums}
+        return {m.name: m for m in self.enums}
 
     @property
-    def message_names(self) -> set[str]:
+    def message_names(self) -> dict[str, MessageAdapter]:
         """Message names referenced in this ast.Message."""
 
-        return {m.name for m in self.messages}
+        return {m.name: m for m in self.messages}
 
     @classmethod
     def from_message(cls, message: Message, parent_prefix="") -> MessageAdapter:
@@ -126,16 +126,16 @@ class FileAdapter:
         return getattr(self.wrapped, name)
 
     @property
-    def enum_names(self) -> set[str]:
+    def enum_names(self) -> dict[str, ast.Enum]:
         """Top-level Enum names in ast.File."""
 
-        return {m.name for m in self.enums}
+        return {m.name: m for m in self.enums}
 
     @property
-    def message_names(self) -> set[str]:
+    def message_names(self) -> dict[str, MessageAdapter]:
         """Top-level Message names in ast.File."""
 
-        return {m.name for m in self.messages}
+        return {m.name: m for m in self.messages}
 
     @classmethod
     def from_file(cls, file: File) -> FileAdapter:

@@ -1,6 +1,7 @@
 """Module with formatter for rendering pydantic model code from proto_schema_parser ast.File."""
 
 import textwrap
+from typing import NamedTuple
 
 from proto_schema_parser import ast
 from proto_schema_parser.ast import (
@@ -17,18 +18,40 @@ from auto_dev.protocols.primitives import PRIMITIVE_TYPE_MAP
 # ruff: noqa: E501, PLR0911
 
 
-def qualified_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> str:
+class ResolvedType(NamedTuple):
+    fully_qualified_name: str
+    ast_node: MessageAdapter | ast.Enum | None = None
+
+    @property
+    def is_enum(self):
+        return isinstance(self.ast_node, ast.Enum)
+
+    @property
+    def is_message(self):
+        return isinstance(self.ast_node, MessageAdapter)
+
+    def __str__(self):
+        return self.fully_qualified_name
+
+
+def qualified_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> ResolvedType:
     """Fully qualified type for a type reference."""
 
-    def find_definition(scope):
-        if scope is None or isinstance(scope, FileAdapter):
-            return None
-        if type_name in scope.enum_names or type_name in scope.message_names:
-            return f"{scope.fully_qualified_name}.{type_name}"
-        return find_definition(scope.parent)
+    if (scalar_type := PRIMITIVE_TYPE_MAP.get(type_name)) is not None:
+        return ResolvedType(scalar_type)
 
-    qualified_name = find_definition(adapter)
-    return qualified_name if qualified_name is not None else PRIMITIVE_TYPE_MAP.get(type_name, type_name)
+    node = adapter.enum_names.get(type_name) or adapter.message_names.get(type_name)
+    match adapter, node:
+        case FileAdapter(), None:
+            raise ValueError(f"Could not resolve {type_name}")
+        case FileAdapter(), _:
+            return ResolvedType(type_name, node)
+        case MessageAdapter(), None:
+            return qualified_type(adapter.parent, type_name)
+        case MessageAdapter(), _:
+            return ResolvedType(f"{adapter.fully_qualified_name}.{type_name}", node)
+        case _:
+            raise TypeError(f"Unexpected adapter type : {adapter}.")
 
 
 def render_field(field: Field, message: MessageAdapter) -> str:
@@ -98,14 +121,10 @@ def encode_field(element, message):
     """Render pydantic model field encoding."""
 
     instance_attr = f"{message.name.lower()}.{element.name}"
-    if (
-        element.type in PRIMITIVE_TYPE_MAP
-        or element.type in message.enum_names
-        or element.type in message.file.enum_names
-    ):
+    qualified = qualified_type(message, element.type)
+    if element.type in PRIMITIVE_TYPE_MAP or qualified.is_enum:
         value = instance_attr
     else:  # Message
-        qualified = qualified_type(message, element.type)
         if element.cardinality == FieldCardinality.REPEATED:
             return f"for item in {instance_attr}:\n" f"    {qualified}.encode(proto_obj.{element.name}.add(), item)"
         if element.cardinality == FieldCardinality.OPTIONAL:
@@ -171,7 +190,8 @@ def decode_field(field: ast.Field, message: MessageAdapter) -> str:
     """Render pydantic model field decoding."""
 
     instance_field = f"proto_obj.{field.name}"
-    if field.type in PRIMITIVE_TYPE_MAP or field.type in message.enum_names or field.type in message.file.enum_names:
+    qualified = qualified_type(message, field.type)
+    if field.type in PRIMITIVE_TYPE_MAP or qualified.is_enum:
         value = instance_field
     else:
         qualified = qualified_type(message, field.type)
