@@ -127,15 +127,17 @@ def test_scaffold_protocol(module_scoped_dummy_agent_tim, protocol_spec: Path):
         msg = f"Protocol already exists in dummy_agent_tim: {protocol_outpath}"
         raise ValueError(msg)
 
+    # Point PYTHONPATH to the temporary project root so generated modules are discoverable
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_root)
+
     command = ["adev", "-v", "scaffold", "protocol", str(protocol_spec)]
-    result = subprocess.run(command, check=False, text=True, capture_output=True)
+    result = subprocess.run(command, env=env, check=False, text=True, capture_output=True)
     if result.returncode != 0:
         msg = f"Protocol scaffolding failed: {result.stderr}"
         raise ValueError(msg)
 
-    # Point PYTHONPATH to the temporary project root so generated modules are discoverable
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(repo_root)
+    assert protocol_outpath.exists()
 
     test_dir = protocol_outpath / "tests"
     command = ["pytest", str(test_dir), "-vv", "-s", "--tb=long", "-p", "no:warnings"]
