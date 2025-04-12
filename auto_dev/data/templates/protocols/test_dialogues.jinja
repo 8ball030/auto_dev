@@ -4,7 +4,7 @@
 
 from unittest.mock import MagicMock
 
-from pydantic import BaseModel, conint, confloat
+from pydantic import BaseModel
 from hypothesis import given
 from hypothesis import strategies as st
 from aea.configurations.data_types import PublicId
@@ -14,13 +14,9 @@ from packages.{{ author }}.protocols.{{ snake_name }}.dialogues import (
     {{ camel_name }}Dialogues,
 )
 from packages.{{ author }}.protocols.{{ snake_name }}.message import {{ camel_name }}Message
-from packages.{{ author }}.protocols.{{ snake_name }}.tests.primitive_strategies import (
-    Int32,
-    Double,
-)
-from packages.{{ author }}.protocols.{{ snake_name }}.custom_types import (
-    {%- for custom_type in custom_types %}
-    {{ custom_type }},
+from packages.{{ author }}.protocols.{{ snake_name }}.tests.performatives import (
+    {%- for performative in initial_performative_types %}
+    {{ snake_to_camel(performative) }},
     {%- endfor %}
 )
 
@@ -52,16 +48,6 @@ def validate_dialogue(performative, model):
     )
 
     assert dialogue is not None
-
-{# Define strategies for each performative #}
-{%- for initial_performative, fields in initial_performative_types.items() %}
-class {{ snake_to_camel(initial_performative) }}(BaseModel):
-    """Model for the `{{ initial_performative|upper }}` initial speech act performative."""
-    {%- for field_name, field_type in fields.items() %}
-    {{ field_name }}: {{ field_type }}
-    {%- endfor %}
-
-{% endfor %}
 
 
 {%- for initial_performative in initial_performative_types %}

@@ -3,7 +3,7 @@
 """Test messages module for the {{ snake_name }} protocol."""
 
 import pytest
-from pydantic import BaseModel, conint, confloat
+from pydantic import BaseModel
 from hypothesis import strategies as st
 from hypothesis import given
 
@@ -18,9 +18,9 @@ from packages.{{ author }}.protocols.{{ snake_name }}.tests.primitive_strategies
     Int32,
     Double,
 )
-from packages.{{ author }}.protocols.{{ snake_name }}.custom_types import (
-    {%- for custom_type in custom_types %}
-    {{ custom_type }},
+from packages.{{ author }}.protocols.{{ snake_name }}.tests.performatives import (
+    {%- for performative in performative_types %}
+    {{ snake_to_camel(performative) }},
     {%- endfor %}
 )
 
@@ -60,16 +60,6 @@ def perform_message_test(performative, model) -> None:
     actual_msg.sender = actual_envelope.sender
     expected_msg = msg
     assert expected_msg == actual_msg
-
-{# Define models for the performatives #}
-{%- for performative, fields in performative_types.items() %}
-class {{ snake_to_camel(performative) }}(BaseModel):
-    """Model for the `{{ performative|upper }}` initial speech act performative."""
-    {%- for field_name, field_type in fields.items() %}
-    {{ field_name }}: {{ field_type }}
-    {%- endfor %}
-
-{% endfor %}
 
 
 {%- for performative in performative_types %}
