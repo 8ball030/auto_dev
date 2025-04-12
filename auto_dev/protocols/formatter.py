@@ -15,19 +15,23 @@ from auto_dev.protocols.adapters import FileAdapter, MessageAdapter
 from auto_dev.protocols.primitives import PRIMITIVE_TYPE_MAP
 
 
-# ruff: noqa: E501, PLR0911
+# ruff: noqa: D105, E501, PLR0911
 
 
 class ResolvedType(NamedTuple):
+    """Represents a fully resolved type reference with optional AST context."""
+
     fully_qualified_name: str
     ast_node: MessageAdapter | ast.Enum | None = None
 
     @property
-    def is_enum(self):
+    def is_enum(self) -> bool:
+        """Return True if the resolved type is an enum."""
         return isinstance(self.ast_node, ast.Enum)
 
     @property
-    def is_message(self):
+    def is_message(self) -> bool:
+        """Return True if the resolved type is a message."""
         return isinstance(self.ast_node, MessageAdapter)
 
     def __str__(self):
@@ -43,7 +47,8 @@ def resolve_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> Resol
     node = adapter.enums_by_name.get(type_name) or adapter.messages_by_name.get(type_name)
     match adapter, node:
         case FileAdapter(), None:
-            raise ValueError(f"Could not resolve {type_name}")
+            msg = f"Could not resolve {type_name}"
+            raise ValueError(msg)
         case FileAdapter(), _:
             return ResolvedType(type_name, node)
         case MessageAdapter(), None:
@@ -51,7 +56,8 @@ def resolve_type(adapter: FileAdapter | MessageAdapter, type_name: str) -> Resol
         case MessageAdapter(), _:
             return ResolvedType(f"{adapter.fully_qualified_name}.{type_name}", node)
         case _:
-            raise TypeError(f"Unexpected adapter type : {adapter}.")
+            msg = f"Unexpected adapter type : {adapter}."
+            raise TypeError(msg)
 
 
 def render_field(field: Field, message: MessageAdapter) -> str:

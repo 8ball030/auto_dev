@@ -115,14 +115,16 @@ def module_scoped_dummy_agent_tim() -> Path:
     with isolated_filesystem(copy_cwd=True) as directory:
         command = ["autonomy", "packages", "init"]
         result = subprocess.run(command, check=False, text=True, capture_output=True)
-        if not result.returncode == 0:
-            raise ValueError(f"Failed to init packages: {result.stderr}")
+        if result.returncode != 0:
+            msg = f"Failed to init packages: {result.stderr}"
+            raise ValueError(msg)
 
         agent = DEFAULT_PUBLIC_ID
         command = ["adev", "create", f"{agent!s}", "-t", "eightballer/base", "--no-clean-up"]
         result = subprocess.run(command, check=False, text=True, capture_output=True, cwd=directory)
-        if not result.returncode == 0:
-            raise ValueError(f"Failed to create agent: {result.stderr}")
+        if result.returncode != 0:
+            msg = f"Failed to create agent: {result.stderr}"
+            raise ValueError(msg)
 
         os.chdir(agent.name)
         yield Path.cwd()

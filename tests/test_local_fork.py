@@ -9,7 +9,7 @@ import requests
 from auto_dev.local_fork import DockerFork
 
 
-TESTNET_RPC_URL = f"https://eth.drpc.org"
+TESTNET_RPC_URL = "https://eth.drpc.org"
 DEFAULT_FORK_BLOCK_NUMBER = 18120809
 
 
