@@ -15,7 +15,7 @@ from packages.{{ author }}.protocols.{{ snake_name }}.dialogues import (
 )
 from packages.{{ author }}.protocols.{{ snake_name }}.message import {{ camel_name }}Message
 from packages.{{ author }}.protocols.{{ snake_name }}.tests.performatives import (
-    {%- for performative in initial_performative_types %}
+    {%- for performative in initial_performatives %}
     {{ snake_to_camel(performative) }},
     {%- endfor %}
 )
@@ -50,7 +50,7 @@ def validate_dialogue(performative, model):
     assert dialogue is not None
 
 
-{%- for initial_performative in initial_performative_types %}
+{%- for initial_performative in initial_performatives %}
 @given(st.from_type({{ snake_to_camel(initial_performative) }}))
 def test_{{ initial_performative }}_dialogues(model):
     """Test for the '{{ initial_performative|upper }}' protocol."""

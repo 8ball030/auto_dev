@@ -66,7 +66,6 @@ class TemplateContext(BaseModel):
     terminal_performatives: list[str]
     valid_replies: dict[str, list[str]]
     performative_types: dict[str, dict[str, str]]
-    initial_performative_types: dict[str, dict[str, str]]
 
     role: str
     roles: list[dict[str, str]]
@@ -116,11 +115,6 @@ class ProtocolSpecification(BaseModel):
         return performative_types
 
     @property
-    def initial_performative_types(self) -> dict[str, dict[str, str]]:
-        """Python type annotation for initial performatives."""
-        return {k: v for k, v in self.performative_types.items() if k in self.interaction_model.initiation}
-
-    @property
     def outpath(self) -> Path:
         """Protocol expected outpath after `aea create` and `aea publish --local`."""
         return protodantic.get_repo_root() / "packages" / self.author / "protocols" / self.name
@@ -156,7 +150,6 @@ class ProtocolSpecification(BaseModel):
             terminal_performatives=self.interaction_model.termination,
             valid_replies=self.interaction_model.reply,
             performative_types=self.performative_types,
-            initial_performative_types=self.initial_performative_types,
             role=roles[0]["name"],
             roles=roles,
             end_states=end_states,
