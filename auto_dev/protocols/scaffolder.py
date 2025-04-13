@@ -8,7 +8,7 @@ from functools import cached_property
 from collections.abc import Callable
 
 import yaml
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Template, Environment, FileSystemLoader
 from pydantic import BaseModel, ConfigDict
 from proto_schema_parser import ast
 from proto_schema_parser.parser import Parser
@@ -18,6 +18,23 @@ from proto_schema_parser.generator import Generator
 from auto_dev.utils import file_swapper, remove_prefix, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic, performatives
+
+
+class JinjaTemplates(BaseModel, arbitrary_types_allowed=True):
+    """JinjaTemplates."""
+
+    README: Template
+    dialogues: Template
+    performatives: Template
+    primitive_strategies: Template
+    test_dialogues: Template
+    test_messages: Template
+
+    @classmethod
+    def load(cls):
+        """Load from jinja2.Environment."""
+        env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
+        return cls(**{field: env.get_template(f"protocols/{field}.jinja") for field in cls.model_fields})
 
 
 class Metadata(BaseModel):
@@ -346,6 +363,8 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
 
     """
 
+    jinja_templates = JinjaTemplates.load()
+
     agent_dir = Path.cwd()
     env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
 
@@ -360,8 +379,7 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     run_push_local_protocol(protocol, agent_dir)
 
     # 3. create README.md
-    template = env.get_template("protocols/README.jinja")
-    generate_readme(protocol, template)
+    generate_readme(protocol, jinja_templates.README)
 
     # 4. Generate custom_types.py and test_custom_types.py
     generate_custom_types(protocol)
@@ -370,23 +388,19 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     rewrite_test_custom_types(protocol)
 
     # 6. Dialogues
-    template = env.get_template("protocols/dialogues.jinja")
-    generate_dialogues(protocol, template)
+    generate_dialogues(protocol, jinja_templates.dialogues)
 
     # 7. generate __init__.py in tests folder
     generate_tests_init(protocol)
 
     # 8. generate performatives
-    template = env.get_template("protocols/performatives.jinja")
-    generate_performative_messages(protocol, template)
+    generate_performative_messages(protocol, jinja_templates.performatives)
 
     # 9. Test dialogues
-    template = env.get_template("protocols/test_dialogues.jinja")
-    generate_test_dialogues(protocol, template)
+    generate_test_dialogues(protocol, jinja_templates.test_dialogues)
 
     # 10. Test messages
-    template = env.get_template("protocols/test_messages.jinja")
-    generate_test_messages(protocol, template)
+    generate_test_messages(protocol, jinja_templates.test_messages)
 
     # 11. Update YAML
     dependencies = {"pydantic": {}, "hypothesis": {}}
