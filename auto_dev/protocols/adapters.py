@@ -97,7 +97,7 @@ class FileAdapter:
     imports: list[ast.Import] = field(default_factory=list)
     packages: list[ast.Package] = field(default_factory=list)
     options: list[ast.Option] = field(default_factory=list)
-    messages: list[ast.MessageAdapter] = field(default_factory=list)
+    messages: list[MessageAdapter] = field(default_factory=list)
     enums: list[ast.Enum] = field(default_factory=list)
     extensions: list[ast.Extension] = field(default_factory=list)
     services: list[ast.Service] = field(default_factory=list)
