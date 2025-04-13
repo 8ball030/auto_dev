@@ -29,7 +29,7 @@ from auto_dev.workflow_manager import Task
 from auto_dev.contracts.contract import DEFAULT_NULL_ADDRESS
 from auto_dev.handler.scaffolder import HandlerScaffoldBuilder
 from auto_dev.dialogues.scaffolder import DialogueTypes, DialogueScaffolder
-from auto_dev.protocols.scaffolder import ProtocolScaffolder
+from auto_dev.protocols.scaffolder import protocol_scaffolder
 from auto_dev.behaviours.scaffolder import BehaviourScaffolder
 from auto_dev.connections.scaffolder import ConnectionScaffolder
 from auto_dev.contracts.block_explorer import BlockExplorer
@@ -329,8 +329,7 @@ def protocol(ctx, protocol_specification_path: str, language: str) -> None:
     """
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
-    scaffolder = ProtocolScaffolder(protocol_specification_path, language, logger=logger, verbose=verbose)
-    scaffolder.generate()
+    protocol_scaffolder(protocol_specification_path, language, logger=logger, verbose=verbose)
 
 
 @scaffold.command()

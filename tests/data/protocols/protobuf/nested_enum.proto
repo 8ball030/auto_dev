@@ -1,0 +1,13 @@
+// nested_enum.proto
+
+syntax = "proto3";
+
+message NestedEnum {
+  Status status = 1;
+
+  enum Status {
+    UNKNOWN = 0;
+    ACTIVE = 1;
+    INACTIVE = 2;
+  }
+}

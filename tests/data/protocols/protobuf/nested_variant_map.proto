@@ -1,0 +1,20 @@
+// nested_variant_map.proto
+
+syntax = "proto3";
+
+message NestedVariantMap {
+  map<string, Nested> items = 1;
+
+  message Nested {
+    map<string, Variant> sub_items = 1;
+
+    message Variant {
+      oneof value {
+        int32 i = 1;
+        string s = 2;
+        repeated string r = 3;
+        map<string, int32> m = 4;
+      }
+    }
+  }
+}

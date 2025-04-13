@@ -1,0 +1,127 @@
+{{ header }}
+
+"""
+This module contains the classes required for {{ snake_name }} dialogue management.
+
+- {{ camel_name }}Dialogue: The dialogue class maintains state of a dialogue and manages it.
+- {{ camel_name }}Dialogues: The dialogues class keeps track of all dialogues.
+"""
+
+from abc import ABC
+from typing import Dict, Type, Callable, FrozenSet, cast
+
+from aea.common import Address
+from aea.skills.base import Model
+from aea.protocols.base import Message
+from aea.protocols.dialogue.base import Dialogue, Dialogues, DialogueLabel
+from packages.{{ author }}.protocols.{{ snake_name }}.message import {{ camel_name }}Message
+
+
+def _role_from_first_message(message: Message, sender: Address) -> Dialogue.Role:  # noqa: ARG001
+    """Infer the role of the agent from an incoming/outgoing first message"""
+    return {{ camel_name }}Dialogue.Role.{{ role }}
+
+
+class {{ camel_name }}Dialogue(Dialogue):
+    """The {{ snake_name }} dialogue class maintains state of a dialogue and manages it."""
+
+    INITIAL_PERFORMATIVES: FrozenSet[Message.Performative] = frozenset({
+        {%- for performative in initial_performatives %}
+        {{ camel_name }}Message.Performative.{{ performative|upper }},
+        {%- endfor %}
+    })
+    TERMINAL_PERFORMATIVES: FrozenSet[Message.Performative] = frozenset({
+        {%- for performative in terminal_performatives %}
+        {{ camel_name }}Message.Performative.{{ performative|upper }},
+        {%- endfor %}
+    })
+    VALID_REPLIES: Dict[Message.Performative, FrozenSet[Message.Performative]] = {
+        {%- for performative, replies in valid_replies.items() %}
+        {{ camel_name }}Message.Performative.{{ performative|upper }}: {% if replies|length > 0 %}frozenset({
+            {%- for reply in replies %}
+            {{ camel_name }}Message.Performative.{{ reply|upper }},
+            {%- endfor %}
+        }){% else %}frozenset(){% endif %},
+        {%- endfor %}
+    }
+
+    class Role(Dialogue.Role):
+        """This class defines the agent's role in a {{ snake_name }} dialogue."""
+        {%- for role in roles %}
+        {{ role.name }} = "{{ role.value }}"
+        {%- endfor %}
+
+    class EndState(Dialogue.EndState):
+        """This class defines the end states of a {{ snake_name }} dialogue."""
+        {%- for state in end_states %}
+        {{ state.name }} = {{ state.value }}
+        {%- endfor %}
+
+    def __init__(
+        self,
+        dialogue_label: DialogueLabel,
+        self_address: Address,
+        role: Dialogue.Role,
+        message_class: Type[{{ camel_name }}Message] = {{ camel_name }}Message,
+    ) -> None:
+        """Initialize a dialogue.
+
+        Args:
+            dialogue_label: the identifier of the dialogue
+            self_address: the address of the entity for whom this dialogue is maintained
+            role: the role of the agent this dialogue is maintained for
+            message_class: the message class used
+        """
+        Dialogue.__init__(
+            self,
+            dialogue_label=dialogue_label,
+            message_class=message_class,
+            self_address=self_address,
+            role=role,
+        )
+
+
+class Base{{ camel_name }}Dialogues(Dialogues, ABC):
+    """This class keeps track of all {{ snake_name }} dialogues."""
+
+    END_STATES = frozenset({
+        {%- for state in end_states %}
+        {{ camel_name }}Dialogue.EndState.{{ state.name }},
+        {%- endfor %}
+    })        
+    _keep_terminal_state_dialogues = {{ keep_terminal_state_dialogues }}
+
+    def __init__(
+        self,
+        self_address: Address,
+        role_from_first_message: Callable[[Message, Address], Dialogue.Role] = _role_from_first_message,
+        dialogue_class: Type[{{ camel_name }}Dialogue] = {{ camel_name }}Dialogue,
+    ) -> None:
+        """Initialize dialogues.
+
+        Args:
+            self_address: the address of the entity for whom dialogues are maintained
+            dialogue_class: the dialogue class used
+            role_from_first_message: the callable determining role from first message
+        """
+        Dialogues.__init__(
+            self,
+            self_address=self_address,
+            end_states=cast(frozenset[Dialogue.EndState], self.END_STATES),
+            message_class={{ camel_name }}Message,
+            dialogue_class=dialogue_class,
+            role_from_first_message=role_from_first_message,
+        )
+
+
+class {{ camel_name }}Dialogues(Base{{ camel_name }}Dialogues, Model):
+    """This class defines the dialogues used in {{ snake_name }}."""
+
+    def __init__(self, **kwargs):
+        """Initialize dialogues."""
+        Model.__init__(self, keep_terminal_state_dialogues={{ keep_terminal_state_dialogues }}, **kwargs)
+        Base{{ camel_name }}Dialogues.__init__(
+            self,
+            self_address=str(self.context.skill_id),
+            role_from_first_message=_role_from_first_message,
+        )

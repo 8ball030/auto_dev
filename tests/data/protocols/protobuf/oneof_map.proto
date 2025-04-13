@@ -1,0 +1,16 @@
+// oneof_map.proto
+
+message Map1 {
+  map<string, int32> entries = 1;
+}
+
+message Map2 {
+  map<string, string> entries = 1;
+}
+
+message OneofWithMap {
+  oneof selection {
+    Map1 map1 = 1;
+    Map2 map2 = 2;
+  }
+}

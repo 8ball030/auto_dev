@@ -1,0 +1,8 @@
+// recursive_node.proto
+
+syntax = "proto3";
+
+message RecursiveNode {
+  string name = 1;
+  optional RecursiveNode child = 2;
+}

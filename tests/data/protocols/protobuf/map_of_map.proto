@@ -1,0 +1,16 @@
+// map_of_map.proto
+
+syntax = "proto3";
+
+message MapOfMap {
+  map<string, InnerMap> outer = 1;
+
+  message InnerMap {
+    map<string, int32> inner = 1;
+  }
+
+  message AnotherInnerMap {
+    map<string, int32> inner = 1;
+    map<string, InnerMap> inner_map = 2;
+  }
+}

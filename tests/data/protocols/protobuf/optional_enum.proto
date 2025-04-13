@@ -1,0 +1,13 @@
+// optional_enum.proto
+
+syntax = "proto3";
+
+enum Response {
+  OK = 0;
+  FAIL = 1;
+  TIMEOUT = 2;
+}
+
+message OptionalEnum {
+  optional Response response = 1;
+}

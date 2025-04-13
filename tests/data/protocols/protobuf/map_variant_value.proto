@@ -1,0 +1,22 @@
+// map_variant_value.proto
+
+syntax = "proto3";
+
+enum MyEnum {
+  ZERO = 0;
+  ONE = 1;
+}
+
+message MapVariantValue {
+  map<string, Variant> data = 1;
+
+  message Variant {
+    oneof value {
+      int32 i = 1;
+      string s = 2;
+      MyEnum e = 3;
+      repeated string r = 4;
+      map<string, int32> m = 5;
+    }
+  }
+}

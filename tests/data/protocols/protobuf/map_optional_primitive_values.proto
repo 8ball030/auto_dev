@@ -1,0 +1,25 @@
+// map_optional_primitive_values.proto
+
+syntax = "proto3";
+
+message OptionalPrimitiveValuesMap {
+  map<string, OptionalValues> optional_map = 1;
+
+  message OptionalValues {
+    optional double optional_double_field = 1;
+    optional float optional_float_field = 2;
+    optional int32 optional_int32_field = 3;
+    optional int64 optional_int64_field = 4;
+    optional uint32 optional_uint32_field = 5;
+    optional uint64 optional_uint64_field = 6;
+    optional sint32 optional_sint32_field = 7;
+    optional sint64 optional_sint64_field = 8;
+    optional fixed32 optional_fixed32_field = 9;
+    optional fixed64 optional_fixed64_field = 10;
+    optional sfixed32 optional_sfixed32_field = 11;
+    optional sfixed64 optional_sfixed64_field = 12;
+    optional bool optional_bool_field = 13;
+    optional string optional_string_field = 14;
+    optional bytes optional_bytes_field = 15;
+  }
+}

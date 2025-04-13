@@ -1,0 +1,27 @@
+// map_repeated_primitive_values.proto
+
+syntax = "proto3";
+
+message MapRepeatedValues {
+  map<string, RepeatedValues> data = 1;
+
+  message RepeatedValues {
+    repeated double repeated_double_field = 1;
+    repeated float repeated_float_field = 2;
+    repeated int32 repeated_int32_field = 3;
+    repeated int64 repeated_int64_field = 4;
+    repeated uint32 repeated_uint32_field = 5;
+    repeated uint64 repeated_uint64_field = 6;
+    repeated sint32 repeated_sint32_field = 7;
+    repeated sint64 repeated_sint64_field = 8;
+    repeated fixed32 repeated_fixed32_field = 9;
+    repeated fixed64 repeated_fixed64_field = 10;
+    repeated sfixed32 repeated_sfixed32_field = 11;
+    repeated sfixed64 repeated_sfixed64_field = 12;
+    repeated bool repeated_bool_field = 13;
+    repeated string repeated_string_field = 14;
+    repeated bytes repeated_bytes_field = 15;
+  }
+}
+
+
