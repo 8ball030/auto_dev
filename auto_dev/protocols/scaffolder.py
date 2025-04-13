@@ -309,7 +309,6 @@ def generate_performative_messages(protocol: ProtocolSpecification, template) ->
 
 def generate_test_dialogues(protocol: ProtocolSpecification, template) -> None:
     """Generate tests/test_dialogue.py."""
-
     output = template.render(**protocol.template_context.model_dump())
     test_dialogues = protocol.outpath / "tests" / f"test_{protocol.name}_dialogues.py"
     test_dialogues.write_text(output)
@@ -317,7 +316,6 @@ def generate_test_dialogues(protocol: ProtocolSpecification, template) -> None:
 
 def generate_test_messages(protocol: ProtocolSpecification, template) -> None:
     """Generate tests/test_messages.py."""
-
     output = template.render(**protocol.template_context.model_dump())
     test_messages = protocol.outpath / "tests" / f"test_{protocol.name}_messages.py"
     test_messages.write_text(output)
@@ -366,7 +364,6 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
     jinja_templates = JinjaTemplates.load()
 
     agent_dir = Path.cwd()
-    env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
 
     # 1. Read spec data
     protocol = read_protocol_spec(protocol_specification_path)
