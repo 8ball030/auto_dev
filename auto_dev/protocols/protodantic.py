@@ -118,6 +118,14 @@ def _extract_primitives(primitives_module) -> tuple[list[type], list[type]]:
     return float_primitives, integer_primitives
 
 
+def _prepare_pb2(proto_inpath: Path, code_outpath: Path) -> Path:
+    pb2_path = _run_protoc(proto_inpath, code_outpath)
+    pb2_content = pb2_path.read_text()
+    pb2_content = _remove_runtime_version_code(pb2_content)
+    pb2_path.write_text(pb2_content)
+    return pb2_path
+
+
 def create(  # noqa: PLR0914
     proto_inpath: Path,
     code_outpath: Path,
@@ -132,20 +140,14 @@ def create(  # noqa: PLR0914
     primitives_outpath = copy_primitives(repo_root, code_outpath)
     primitives_import_path = _compute_import_path(primitives_outpath, repo_root)
 
-    # Run protoc to generate pb2 file
-    pb2_path = _run_protoc(proto_inpath, code_outpath)
-
     # import the custom primitive types
     float_primitives, integer_primitives = _extract_primitives(primitives_module)
 
     # load the .proto file AST tree
     file = FileAdapter.from_file(Parser().parse(proto_inpath.read_text()))
 
-    # remove runtime imports from the pb2 file
-    pb2_path = code_outpath.parent / f"{proto_inpath.stem}_pb2.py"
-    pb2_content = pb2_path.read_text()
-    pb2_content = _remove_runtime_version_code(pb2_content)
-    pb2_path.write_text(pb2_content)
+    # Run protoc to generate pb2 file, then remove runtime imports
+    pb2_path = _prepare_pb2(proto_inpath, code_outpath)
 
     # compute import paths
     strategies_outpath = test_outpath.parent / "primitive_strategies.py"
