@@ -1,10 +1,11 @@
 """Module for generating pydantic models and associated hypothesis tests."""
 
+from __future__ import annotations
+
 import re
 import inspect
 import subprocess  # nosec: B404
-from types import ModuleType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from pathlib import Path
 
 from jinja2 import Template, Environment, FileSystemLoader
@@ -14,6 +15,10 @@ from proto_schema_parser.parser import Parser
 from auto_dev.constants import JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import formatter, primitives as primitives_module
 from auto_dev.protocols.adapters import FileAdapter
+
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 
 class JinjaTemplates(BaseModel, arbitrary_types_allowed=True):
@@ -31,6 +36,34 @@ class JinjaTemplates(BaseModel, arbitrary_types_allowed=True):
         return cls(**{field: env.get_template(f"protocols/{field}.jinja") for field in cls.model_fields})
 
 
+class ImportPaths(BaseModel):
+    """ImportPaths."""
+
+    strategies: str
+    primitives: str
+    models: str
+    message: str
+
+    @classmethod
+    def from_paths(
+        cls,
+        *,
+        repo_root: Path,
+        strategies_outpath: Path,
+        primitives_outpath: Path,
+        code_outpath: Path,
+    ) -> ImportPaths:
+        """Determine necessary module paths from outpaths."""
+
+        models_import_path = _compute_import_path(code_outpath, repo_root)
+        return cls(
+            strategies=_compute_import_path(strategies_outpath, repo_root),
+            primitives=_compute_import_path(primitives_outpath, repo_root),
+            models=models_import_path,
+            message=".".join(models_import_path.split(".")[:-1]) or ".",
+        )
+
+
 class TemplateContext(BaseModel):
     """TemplateContext."""
 
@@ -42,10 +75,7 @@ class TemplateContext(BaseModel):
     file: Any
     float_primitives: list[type]
     integer_primitives: list[type]
-    primitives_import_path: str
-    strategies_import_path: str
-    models_import_path: str
-    message_import_path: str
+    import_paths: ImportPaths
     messages_pb2: str
 
     def shallow_dump(self) -> dict[str, Any]:
@@ -126,7 +156,7 @@ def _prepare_pb2(proto_inpath: Path, code_outpath: Path) -> Path:
     return pb2_path
 
 
-def create(  # noqa: PLR0914
+def create(
     proto_inpath: Path,
     code_outpath: Path,
     test_outpath: Path,
@@ -138,7 +168,6 @@ def create(  # noqa: PLR0914
 
     # Copy primitives file
     primitives_outpath = copy_primitives(repo_root, code_outpath)
-    primitives_import_path = _compute_import_path(primitives_outpath, repo_root)
 
     # import the custom primitive types
     float_primitives, integer_primitives = _extract_primitives(primitives_module)
@@ -151,23 +180,23 @@ def create(  # noqa: PLR0914
 
     # compute import paths
     strategies_outpath = test_outpath.parent / "primitive_strategies.py"
-    strategies_import_path = _compute_import_path(strategies_outpath, repo_root)
-    primitives_import_path = _compute_import_path(primitives_outpath, repo_root)
-    models_import_path = _compute_import_path(code_outpath, repo_root)
-    message_import_path = ".".join(models_import_path.split(".")[:-1]) or "."
-    messages_pb2 = pb2_path.with_suffix("").name
 
-    # render jinja templates
+    # generate template context
+    import_paths = ImportPaths.from_paths(
+        repo_root=repo_root,
+        strategies_outpath=strategies_outpath,
+        primitives_outpath=primitives_outpath,
+        code_outpath=code_outpath,
+    )
     template_context = TemplateContext(
         file=file,
         float_primitives=float_primitives,
         integer_primitives=integer_primitives,
-        primitives_import_path=primitives_import_path,
-        strategies_import_path=strategies_import_path,
-        models_import_path=models_import_path,
-        message_import_path=message_import_path,
-        messages_pb2=messages_pb2,
+        import_paths=import_paths,
+        messages_pb2=pb2_path.with_suffix("").name,
     )
+
+    # render jinja templates
     jinja_kwargs = template_context.shallow_dump()
 
     generated_code = jinja_templates.protodantic.render(**jinja_kwargs)

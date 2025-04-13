@@ -3,9 +3,9 @@
 from hypothesis import given
 from hypothesis import strategies as st
 
-from {{ message_import_path }} import {{ messages_pb2 }}
+from {{ import_paths.message }} import {{ messages_pb2 }}
 
-from {{ strategies_import_path }} import (
+from {{ import_paths.strategies }} import (
     {%- for primitive in float_primitives %}
     {{ primitive.__name__ }},
     {%- endfor %}
@@ -13,7 +13,7 @@ from {{ strategies_import_path }} import (
     {{ primitive.__name__ }},
     {%- endfor %}
 )
-from {{ models_import_path }} import (
+from {{ import_paths.models }} import (
     {%- for enum in file.enums %}
     {{ enum.name }},
     {%- endfor %}

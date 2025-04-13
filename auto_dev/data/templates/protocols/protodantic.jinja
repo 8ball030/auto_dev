@@ -6,7 +6,7 @@ from enum import IntEnum
 
 from pydantic import BaseModel
 
-from {{ primitives_import_path }} import (
+from {{ import_paths.primitives }} import (
     {%- for primitive in float_primitives %}
     {{ primitive.__name__ }},
     {%- endfor %}
