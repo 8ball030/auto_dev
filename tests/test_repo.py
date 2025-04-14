@@ -5,7 +5,6 @@ from pathlib import Path
 
 
 def _test_repo_scaffold(repo_type, make_commands, cli_runner, test_clean_filesystem):
-
     repo_root = Path(test_clean_filesystem) / "dummy"
     command = ["adev", "repo", "scaffold", repo_root.name, "-t", repo_type]
     runner = cli_runner(command)
