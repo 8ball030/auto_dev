@@ -14,6 +14,11 @@ COVERAGE_COMMAND = f"""coverage report \
 """
 
 
+def get_test_cpu_count() -> str:
+    """Determine how many CPUs to use for pytest-xdist."""
+    return str(cpu_count()) if os.getenv("CI") else "auto"
+
+
 def test_path(
     path: str,
     verbose: bool = False,
@@ -57,7 +62,7 @@ def test_path(
         extra_args.append("-w")
 
     if multiple:
-        extra_args.extend(("-n", str(cpu_count())))
+        extra_args.extend(("-n", get_test_cpu_count()))
 
     args = [path, *extra_args]
     os.environ["PYTHONPATH"] = "."
