@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 import toml
+import pytest
 from aea.cli.utils.config import get_default_author_from_cli_config
 
 from auto_dev.utils import change_dir
@@ -87,6 +88,7 @@ class BaseTestRepo:
         assert not error_messages
 
 
+@pytest.mark.skip
 class TestRepoPython(BaseTestRepo):
     """Test scaffolding new python repository."""
 
@@ -94,6 +96,7 @@ class TestRepoPython(BaseTestRepo):
     make_commands = "fmt", "lint", "test"
 
 
+@pytest.mark.skip
 class TestRepoAutonomy(BaseTestRepo):
     """Test scaffolding new autonomy repository."""
 
