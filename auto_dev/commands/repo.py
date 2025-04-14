@@ -337,7 +337,7 @@ def scaffold_new_repo(logger, name, type_of_repo, force, auto_approve, install, 
             src_dir = Path(name)
             src_dir.mkdir(exist_ok=False)
             logger.debug(f"Scaffolding `{src_dir!s}`")
-            (src_dir / "__init__.py").touch()
+            (src_dir / "__init__.py").write_text(f'"""{name.capitalize()} module."""')
             (src_dir / "main.py").write_text(SAMPLE_PYTHON_MAIN_FILE)
             (src_dir / "cli.py").write_text(SAMPLE_PYTHON_CLI_FILE.format(project_name=name))
         else:
