@@ -11,13 +11,17 @@ contains the following commands;
 import os
 import sys
 import difflib
+import subprocess
 from shutil import rmtree
 from pathlib import Path
 from dataclasses import dataclass
 
+import toml
 import requests
 import rich_click as click
 from rich import print  # pylint: disable=W0622
+from toml import TomlPreserveInlineDictEncoder
+from jinja2 import Environment, FileSystemLoader
 from rich.prompt import Prompt
 from rich.progress import Progress, track
 from aea.cli.utils.config import get_default_author_from_cli_config
@@ -26,9 +30,11 @@ from auto_dev.base import build_cli
 from auto_dev.enums import UserInput
 from auto_dev.utils import change_dir
 from auto_dev.constants import (
+    THIS_REPO_ROOT,
     DEFAULT_TIMEOUT,
     TEMPLATE_FOLDER,
     DEFAULT_ENCODING,
+    JINJA_TEMPLATE_FOLDER,
     SAMPLE_PYTHON_CLI_FILE,
     SAMPLE_PYTHON_MAIN_FILE,
     CheckResult,
@@ -58,6 +64,34 @@ def execute_commands(*commands: str, verbose: bool, logger, shell: bool = False)
             logger.error(f"{cli_executor.stdout}")
             logger.error(f"{cli_executor.stderr}")
             sys.exit(1)
+
+
+def _render_autonomy_pyproject_template(project_name: str, authors: str) -> str:
+    env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
+    template = env.get_template("repo/autonomy/pyproject.jinja")
+
+    pyproject_path = THIS_REPO_ROOT / "pyproject.toml"
+    pyproject = toml.load(pyproject_path)
+
+    build_system = pyproject["build-system"]
+    classifiers = pyproject["tool"]["poetry"]["classifiers"]
+    python = pyproject["tool"]["poetry"]["dependencies"]["python"]
+    current_version = pyproject["tool"]["poetry"]["version"]
+    min_minor_version = ".".join(current_version.split(".")[:2])
+    version = f">={min_minor_version}.0,<={current_version}"
+    dev_dependencies = pyproject["tool"]["poetry"]["group"]["dev"]["dependencies"]
+    black_config = pyproject["tool"]["black"]
+
+    return template.render(
+        build_system=toml.dumps(build_system),
+        project_name=project_name,
+        authors=authors,
+        classifiers="  " + ",\n  ".join(f'"{c}"' for c in classifiers),
+        python=python,
+        version=version,
+        dev_dependencies=toml.dumps(dev_dependencies, TomlPreserveInlineDictEncoder()),
+        black_config=toml.dumps(black_config),
+    )
 
 
 cli = build_cli()
@@ -102,6 +136,23 @@ class RepoScaffolder:
         """Scaffold files for a new repo."""
         new_repo_dir = Path.cwd()
         template_folder = TEMPLATES[self.type_of_repo]
+
+        if self.type_of_repo == "autonomy":
+            project_name = self.scaffold_kwargs["project_name"]
+            authors = self.scaffold_kwargs["author"]
+            pyproject_content = _render_autonomy_pyproject_template(project_name, authors)
+            (new_repo_dir / "pyproject.toml").write_text(pyproject_content)
+            result = subprocess.run(
+                ["poetry", "lock"],
+                capture_output=True,
+                text=True,
+                check=False,
+                cwd=new_repo_dir,
+            )
+            if result.returncode != 0:
+                msg = f"Failed to lock packages:\n{result.stderr}"
+                raise ValueError(msg)
+
         for file in track(
             self.template_files,
             description=f"Scaffolding {self.type_of_repo} repo",
