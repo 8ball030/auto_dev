@@ -1,69 +1,56 @@
 """Tests for the click cli."""
 
 import subprocess
-import subprocess
 from pathlib import Path
 
-import toml
-import pytest
-from aea.cli.utils.config import get_default_author_from_cli_config
 
-from auto_dev.utils import change_dir
+def _test_repo_scaffold(repo_type, make_commands, cli_runner, test_clean_filesystem):
+
+    repo_root = Path(test_clean_filesystem) / "dummy"
+    command = ["adev", "repo", "scaffold", repo_root.name, "-t", repo_type]
+    runner = cli_runner(command)
+    result = runner.execute()
+    makefile = repo_root / "Makefile"
+
+    # Verify the basic repository structure exists
+    assert result, runner.output
+    assert repo_root.exists(), f"Repository {repo_root} does not exist."
+    assert (repo_root / ".git").exists(), f".git directory not found in {repo_root}."
+    assert makefile.exists(), f"Makefile not found in {repo_root}."
+
+    # Run each make command and collect any errors.
+    error_messages = {}
+    for cmd in make_commands:
+        proc_result = subprocess.run(
+            ["make", cmd],
+            shell=False,
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=repo_root,
+        )
+        if proc_result.returncode != 0:
+            error_messages[cmd] = proc_result.stderr
+    assert not error_messages, f"Errors encountered in make commands: {error_messages}"
 
 
 def test_python_repo(cli_runner, test_clean_filesystem):
+    """Test scaffolding a Python repository."""
 
-    repo_root = Path(test_clean_filesystem) / "dummy_python"
-
-    command = ["adev", "repo", "scaffold", repo_root.name, "-t", "python"]
-    runner = cli_runner(command)
-    result = runner.execute()
-    makefile = repo_root / "Makefile"
-
-    assert result, runner.output
-    assert repo_root.exists()
-    assert (repo_root / ".git").exists()
-    assert makefile.exists()
-
-    error_messages = {}
-    make_commands = "fmt", "lint", "test"
-    for command in make_commands:
-        result = subprocess.run(
-            ["make", command],
-            shell=False,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if not runner.return_code == 0:
-            error_messages[command] = runner.stderr
-    assert not error_messages
+    _test_repo_scaffold(
+        repo_type="python",
+        make_commands=("fmt", "lint", "test"),
+        cli_runner=cli_runner,
+        test_clean_filesystem=test_clean_filesystem,
+    )
 
 
 def test_autonomy_repo(cli_runner, test_clean_filesystem):
+    """Test scaffolding an Autonomy repository."""
 
-    repo_root = Path(test_clean_filesystem) / "dummy_autonomy"
-
-    command = ["adev", "repo", "scaffold", repo_root.name, "-t", "autonomy"]
-    runner = cli_runner(command)
-    result = runner.execute()
-    makefile = repo_root / "Makefile"
-
-    assert result, runner.output
-    assert repo_root.exists()
-    assert (repo_root / ".git").exists()
-    assert makefile.exists()
-
-    error_messages = {}
-    make_commands = "fmt", "lint", "test", "hashes"
-    for command in make_commands:
-        result = subprocess.run(
-            ["make", command],
-            shell=False,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if not runner.return_code == 0:
-            error_messages[command] = runner.stderr
-    assert not error_messages
+    _test_repo_scaffold(
+        repo_type="autonomy",
+        make_commands=("fmt", "lint", "test", "hashes"),
+        cli_runner=cli_runner,
+        test_clean_filesystem=test_clean_filesystem,
+    )
