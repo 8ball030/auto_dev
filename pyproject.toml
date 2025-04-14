@@ -115,3 +115,10 @@ filterwarnings = [
 ]
 
 addopts = "--cov=auto_dev --cov-report html"
+
+[tool.coverage.run]
+source = ["."]
+branch = true
+
+[tool.coverage.paths]
+source = ["auto_dev", "/tmp/*/auto_dev"]
