@@ -19,8 +19,6 @@ classifiers = [
 python = ">=3.10,<3.14"
 autonomy-dev = {{extras = ["all"], version = ">=0.2.64,<=0.2.153"}}
 
-[tool.poetry.dev-dependencies]
-
 
 [tool.poetry.extras]
 dev = ["pre-commit", "virtualenv", "pip", "twine", "toml", "bump2version"]

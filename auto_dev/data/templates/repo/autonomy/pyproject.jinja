@@ -1,0 +1,24 @@
+[build-system]
+{{ build_system }}
+
+[tool.poetry]
+name = "{{ project_name }}"
+version = "0.1.0"
+description = ""
+authors = ["{{ authors }}"]
+readme = "README.md"
+license = "Apache-2.0"
+classifiers = [
+{{ classifiers }}
+]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "{{ python }}"
+autonomy-dev = {extras = ["all"], version = "{{ version }}"}
+
+[tool.poetry.group.dev.dependencies]
+{{ dev_dependencies }}
+
+[tool.black]
+{{ black_config }}
