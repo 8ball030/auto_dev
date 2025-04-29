@@ -34,7 +34,7 @@ include = "\\.pyi?$"
 exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox\n  | \\.venv\n  | _build\n  | buck-out\n  | build\n  | dist\n)/\n"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.14"
+python = ">=3.10,<3.13"
 open-autonomy = "==0.19.7"
 open-aea = "==1.65.0"
 open-aea-test-autonomy = "==0.19.7"
@@ -70,6 +70,7 @@ isort = "^5.13.2"
 openapi-spec-validator = "0.2.8"
 disutils = "^1.4.32.post2"
 setuptools = "^75.8.0"
+proto-schema-parser = "^1.5.0"
 
 
 [tool.poetry.group.dev.dependencies]

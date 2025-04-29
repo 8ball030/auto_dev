@@ -2,6 +2,7 @@
 # pylint: disable=W0135
 
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -107,9 +108,32 @@ def dummy_agent_tim(test_packages_filesystem) -> Path:
     return Path.cwd()
 
 
+@pytest.fixture(scope="module")
+def module_scoped_dummy_agent_tim() -> Path:
+    """Fixture for module scoped dummy agent tim."""
+
+    with isolated_filesystem(copy_cwd=True) as directory:
+        command = ["autonomy", "packages", "init"]
+        result = subprocess.run(command, check=False, text=True, capture_output=True)
+        if result.returncode != 0:
+            msg = f"Failed to init packages: {result.stderr}"
+            raise ValueError(msg)
+
+        agent = DEFAULT_PUBLIC_ID
+        command = ["adev", "create", f"{agent!s}", "-t", "eightballer/base", "--no-clean-up"]
+        result = subprocess.run(command, check=False, text=True, capture_output=True, cwd=directory)
+        if result.returncode != 0:
+            msg = f"Failed to create agent: {result.stderr}"
+            raise ValueError(msg)
+
+        os.chdir(agent.name)
+        yield Path.cwd()
+
+
 @pytest.fixture
 def dummy_agent_default(test_packages_filesystem) -> Path:
     """Fixture for dummy agent default."""
+
     assert Path.cwd() == Path(test_packages_filesystem)
     agent = DEFAULT_PUBLIC_ID
     command = f"adev create {agent!s} -t eightballer/base --no-clean-up --no-publish"
