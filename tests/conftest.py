@@ -111,19 +111,10 @@ def dummy_agent_tim(test_packages_filesystem) -> Path:
 
 
 @pytest.fixture(scope="module")
-def module_monkeypatch():
-    """Module-scoped monkeypatch."""
-    mp = pytest.MonkeyPatch()
-    yield mp
-    mp.undo()
-
-
-@pytest.fixture(scope="module")
-def module_scoped_dummy_agent_tim(module_monkeypatch) -> Path:
+def module_scoped_dummy_agent_tim() -> Path:
     """Fixture for module scoped dummy agent tim."""
 
     with isolated_filesystem(copy_cwd=True) as directory:
-        module_monkeypatch.setenv("PYTHONPATH", directory)
         command = ["autonomy", "packages", "init"]
         result = subprocess.run(command, check=False, text=True, capture_output=True)
         if result.returncode != 0:

@@ -1,5 +1,6 @@
 """Module for testing protocol generation."""
 
+import os
 import tempfile
 import functools
 import subprocess
@@ -9,14 +10,6 @@ import pytest
 
 from auto_dev.protocols import protodantic, performatives
 from auto_dev.protocols.scaffolder import read_protocol_spec
-
-
-HYPOTHESIS_SETTINGS = """
-from hypothesis import HealthCheck, settings
-
-settings.register_profile("generated", deadline=1000, suppress_health_check=[HealthCheck.too_slow])
-settings.load_profile("generated")
-"""
 
 
 @functools.lru_cache
@@ -74,7 +67,7 @@ def test_protodantic(proto_path: Path):
         tmp_path = Path(tmp_dir)
         code_out = tmp_path / "models.py"
         test_out = tmp_path / "test_models.py"
-        (tmp_path / "__init__.py").write_text(HYPOTHESIS_SETTINGS)
+        (tmp_path / "__init__.py").touch()
         protodantic.create(proto_path, code_out, test_out)
         exit_code = pytest.main([tmp_dir, "-vv", "-s", "--tb=long", "-p", "no:warnings"])
         assert exit_code == 0
@@ -134,8 +127,12 @@ def test_scaffold_protocol(module_scoped_dummy_agent_tim, protocol_spec: Path):
         msg = f"Protocol already exists in dummy_agent_tim: {protocol_outpath}"
         raise ValueError(msg)
 
+    # Point PYTHONPATH to the temporary project root so generated modules are discoverable
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_root)
+
     command = ["adev", "-v", "scaffold", "protocol", str(protocol_spec)]
-    result = subprocess.run(command, check=False, text=True, capture_output=True)
+    result = subprocess.run(command, env=env, check=False, text=True, capture_output=True)
     if result.returncode != 0:
         msg = f"Protocol scaffolding failed: {result.stderr}"
         raise ValueError(msg)
@@ -143,10 +140,10 @@ def test_scaffold_protocol(module_scoped_dummy_agent_tim, protocol_spec: Path):
     assert protocol_outpath.exists()
 
     test_dir = protocol_outpath / "tests"
-    (test_dir / "__init__.py").write_text(HYPOTHESIS_SETTINGS)
     command = ["pytest", str(test_dir), "-vv", "-s", "--tb=long", "-p", "no:warnings"]
     result = subprocess.run(
         command,
+        env=env,
         check=False,
         text=True,
         capture_output=True,
