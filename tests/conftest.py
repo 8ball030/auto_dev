@@ -75,10 +75,9 @@ def test_filesystem(monkeypatch):
 
 
 @pytest.fixture
-def test_clean_filesystem(monkeypatch):
+def test_clean_filesystem():
     """Fixture for invoking command-line interfaces."""
     with isolated_filesystem() as directory:
-        monkeypatch.setenv("PYTHONPATH", directory)
         yield directory
 
 
