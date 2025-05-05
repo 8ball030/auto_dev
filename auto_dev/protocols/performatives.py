@@ -41,7 +41,7 @@ def parse_annotation(annotation: str) -> str:
 
     if core.startswith("optional[") and core.endswith("]"):
         inner = core[len("optional[") : -1]
-        return f"{parse_annotation(inner)} | None"
+        return f"Optional[{parse_annotation(inner)}]"
     if core.startswith("list[") and core.endswith("]"):
         inner = core[len("list[") : -1]
         return f"tuple[{parse_annotation(inner)}]"  # quirk of the framework!
