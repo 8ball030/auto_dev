@@ -16,6 +16,11 @@ from packages.{{ author }}.protocols.{{ snake_name }}.custom_types import (
     {%- endfor %}
 )
 
+
+# ruff: noqa: UP007
+# UP007    - Use X | Y for type annotations  # NOTE: important edge case pydantic-hypothesis interaction!
+
+
 {# Define models for the performatives #}
 {%- for performative, fields in performative_types.items() %}
 class {{ snake_to_camel(performative) }}(BaseModel):

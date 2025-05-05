@@ -16,13 +16,14 @@ from {{ import_paths.primitives }} import (
     {%- endfor %}
 )
 
-# ruff: noqa: N806, C901, PLR0912, PLR0914, PLR0915, A001
+# ruff: noqa: N806, C901, PLR0912, PLR0914, PLR0915, A001, UP007
 # N806     - variable should be lowercase
 # C901     - function is too complex
 # PLR0912  - too many branches
 # PLR0914  - too many local variables
 # PLR0915  - too many statements
 # A001     - shadowing builtin names like `id` and `type`
+# UP007    - Use X | Y for type annotations  # NOTE: important edge case pydantic-hypothesis interaction!
 
 MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
