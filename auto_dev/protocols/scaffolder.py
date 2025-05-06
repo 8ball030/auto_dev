@@ -1,13 +1,17 @@
 """Module for generating protocols from a protocol.yaml specification."""
 
 import shutil
+import inspect
 import tempfile
+import importlib
 import subprocess
+from enum import IntEnum
 from pathlib import Path
 from functools import cached_property
 from collections.abc import Callable
 
 import yaml
+from more_itertools import partition
 from jinja2 import Template, Environment, FileSystemLoader
 from pydantic import BaseModel, ConfigDict
 from proto_schema_parser import ast
@@ -15,7 +19,7 @@ from proto_schema_parser.parser import Parser
 from aea.protocols.generator.base import ProtocolGenerator
 from proto_schema_parser.generator import Generator
 
-from auto_dev.utils import file_swapper, remove_prefix, snake_to_camel
+from auto_dev.utils import file_swapper, remove_prefix, snake_to_camel, camel_to_snake
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic, performatives
 
@@ -139,12 +143,12 @@ class ProtocolSpecification(BaseModel):
     @property
     def code_outpath(self) -> Path:
         """Outpath for custom_types.py."""
-        return self.outpath / "custom_types.py"
+        return self.outpath / "protodantic_models.py"
 
     @property
     def test_outpath(self) -> Path:
         """Outpath for tests/test_custom_types.py."""
-        return self.outpath / "tests" / "test_custom_types.py"
+        return self.outpath / "tests" / "test_protodantic_models.py"
 
     @cached_property
     def template_context(self) -> TemplateContext:
@@ -279,6 +283,58 @@ def generate_custom_types(protocol: ProtocolSpecification):
     tmp_proto_path.unlink()
 
 
+def post_enum_processing(protocol: ProtocolSpecification):
+
+    def load_module(path: Path):
+        name = protocol.code_outpath.with_suffix("").name
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def is_enum_only_model(cls: type[BaseModel]):
+        nested_enums = [
+            member for _, member in inspect.getmembers(cls, inspect.isclass)
+            if issubclass(member, IntEnum)
+        ]
+        other_fields = [f for f in cls.model_fields]
+        return len(nested_enums) == 1 and len(other_fields) == 1
+
+    models = load_module(protocol.code_outpath)
+    outpath = protocol.code_outpath.parent / "custom_types.py"
+    model_classes = inspect.getmembers(models, inspect.isclass)
+    locally_defined = filter(lambda cls: cls.__module__ == models.__name__, dict(model_classes).values())
+    proper_messages, single_enum_message = map(tuple, partition(is_enum_only_model, locally_defined))
+    with outpath.open("w") as out:
+        out.write("\"\"\"Module containing the custom types.\"\"\"\n")
+        out.write("from __future__ import annotations\n")
+        out.write("from enum import IntEnum\n\n")
+        for cls in proper_messages:
+            out.write(f"from .protodantic_models import {cls.__name__} as _{cls.__name__}\n")
+        out.write("\n# ruff: noqa: D101, D102\n\n")
+        for cls in proper_messages:
+            out.write(f"{cls.__name__} = _{cls.__name__}\n")
+        for cls in single_enum_message:
+            enum = next(
+                member for _, member in inspect.getmembers(cls, inspect.isclass)
+                if issubclass(member, IntEnum)
+            )
+            name = cls.__name__
+            snake_name = camel_to_snake(name)
+            prefix = camel_to_snake(enum.__name__).upper()
+            out.write(f"class {name}(IntEnum):\n")
+            for member_name, member in enum.__members__.items():
+                clean = member_name.removeprefix(f"{prefix}_")
+                out.write(f"    {clean} = {member.value}\n")
+            out.write("\n")
+            out.write(f"    @staticmethod\n")
+            out.write(f"    def encode(pb_obj, {snake_name}: {name}) -> None:\n")
+            out.write(f"        pb_obj.{snake_name} = {snake_name}\n\n")
+            out.write(f"    @classmethod\n")
+            out.write(f"    def decode(cls, pb_obj) -> {name}:\n")
+            out.write(f"        return cls(pb_obj.{snake_name})\n\n\n")
+
+
 def rewrite_test_custom_types(protocol: ProtocolSpecification) -> None:
     """Rewrite custom_types.py import to accomodate aea message wrapping during .proto generation."""
     content = protocol.test_outpath.read_text()
@@ -380,6 +436,7 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
 
     # 4. Generate custom_types.py and test_custom_types.py
     generate_custom_types(protocol)
+    post_enum_processing(protocol)
 
     # 5. rewrite test_custom_types to patch the import
     rewrite_test_custom_types(protocol)
