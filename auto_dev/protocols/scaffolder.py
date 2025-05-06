@@ -1,5 +1,7 @@
 """Module for generating protocols from a protocol.yaml specification."""
 
+import re
+import ast as pyast
 import shutil
 import inspect
 import tempfile
@@ -23,6 +25,38 @@ from auto_dev.utils import file_swapper, remove_prefix, camel_to_snake, snake_to
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic, performatives
 
+
+CUSTOM_TYPE_COMMENT = """
+# ruff: noqa: N806, C901, PLR0912, PLR0914, PLR0915, A001, UP007
+# N806     - variable should be lowercase
+# C901     - function is too complex
+# PLR0912  - too many branches
+# PLR0914  - too many local variables
+# PLR0915  - too many statements
+# A001     - shadowing builtin names like `id` and `type`
+# UP007    - Use X | Y for type annotations  # NOTE: important edge case pydantic-hypothesis interaction!
+"""
+
+
+FLAT_ENUM_TEMPLATE = """
+class {name}(IntEnum):
+    \"\"\"{name}\"\"\"
+    {clean_members}
+
+    @staticmethod
+    def encode(pb_obj, {snake_name}: {name}) -> None:
+        \"\"\"Encode {name} to protobuf.\"\"\"
+        pb_obj.{snake_name} = {snake_name}
+
+    @classmethod
+    def decode(cls, pb_obj) -> {name}:
+        \"\"\"Decode protobuf to {name}.\"\"\"
+        return cls(pb_obj.{snake_name})
+
+    @classmethod
+    def model_rebuild(cls):
+        \"\"\"Stub to catch model_rebuild invocations after enum flatten\"\"\"
+"""
 
 class JinjaTemplates(BaseModel, arbitrary_types_allowed=True):
     """JinjaTemplates."""
@@ -143,12 +177,12 @@ class ProtocolSpecification(BaseModel):
     @property
     def code_outpath(self) -> Path:
         """Outpath for custom_types.py."""
-        return self.outpath / "protodantic_models.py"
+        return self.outpath / "custom_types.py"
 
     @property
     def test_outpath(self) -> Path:
         """Outpath for tests/test_custom_types.py."""
-        return self.outpath / "tests" / "test_protodantic_models.py"
+        return self.outpath / "tests" / "test_custom_types.py"
 
     @cached_property
     def template_context(self) -> TemplateContext:
@@ -284,50 +318,78 @@ def generate_custom_types(protocol: ProtocolSpecification):
 
 
 def post_enum_processing(protocol: ProtocolSpecification):
-    """Post enum processing."""
+    """AST-based in-place flattening of enum-only message classes."""
+    models_py = protocol.code_outpath
+    src_text = models_py.read_text()
 
-    def load_module(path: Path):
-        name = protocol.code_outpath.with_suffix("").name
-        spec = importlib.util.spec_from_file_location(name, path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
+    # Dynamically import the generated models to detect enum‐only message classes
+    spec = importlib.util.spec_from_file_location("generated_models", models_py)
+    models_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(models_mod)
 
-    def is_enum_only_model(cls: type[BaseModel]):
-        nested_enums = [member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum)]
-        other_fields = list(cls.model_fields)
-        return len(nested_enums) == 1 and len(other_fields) == 1
+    def is_enum_only_model(cls: type[BaseModel]) -> bool:
+        nested = [
+            member
+            for _, member in inspect.getmembers(cls, inspect.isclass)
+            if issubclass(member, IntEnum)
+        ]
+        fields = list(cls.model_fields)
+        return len(nested) == 1 and len(fields) == 1
 
-    models = load_module(protocol.code_outpath)
-    outpath = protocol.code_outpath.parent / "custom_types.py"
-    model_classes = inspect.getmembers(models, inspect.isclass)
-    locally_defined = filter(lambda cls: cls.__module__ == models.__name__, dict(model_classes).values())
-    proper_messages, single_enum_message = map(tuple, partition(is_enum_only_model, locally_defined))
-    with outpath.open("w") as out:
-        out.write('"""Module containing the custom types."""\n')
-        out.write("from __future__ import annotations\n")
-        out.write("from enum import IntEnum\n\n")
-        for cls in proper_messages:
-            out.write(f"from .protodantic_models import {cls.__name__} as _{cls.__name__}\n")
-        out.write("\n# ruff: noqa: D101, D102\n\n")
-        for cls in proper_messages:
-            out.write(f"{cls.__name__} = _{cls.__name__}\n")
-        for cls in single_enum_message:
-            enum = next(member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum))
-            name = cls.__name__
-            snake_name = camel_to_snake(name)
-            prefix = camel_to_snake(enum.__name__).upper()
-            out.write(f"class {name}(IntEnum):\n")
-            for member_name, member in enum.__members__.items():
-                clean = member_name.removeprefix(f"{prefix}_")
-                out.write(f"    {clean} = {member.value}\n")
-            out.write("\n")
-            out.write("    @staticmethod\n")
-            out.write(f"    def encode(pb_obj, {snake_name}: {name}) -> None:\n")
-            out.write(f"        pb_obj.{snake_name} = {snake_name}\n\n")
-            out.write("    @classmethod\n")
-            out.write(f"    def decode(cls, pb_obj) -> {name}:\n")
-            out.write(f"        return cls(pb_obj.{snake_name})\n\n\n")
+    def inject_comment(src: str, comment: str) -> str:
+        # Matches the whole leading import block (one or more import lines + trailing blank lines)
+        pattern = re.compile(r"^((?:(?:import|from)\s.*\n)+\n*)", re.MULTILINE)
+        replacement = r"\1" + comment.rstrip() + "\n\n"
+        return pattern.sub(replacement, src, count=1)
+
+    enum_only_names = {
+        name
+        for name, cls in inspect.getmembers(models_mod, inspect.isclass)
+        if cls.__module__ == models_mod.__name__
+        and issubclass(cls, BaseModel)
+        and is_enum_only_model(cls)
+    }
+
+    # Pre‐generate flat enum class source snippets
+    flat_src_map: dict[str, str] = {}
+    for name in enum_only_names:
+        snake_name = camel_to_snake(name)
+        cls = getattr(models_mod, name)
+        enum = next(
+            member
+            for _, member in inspect.getmembers(cls, inspect.isclass)
+            if issubclass(member, IntEnum)
+        )
+        clean_members = []
+        prefix = camel_to_snake(enum.__name__).upper()
+        for member_name, member in enum.__members__.items():
+            clean = member_name.removeprefix(f"{prefix}_")
+            clean_members.append(f"{clean} = {member.value}")
+
+        snippet = FLAT_ENUM_TEMPLATE.format(
+            name=name,
+            clean_members="\n    ".join(clean_members),
+            snake_name=snake_name,
+        )
+        flat_src_map[name] = snippet.strip()
+
+    # AST‐transformer that replaces those ClassDefs
+    class EnumFlattener(pyast.NodeTransformer):
+        def visit_ClassDef(self, node: pyast.ClassDef):
+            if node.name in flat_src_map:
+                new_node = pyast.parse(flat_src_map[node.name]).body[0]
+                return pyast.copy_location(new_node, node)
+            return node
+
+    # Apply transformation
+    tree = pyast.parse(src_text)
+    new_tree = EnumFlattener().visit(tree)
+    pyast.fix_missing_locations(new_tree)
+
+    # Re-write out custom_types.py with the entire transformed module
+    full_code = pyast.unparse(new_tree)
+    with protocol.code_outpath.open("w") as out:
+        out.write(inject_comment(full_code, CUSTOM_TYPE_COMMENT))
 
 
 def rewrite_test_custom_types(protocol: ProtocolSpecification) -> None:
@@ -348,7 +410,7 @@ def generate_dialogues(protocol: ProtocolSpecification, template):
 def generate_tests_init(protocol: ProtocolSpecification) -> None:
     """Generate tests/__init__.py."""
     test_init_file = protocol.outpath / "tests" / "__init__.py"
-    test_init_file.write_text(f'"""Test module for the {protocol.name}"""')
+    test_init_file.write_text(f'"""Test module for the {protocol.name} protocol."""')
 
 
 def generate_performative_messages(protocol: ProtocolSpecification, template) -> None:
