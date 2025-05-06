@@ -51,10 +51,6 @@ class {name}(IntEnum):
     def decode(cls, pb_obj) -> {name}:
         \"\"\"Decode protobuf to {name}.\"\"\"
         return cls(pb_obj.{snake_name})
-
-    @classmethod
-    def model_rebuild(cls):
-        \"\"\"Stub to catch model_rebuild invocations after enum flatten\"\"\"
 """
 
 
