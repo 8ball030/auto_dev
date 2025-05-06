@@ -15,7 +15,6 @@ from collections.abc import Callable
 import yaml
 from jinja2 import Template, Environment, FileSystemLoader
 from pydantic import BaseModel, ConfigDict
-from more_itertools import partition
 from proto_schema_parser import ast
 from proto_schema_parser.parser import Parser
 from aea.protocols.generator.base import ProtocolGenerator
@@ -57,6 +56,7 @@ class {name}(IntEnum):
     def model_rebuild(cls):
         \"\"\"Stub to catch model_rebuild invocations after enum flatten\"\"\"
 """
+
 
 class JinjaTemplates(BaseModel, arbitrary_types_allowed=True):
     """JinjaTemplates."""
@@ -319,20 +319,14 @@ def generate_custom_types(protocol: ProtocolSpecification):
 
 def post_enum_processing(protocol: ProtocolSpecification):
     """AST-based in-place flattening of enum-only message classes."""
-    models_py = protocol.code_outpath
-    src_text = models_py.read_text()
 
-    # Dynamically import the generated models to detect enum‐only message classes
-    spec = importlib.util.spec_from_file_location("generated_models", models_py)
+    # Dynamically import the generated models to detect enum-only message classes
+    spec = importlib.util.spec_from_file_location("generated_models", protocol.code_outpath)
     models_mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(models_mod)
 
     def is_enum_only_model(cls: type[BaseModel]) -> bool:
-        nested = [
-            member
-            for _, member in inspect.getmembers(cls, inspect.isclass)
-            if issubclass(member, IntEnum)
-        ]
+        nested = [member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum)]
         fields = list(cls.model_fields)
         return len(nested) == 1 and len(fields) == 1
 
@@ -345,21 +339,15 @@ def post_enum_processing(protocol: ProtocolSpecification):
     enum_only_names = {
         name
         for name, cls in inspect.getmembers(models_mod, inspect.isclass)
-        if cls.__module__ == models_mod.__name__
-        and issubclass(cls, BaseModel)
-        and is_enum_only_model(cls)
+        if cls.__module__ == models_mod.__name__ and issubclass(cls, BaseModel) and is_enum_only_model(cls)
     }
 
-    # Pre‐generate flat enum class source snippets
+    # Pre-generate flat enum class source snippets
     flat_src_map: dict[str, str] = {}
     for name in enum_only_names:
         snake_name = camel_to_snake(name)
         cls = getattr(models_mod, name)
-        enum = next(
-            member
-            for _, member in inspect.getmembers(cls, inspect.isclass)
-            if issubclass(member, IntEnum)
-        )
+        enum = next(member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum))
         clean_members = []
         prefix = camel_to_snake(enum.__name__).upper()
         for member_name, member in enum.__members__.items():
@@ -373,16 +361,16 @@ def post_enum_processing(protocol: ProtocolSpecification):
         )
         flat_src_map[name] = snippet.strip()
 
-    # AST‐transformer that replaces those ClassDefs
+    # AST-transformer that replaces those ClassDefs
     class EnumFlattener(pyast.NodeTransformer):
-        def visit_ClassDef(self, node: pyast.ClassDef):
+        def visit_ClassDef(self, node: pyast.ClassDef):  # noqa: N802
             if node.name in flat_src_map:
                 new_node = pyast.parse(flat_src_map[node.name]).body[0]
                 return pyast.copy_location(new_node, node)
             return node
 
     # Apply transformation
-    tree = pyast.parse(src_text)
+    tree = pyast.parse(protocol.code_outpath.read_text())
     new_tree = EnumFlattener().visit(tree)
     pyast.fix_missing_locations(new_tree)
 
