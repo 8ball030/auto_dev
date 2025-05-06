@@ -31,5 +31,6 @@ class {{ snake_to_camel(performative) }}(BaseModel):
 
 {% endfor %}
 
-for cls in BaseModel.__subclasses__():
-    cls.model_rebuild()
+{%- for performative in performative_types %}
+{{ snake_to_camel(performative) }}.model_rebuild()
+{%- endfor %}
