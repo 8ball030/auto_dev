@@ -11,15 +11,15 @@ from functools import cached_property
 from collections.abc import Callable
 
 import yaml
-from more_itertools import partition
 from jinja2 import Template, Environment, FileSystemLoader
 from pydantic import BaseModel, ConfigDict
+from more_itertools import partition
 from proto_schema_parser import ast
 from proto_schema_parser.parser import Parser
 from aea.protocols.generator.base import ProtocolGenerator
 from proto_schema_parser.generator import Generator
 
-from auto_dev.utils import file_swapper, remove_prefix, snake_to_camel, camel_to_snake
+from auto_dev.utils import file_swapper, remove_prefix, camel_to_snake, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic, performatives
 
@@ -284,6 +284,7 @@ def generate_custom_types(protocol: ProtocolSpecification):
 
 
 def post_enum_processing(protocol: ProtocolSpecification):
+    """Post enum processing."""
 
     def load_module(path: Path):
         name = protocol.code_outpath.with_suffix("").name
@@ -293,11 +294,8 @@ def post_enum_processing(protocol: ProtocolSpecification):
         return module
 
     def is_enum_only_model(cls: type[BaseModel]):
-        nested_enums = [
-            member for _, member in inspect.getmembers(cls, inspect.isclass)
-            if issubclass(member, IntEnum)
-        ]
-        other_fields = [f for f in cls.model_fields]
+        nested_enums = [member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum)]
+        other_fields = list(cls.model_fields)
         return len(nested_enums) == 1 and len(other_fields) == 1
 
     models = load_module(protocol.code_outpath)
@@ -306,7 +304,7 @@ def post_enum_processing(protocol: ProtocolSpecification):
     locally_defined = filter(lambda cls: cls.__module__ == models.__name__, dict(model_classes).values())
     proper_messages, single_enum_message = map(tuple, partition(is_enum_only_model, locally_defined))
     with outpath.open("w") as out:
-        out.write("\"\"\"Module containing the custom types.\"\"\"\n")
+        out.write('"""Module containing the custom types."""\n')
         out.write("from __future__ import annotations\n")
         out.write("from enum import IntEnum\n\n")
         for cls in proper_messages:
@@ -315,10 +313,7 @@ def post_enum_processing(protocol: ProtocolSpecification):
         for cls in proper_messages:
             out.write(f"{cls.__name__} = _{cls.__name__}\n")
         for cls in single_enum_message:
-            enum = next(
-                member for _, member in inspect.getmembers(cls, inspect.isclass)
-                if issubclass(member, IntEnum)
-            )
+            enum = next(member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum))
             name = cls.__name__
             snake_name = camel_to_snake(name)
             prefix = camel_to_snake(enum.__name__).upper()
@@ -327,10 +322,10 @@ def post_enum_processing(protocol: ProtocolSpecification):
                 clean = member_name.removeprefix(f"{prefix}_")
                 out.write(f"    {clean} = {member.value}\n")
             out.write("\n")
-            out.write(f"    @staticmethod\n")
+            out.write("    @staticmethod\n")
             out.write(f"    def encode(pb_obj, {snake_name}: {name}) -> None:\n")
             out.write(f"        pb_obj.{snake_name} = {snake_name}\n\n")
-            out.write(f"    @classmethod\n")
+            out.write("    @classmethod\n")
             out.write(f"    def decode(cls, pb_obj) -> {name}:\n")
             out.write(f"        return cls(pb_obj.{snake_name})\n\n\n")
 

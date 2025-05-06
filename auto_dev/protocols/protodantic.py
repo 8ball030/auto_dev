@@ -12,7 +12,7 @@ from jinja2 import Template, Environment, FileSystemLoader
 from pydantic import BaseModel, ConfigDict
 from proto_schema_parser.parser import Parser
 
-from auto_dev.constants import JINJA_TEMPLATE_FOLDER, PKG_ROOT
+from auto_dev.constants import PKG_ROOT, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import formatter, primitives as primitives_module
 from auto_dev.protocols.adapters import FileAdapter
 
