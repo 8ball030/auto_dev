@@ -29,5 +29,7 @@ MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
 
 {{ formatter.render(file) }}
 
-for cls in BaseModel.__subclasses__():
-    cls.model_rebuild()
+
+{%- for message in file.messages %}
+{{ message.name }}.model_rebuild()
+{%- endfor %}
