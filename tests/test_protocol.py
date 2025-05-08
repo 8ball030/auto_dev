@@ -79,7 +79,7 @@ def test_protodantic(proto_path: Path):
         ("pt:int", "conint(ge=Int32.min(), le=Int32.max())"),
         ("pt:float", "confloat(ge=Double.min(), le=Double.max())"),
         ("pt:list[pt:int]", "tuple[conint(ge=Int32.min(), le=Int32.max())]"),
-        ("pt:optional[pt:int]", "conint(ge=Int32.min(), le=Int32.max()) | None"),
+        ("pt:optional[pt:int]", "Optional[conint(ge=Int32.min(), le=Int32.max())]"),
         ("pt:dict[pt:str, pt:int]", "dict[str, conint(ge=Int32.min(), le=Int32.max())]"),
         (
             "pt:list[pt:union[pt:dict[pt:str, pt:int], pt:list[pt:bytes]]]",
@@ -87,7 +87,7 @@ def test_protodantic(proto_path: Path):
         ),
         (
             "pt:optional[pt:dict[pt:union[pt:str, pt:int], pt:list[pt:union[pt:float, pt:bool]]]]",
-            "dict[str | conint(ge=Int32.min(), le=Int32.max()), tuple[confloat(ge=Double.min(), le=Double.max()) | bool]] | None",  # noqa: E501
+            "Optional[dict[str | conint(ge=Int32.min(), le=Int32.max()), tuple[confloat(ge=Double.min(), le=Double.max()) | bool]]]",  # noqa: E501
         ),
     ],
 )
