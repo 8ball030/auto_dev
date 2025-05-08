@@ -12,7 +12,7 @@ from jinja2 import Template, Environment, FileSystemLoader
 from pydantic import BaseModel, ConfigDict
 from proto_schema_parser.parser import Parser
 
-from auto_dev.constants import JINJA_TEMPLATE_FOLDER
+from auto_dev.constants import PKG_ROOT, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import formatter, primitives as primitives_module
 from auto_dev.protocols.adapters import FileAdapter
 
@@ -118,9 +118,9 @@ def _get_locally_defined_classes(module: ModuleType) -> list[type]:
     return list(filter(locally_defined, vars(module).values()))
 
 
-def copy_primitives(repo_root: Path, code_outpath: Path) -> Path:
+def copy_primitives(pkg_root: Path, code_outpath: Path) -> Path:
     """Copy primitives."""
-    primitives_py = repo_root / "auto_dev" / "protocols" / "primitives.py"
+    primitives_py = pkg_root / "protocols" / "primitives.py"
     primitives_outpath = code_outpath.parent / primitives_py.name
     primitives_outpath.write_text(primitives_py.read_text())
     return primitives_outpath
@@ -167,7 +167,7 @@ def create(
     jinja_templates = JinjaTemplates.load()
 
     # Copy primitives file
-    primitives_outpath = copy_primitives(repo_root, code_outpath)
+    primitives_outpath = copy_primitives(PKG_ROOT, code_outpath)
 
     # import the custom primitive types
     float_primitives, integer_primitives = _extract_primitives(primitives_module)

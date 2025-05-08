@@ -22,20 +22,14 @@ from {{ import_paths.models }} import (
     {%- endfor %}
 )
 
-{# Define strategies for each message #}
-{%- for message in file.messages %}
-{{ message.name|lower }}_strategy = st.from_type({{ message.name }})
-{%- endfor %}
-
 {# Define tests for each message #}
 {%- for message in file.messages %}
-@given({{ message.name|lower }}_strategy)
+@given(st.from_type({{ message.name }}))
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
     """Test {{ message.name }}"""
     assert isinstance({{ message.name|lower }}, {{ message.name }})
     proto_obj = {{ messages_pb2 }}.{{ message.name }}()
     {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})
     result = {{ message.name }}.decode(proto_obj)
-    assert id({{ message.name|lower }}) != id(result)
     assert {{ message.name|lower }} == result
 {% endfor %}

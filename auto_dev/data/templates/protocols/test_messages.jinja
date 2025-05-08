@@ -28,7 +28,7 @@ from packages.{{ author }}.protocols.{{ snake_name }}.tests.performatives import
 def shallow_dump(model: BaseModel) -> dict:
     """Shallow dump pydantic model."""
 
-    return {name: getattr(model, name) for name in model.__fields__}
+    return {name: getattr(model, name) for name in model.__class__.model_fields}
 
 
 def perform_message_test(performative, model) -> None:

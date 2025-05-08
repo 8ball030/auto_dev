@@ -1,8 +1,13 @@
 """Module for generating protocols from a protocol.yaml specification."""
 
+import re
+import ast as pyast
 import shutil
+import inspect
 import tempfile
+import importlib
 import subprocess
+from enum import IntEnum
 from pathlib import Path
 from functools import cached_property
 from collections.abc import Callable
@@ -15,9 +20,38 @@ from proto_schema_parser.parser import Parser
 from aea.protocols.generator.base import ProtocolGenerator
 from proto_schema_parser.generator import Generator
 
-from auto_dev.utils import file_swapper, remove_prefix, snake_to_camel
+from auto_dev.utils import file_swapper, remove_prefix, camel_to_snake, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
 from auto_dev.protocols import protodantic, performatives
+
+
+CUSTOM_TYPE_COMMENT = """
+# ruff: noqa: N806, C901, PLR0912, PLR0914, PLR0915, A001, UP007
+# N806     - variable should be lowercase
+# C901     - function is too complex
+# PLR0912  - too many branches
+# PLR0914  - too many local variables
+# PLR0915  - too many statements
+# A001     - shadowing builtin names like `id` and `type`
+# UP007    - Use X | Y for type annotations  # NOTE: important edge case pydantic-hypothesis interaction!
+"""
+
+
+FLAT_ENUM_TEMPLATE = """
+class {name}(IntEnum):
+    \"\"\"{name}\"\"\"
+    {clean_members}
+
+    @staticmethod
+    def encode(pb_obj, {snake_name}: {name}) -> None:
+        \"\"\"Encode {name} to protobuf.\"\"\"
+        pb_obj.{snake_name} = {snake_name}
+
+    @classmethod
+    def decode(cls, pb_obj) -> {name}:
+        \"\"\"Decode protobuf to {name}.\"\"\"
+        return cls(pb_obj.{snake_name})
+"""
 
 
 class JinjaTemplates(BaseModel, arbitrary_types_allowed=True):
@@ -279,6 +313,69 @@ def generate_custom_types(protocol: ProtocolSpecification):
     tmp_proto_path.unlink()
 
 
+def post_enum_processing(protocol: ProtocolSpecification):
+    """AST-based in-place flattening of enum-only message classes."""
+
+    # Dynamically import the generated models to detect enum-only message classes
+    spec = importlib.util.spec_from_file_location("generated_models", protocol.code_outpath)
+    models_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(models_mod)
+
+    def is_enum_only_model(cls: type[BaseModel]) -> bool:
+        nested = [member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum)]
+        fields = list(cls.model_fields)
+        return len(nested) == 1 and len(fields) == 1
+
+    def inject_comment(src: str, comment: str) -> str:
+        # Matches the whole leading import block (one or more import lines + trailing blank lines)
+        pattern = re.compile(r"^((?:(?:import|from)\s.*\n)+\n*)", re.MULTILINE)
+        replacement = r"\1" + comment.rstrip() + "\n\n"
+        return pattern.sub(replacement, src, count=1)
+
+    enum_only_names = {
+        name
+        for name, cls in inspect.getmembers(models_mod, inspect.isclass)
+        if cls.__module__ == models_mod.__name__ and issubclass(cls, BaseModel) and is_enum_only_model(cls)
+    }
+
+    # Pre-generate flat enum class source snippets
+    flat_src_map: dict[str, str] = {}
+    for name in enum_only_names:
+        snake_name = camel_to_snake(name)
+        cls = getattr(models_mod, name)
+        enum = next(member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum))
+        clean_members = []
+        prefix = camel_to_snake(enum.__name__).upper()
+        for member_name, member in enum.__members__.items():
+            clean = member_name.removeprefix(f"{prefix}_")
+            clean_members.append(f"{clean} = {member.value}")
+
+        snippet = FLAT_ENUM_TEMPLATE.format(
+            name=name,
+            clean_members="\n    ".join(clean_members),
+            snake_name=snake_name,
+        )
+        flat_src_map[name] = snippet.strip()
+
+    # AST-transformer that replaces those ClassDefs
+    class EnumFlattener(pyast.NodeTransformer):
+        def visit_ClassDef(self, node: pyast.ClassDef):  # noqa: N802
+            if node.name in flat_src_map:
+                new_node = pyast.parse(flat_src_map[node.name]).body[0]
+                return pyast.copy_location(new_node, node)
+            return node
+
+    # Apply transformation
+    tree = pyast.parse(protocol.code_outpath.read_text())
+    new_tree = EnumFlattener().visit(tree)
+    pyast.fix_missing_locations(new_tree)
+
+    # Re-write out custom_types.py with the entire transformed module
+    full_code = pyast.unparse(new_tree)
+    with protocol.code_outpath.open("w") as out:
+        out.write(inject_comment(full_code, CUSTOM_TYPE_COMMENT))
+
+
 def rewrite_test_custom_types(protocol: ProtocolSpecification) -> None:
     """Rewrite custom_types.py import to accomodate aea message wrapping during .proto generation."""
     content = protocol.test_outpath.read_text()
@@ -297,7 +394,7 @@ def generate_dialogues(protocol: ProtocolSpecification, template):
 def generate_tests_init(protocol: ProtocolSpecification) -> None:
     """Generate tests/__init__.py."""
     test_init_file = protocol.outpath / "tests" / "__init__.py"
-    test_init_file.write_text(f'"""Test module for the {protocol.name}"""')
+    test_init_file.write_text(f'"""Test module for the {protocol.name} protocol."""')
 
 
 def generate_performative_messages(protocol: ProtocolSpecification, template) -> None:
@@ -380,6 +477,7 @@ def protocol_scaffolder(protocol_specification_path: str, language, logger, verb
 
     # 4. Generate custom_types.py and test_custom_types.py
     generate_custom_types(protocol)
+    post_enum_processing(protocol)
 
     # 5. rewrite test_custom_types to patch the import
     rewrite_test_custom_types(protocol)

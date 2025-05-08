@@ -68,7 +68,7 @@ def render_field(field: Field, message: MessageAdapter) -> str:
         case FieldCardinality.REQUIRED | None:
             return f"{resolved_type}"
         case FieldCardinality.OPTIONAL:
-            return f"{resolved_type} | None"
+            return f"Optional[{resolved_type}] = None"
         case FieldCardinality.REPEATED:
             return f"list[{resolved_type}]"
         case _:
