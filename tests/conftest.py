@@ -67,9 +67,10 @@ def openapi_test_case(request):
 
 
 @pytest.fixture
-def test_filesystem():
+def test_filesystem(monkeypatch):
     """Fixture for invoking command-line interfaces."""
     with isolated_filesystem(copy_cwd=True) as directory:
+        monkeypatch.setenv("PYTHONPATH", directory)
         yield directory
 
 
