@@ -16,6 +16,7 @@ class ParamType(Enum):
     UINT16 = "uint16"
     UINT24 = "uint24"
     UINT128 = "uint128"
+    INT64 = "int64"
     INT128 = "int128"
     INT256 = "int256"
     BYTES32 = "bytes32"
@@ -38,3 +39,4 @@ class ParamType(Enum):
     BYTES = "bytes"
     BYTES_ARRAY = "bytes[]"
     BYTES32_ARRAY_ARRAY = "bytes32[][]"
+    BYTES32_ARRAY = "bytes32[]"
