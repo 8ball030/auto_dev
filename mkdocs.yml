@@ -10,6 +10,8 @@ nav:
   - FSM: fsm.md
   - OpenAPI: openapi.md
   - Data Access Object: dao.md
+- Guides:
+  - Watcher: guides/watcher.md
 - Commands:
   - augment: commands/augment.md
   - convert: commands/convert.md
