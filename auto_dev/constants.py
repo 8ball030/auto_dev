@@ -8,6 +8,9 @@ from aea.cli.utils.config import get_or_create_cli_config
 from aea.configurations.data_types import PublicId
 
 
+PKG_ROOT = Path(__file__).parent
+THIS_REPO_ROOT = PKG_ROOT.parent
+
 DEFAULT_ENCODING = "utf-8"
 DEFAULT_TZ = "UTC"
 DEFAULT_TIMEOUT = 10

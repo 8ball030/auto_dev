@@ -1,0 +1,72 @@
+{{ header }}
+
+"""Test messages module for the {{ snake_name }} protocol."""
+
+import pytest
+from pydantic import BaseModel
+from hypothesis import strategies as st
+from hypothesis import given
+
+from aea.common import Address
+from aea.mail.base import Envelope
+from aea.protocols.base import Message
+from aea.protocols.dialogue.base import Dialogue, Dialogues
+
+
+from packages.{{ author }}.protocols.{{ snake_name }}.message import {{ camel_name }}Message
+from packages.{{ author }}.protocols.{{ snake_name }}.tests.primitive_strategies import (
+    Int32,
+    Double,
+)
+from packages.{{ author }}.protocols.{{ snake_name }}.tests.performatives import (
+    {%- for performative in performative_types %}
+    {{ snake_to_camel(performative) }},
+    {%- endfor %}
+)
+
+
+def shallow_dump(model: BaseModel) -> dict:
+    """Shallow dump pydantic model."""
+
+    return {name: getattr(model, name) for name in model.__class__.model_fields}
+
+
+def perform_message_test(performative, model) -> None:
+    """Test message encode/decode."""
+
+    msg = {{ camel_name }}Message(
+        performative=performative,
+        **shallow_dump(model),
+    )
+
+    msg.to = "receiver"
+    assert msg._is_consistent()  # noqa: SLF001
+    envelope = Envelope(to=msg.to, sender="sender", message=msg)
+    envelope_bytes = envelope.encode()
+
+    actual_envelope = Envelope.decode(envelope_bytes)
+    expected_envelope = envelope
+
+    assert expected_envelope.to == actual_envelope.to
+    assert expected_envelope.sender == actual_envelope.sender
+    assert (
+        expected_envelope.protocol_specification_id
+        == actual_envelope.protocol_specification_id
+    )
+    assert expected_envelope.message != actual_envelope.message
+
+    actual_msg = {{ camel_name }}Message.serializer.decode(actual_envelope.message_bytes)
+    actual_msg.to = actual_envelope.to
+    actual_msg.sender = actual_envelope.sender
+    expected_msg = msg
+    assert expected_msg == actual_msg
+
+
+{%- for performative in performative_types %}
+
+@given(st.from_type({{ snake_to_camel(performative) }}))
+def test_{{ performative }}_messages(model):
+    """Test for the '{{ performative|upper }}' protocol message encode and decode."""
+
+    perform_message_test({{ camel_name }}Message.Performative.{{ performative|upper }}, model)
+{% endfor %}

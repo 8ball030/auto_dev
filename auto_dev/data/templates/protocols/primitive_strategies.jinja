@@ -1,0 +1,28 @@
+"""Module containing hypothesis strategies for the custom primitives."""
+
+from hypothesis import given
+from hypothesis import strategies as st
+
+from {{ import_paths.primitives }} import (
+    {%- for primitive in float_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+    {%- for primitive in integer_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+)
+
+{# Register strategies for floating-point types #}
+{%- for primitive in float_primitives %}
+st.register_type_strategy(
+    {{ primitive.__name__ }},
+    st.floats(min_value={{ primitive.__name__ }}.min(), max_value={{ primitive.__name__ }}.max(),  allow_nan=False, allow_infinity=False).map({{ primitive.__name__ }})
+)
+{%- endfor %}
+{# Register strategies for integer types #}
+{%- for primitive in integer_primitives %}
+st.register_type_strategy(
+    {{ primitive.__name__ }},
+    st.integers(min_value={{ primitive.__name__ }}.min(), max_value={{ primitive.__name__ }}.max()).map({{ primitive.__name__ }})
+)
+{% endfor %}

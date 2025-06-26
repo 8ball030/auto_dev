@@ -465,7 +465,7 @@ open_aea_repo = GitDependency(
 
 auto_dev_repo = GitDependency(
     name="autonomy-dev",
-    version="0.2.142",
+    version="0.2.153",
     location=DependencyLocation.REMOTE,
     url="https://api.github.com/repos/8ball030/auto_dev",
     extras=["all"],
@@ -609,10 +609,11 @@ def get_update_command(poetry_dependencies: Dependency, strict: bool = False, us
         raw = toml.load("pyproject.toml")["tool"]["poetry"]["dependencies"]
 
         current_version = str(raw[dependency.name])
-
         if use_latest:
-            expected_version = f"'{pre_fix}{dependency.get_latest_version()}'"
-            click.echo(f"   Fetched  latest version for:   {dependency.name}@{expected_version}")
+            if dependency.location is DependencyLocation.LOCAL:
+                expected_version = f"{dependency.url}"
+            else:
+                expected_version = f"'{pre_fix}{dependency.get_latest_version()}'"
         else:
             expected_version = f"'{pre_fix}{dependency.version}'"
 

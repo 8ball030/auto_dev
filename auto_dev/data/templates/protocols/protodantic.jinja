@@ -1,0 +1,35 @@
+"""Module containing the pydantic models generated from the .proto file."""
+
+from __future__ import annotations
+
+from enum import IntEnum
+from typing import Optional
+
+from pydantic import BaseModel
+
+from {{ import_paths.primitives }} import (
+    {%- for primitive in float_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+    {%- for primitive in integer_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+)
+
+# ruff: noqa: N806, C901, PLR0912, PLR0914, PLR0915, A001, UP007
+# N806     - variable should be lowercase
+# C901     - function is too complex
+# PLR0912  - too many branches
+# PLR0914  - too many local variables
+# PLR0915  - too many statements
+# A001     - shadowing builtin names like `id` and `type`
+# UP007    - Use X | Y for type annotations  # NOTE: important edge case pydantic-hypothesis interaction!
+
+MAX_PROTO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GiB in bytes
+
+{{ formatter.render(file) }}
+
+
+for cls in BaseModel.__subclasses__():
+    if cls.__module__ == __name__:
+        cls.model_rebuild()

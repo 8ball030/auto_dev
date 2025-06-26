@@ -1,0 +1,36 @@
+{{ header }}
+
+"""Models for the {{ snake_name }} protocol performatives to facilitate hypothesis strategy generation."""
+
+from typing import Optional
+
+from pydantic import BaseModel, conint, confloat
+
+from packages.{{ author }}.protocols.{{ snake_name }}.tests.primitive_strategies import (
+    Int32,
+    Double,
+)
+from packages.{{ author }}.protocols.{{ snake_name }}.custom_types import (
+    {%- for custom_type in custom_types %}
+    {{ custom_type }},
+    {%- endfor %}
+)
+
+
+# ruff: noqa: UP007
+# UP007    - Use X | Y for type annotations  # NOTE: important edge case pydantic-hypothesis interaction!
+
+
+{# Define models for the performatives #}
+{%- for performative, fields in performative_types.items() %}
+class {{ snake_to_camel(performative) }}(BaseModel):
+    """Model for the `{{ performative|upper }}` initial speech act performative."""
+    {%- for field_name, field_type in fields.items() %}
+    {{ field_name }}: {{ field_type }}
+    {%- endfor %}
+
+{% endfor %}
+
+{%- for performative in performative_types %}
+{{ snake_to_camel(performative) }}.model_rebuild()
+{%- endfor %}

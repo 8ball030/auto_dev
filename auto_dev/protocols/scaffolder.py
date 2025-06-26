@@ -1,50 +1,220 @@
-"""Protocol scaffolder."""
+"""Module for generating protocols from a protocol.yaml specification."""
 
 import re
-import ast
-import datetime
+import ast as pyast
+import shutil
+import inspect
 import tempfile
-import textwrap
+import importlib
 import subprocess
+from enum import IntEnum
 from pathlib import Path
-from itertools import starmap
-from collections import namedtuple
+from functools import cached_property
+from collections.abc import Callable
 
 import yaml
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Template, Environment, FileSystemLoader
+from pydantic import BaseModel, ConfigDict
+from proto_schema_parser import ast
+from proto_schema_parser.parser import Parser
 from aea.protocols.generator.base import ProtocolGenerator
+from proto_schema_parser.generator import Generator
 
-from auto_dev.fmt import Formatter
-from auto_dev.utils import currenttz, get_logger, remove_prefix, camel_to_snake, snake_to_camel
+from auto_dev.utils import file_swapper, remove_prefix, camel_to_snake, snake_to_camel
 from auto_dev.constants import DEFAULT_ENCODING, JINJA_TEMPLATE_FOLDER
-from auto_dev.data.connections.template import HEADER
+from auto_dev.protocols import protodantic, performatives
 
 
-ProtocolSpecification = namedtuple("ProtocolSpecification", ["metadata", "custom_types", "speech_acts"])
-NEW_DOCSTRING = textwrap.dedent("""
-{text}
-{args}
-{returns}
-""")
-
-README_TEMPLATE = """
-# {name} Protocol
-
-## Description
-
-...
-
-## Specification
-
-```yaml
-{protocol_definition}
-```
+CUSTOM_TYPE_COMMENT = """
+# ruff: noqa: N806, C901, PLR0912, PLR0914, PLR0915, A001, UP007
+# N806     - variable should be lowercase
+# C901     - function is too complex
+# PLR0912  - too many branches
+# PLR0914  - too many local variables
+# PLR0915  - too many statements
+# A001     - shadowing builtin names like `id` and `type`
+# UP007    - Use X | Y for type annotations  # NOTE: important edge case pydantic-hypothesis interaction!
 """
 
 
-def read_protocol(filepath: str) -> ProtocolSpecification:
+FLAT_ENUM_TEMPLATE = """
+class {name}(IntEnum):
+    \"\"\"{name}\"\"\"
+    {clean_members}
+
+    @staticmethod
+    def encode(pb_obj, {snake_name}: {name}) -> None:
+        \"\"\"Encode {name} to protobuf.\"\"\"
+        pb_obj.{snake_name} = {snake_name}
+
+    @classmethod
+    def decode(cls, pb_obj) -> {name}:
+        \"\"\"Decode protobuf to {name}.\"\"\"
+        return cls(pb_obj.{snake_name})
+"""
+
+
+class JinjaTemplates(BaseModel, arbitrary_types_allowed=True):
+    """JinjaTemplates."""
+
+    README: Template
+    dialogues: Template
+    performatives: Template
+    primitive_strategies: Template
+    test_dialogues: Template
+    test_messages: Template
+
+    @classmethod
+    def load(cls):
+        """Load from jinja2.Environment."""
+        env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
+        return cls(**{field: env.get_template(f"protocols/{field}.jinja") for field in cls.model_fields})
+
+
+class Metadata(BaseModel):
+    """Metadata."""
+
+    name: str
+    author: str
+    version: str
+    description: str
+    license: str
+    aea_version: str
+    protocol_specification_id: str
+    speech_acts: dict[str, dict[str, str]] | None = None
+
+
+class InteractionModel(BaseModel):
+    """InteractionModel."""
+
+    initiation: list[str]
+    reply: dict[str, list[str]]
+    termination: list[str]
+    roles: dict[str, None]
+    end_states: list[str]
+    keep_terminal_state_dialogues: bool
+
+
+class TemplateContext(BaseModel):
+    """TemplateContext."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+    header: str
+    description: str
+    protocol_definition: str
+
+    author: str
+    name: str
+    snake_name: str
+    camel_name: str
+
+    custom_types: list[str]
+    initial_performatives: list[str]
+    terminal_performatives: list[str]
+    valid_replies: dict[str, list[str]]
+    performative_types: dict[str, dict[str, str]]
+
+    role: str
+    roles: list[dict[str, str]]
+    end_states: list[dict[str, str | int]]
+    keep_terminal_state_dialogues: bool
+    snake_to_camel: Callable[[str], str]
+
+
+class ProtocolSpecification(BaseModel):
+    """ProtocolSpecification."""
+
+    path: Path
+    metadata: Metadata
+    custom_definitions: dict[str, str] | None = None
+    interaction_model: InteractionModel
+
+    @property
+    def name(self) -> str:
+        """Protocol name."""
+        return self.metadata.name
+
+    @property
+    def author(self) -> str:
+        """Protocol author."""
+        return self.metadata.author
+
+    @property
+    def camel_name(self) -> str:
+        """Protocol name in camel case."""
+        return snake_to_camel(self.metadata.name)
+
+    @property
+    def custom_types(self) -> list[str]:
+        """Top-level custom type names in protocol specification."""
+        return [custom_type.removeprefix("ct:") for custom_type in self.custom_definitions]
+
+    @property
+    def performative_types(self) -> dict[str, dict[str, str]]:
+        """Python type annotation for performatives."""
+
+        performative_types = {}
+        for performative, message_fields in self.metadata.speech_acts.items():
+            field_types = {}
+            for field_name, value_type in message_fields.items():
+                field_types[field_name] = performatives.parse_annotation(value_type)
+            performative_types[performative] = field_types
+        return performative_types
+
+    @property
+    def outpath(self) -> Path:
+        """Protocol expected outpath after `aea create` and `aea publish --local`."""
+        return protodantic.get_repo_root() / "packages" / self.author / "protocols" / self.name
+
+    @property
+    def code_outpath(self) -> Path:
+        """Outpath for custom_types.py."""
+        return self.outpath / "custom_types.py"
+
+    @property
+    def test_outpath(self) -> Path:
+        """Outpath for tests/test_custom_types.py."""
+        return self.outpath / "tests" / "test_custom_types.py"
+
+    @cached_property
+    def template_context(self) -> TemplateContext:
+        """Get the template context for template rendering."""
+
+        roles = [{"name": r.upper(), "value": r} for r in self.interaction_model.roles]
+        end_states = [{"name": s.upper(), "value": idx} for idx, s in enumerate(self.interaction_model.end_states)]
+        protocol_definition = Path(self.path).read_text(encoding="utf-8")
+
+        return TemplateContext(
+            header="# Auto-generated by tool",
+            description=self.metadata.description,
+            protocol_definition=protocol_definition,
+            author=self.metadata.author,
+            name=" ".join(map(str.capitalize, self.name.split("_"))),
+            snake_name=self.metadata.name,
+            camel_name=snake_to_camel(self.metadata.name),
+            custom_types=self.custom_types,
+            initial_performatives=self.interaction_model.initiation,
+            terminal_performatives=self.interaction_model.termination,
+            valid_replies=self.interaction_model.reply,
+            performative_types=self.performative_types,
+            role=roles[0]["name"],
+            roles=roles,
+            end_states=end_states,
+            keep_terminal_state_dialogues=self.interaction_model.keep_terminal_state_dialogues,
+            snake_to_camel=snake_to_camel,
+        )
+
+
+def read_protocol_spec(filepath: str) -> ProtocolSpecification:
     """Read protocol specification."""
+
     content = Path(filepath).read_text(encoding=DEFAULT_ENCODING)
+
+    # parse from README.md, otherwise we assume protocol.yaml
     if "```" in content:
         if content.count("```") != 2:
             msg = "Expecting a single code block"
@@ -52,288 +222,232 @@ def read_protocol(filepath: str) -> ProtocolSpecification:
         content = remove_prefix(content.split("```")[1], "yaml")
 
     # use ProtocolGenerator to validate the specification
-
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", encoding=DEFAULT_ENCODING) as temp_file:
         Path(temp_file.name).write_text(content, encoding=DEFAULT_ENCODING)
         ProtocolGenerator(temp_file.name)
 
-    metadata, custom_types, speech_acts = yaml.safe_load_all(content)
+    content = list(yaml.safe_load_all(content))
+    if len(content) == 3:
+        metadata, custom_definitions, interaction_model = content
+    elif len(content) == 2:
+        metadata, interaction_model = content
+        custom_definitions = None
+    else:
+        msg = f"Expected 2 or 3 YAML documents in {filepath}."
+        raise ValueError(msg)
 
-    return ProtocolSpecification(metadata, custom_types, speech_acts)
-
-
-def get_dummy_data(field):
-    """Get dummy data."""
-    # We assume this is a custom type MIGHT MAKE A PROBLEM LATER!
-    res = 0
-    if field["type"] == "str":
-        res = f'{field["name"]}'
-    if field["type"] == "float":
-        res = float(res)
-    if field["type"] == "bool":
-        res = False
-    if field["type"].startswith("List"):
-        res = []
-    if field["type"].startswith("Dict"):
-        res = {}
-    if field["type"].startswith("Optional"):
-        # We recursively call this function to get the dummy data
-        res = get_dummy_data({"type": field["type"].split("Optional[")[1].split("]")[0], "name": field["name"]})
-    return res
-
-
-def parse_enums(protocol: ProtocolSpecification) -> dict[str, dict[str, str]]:
-    """Parse enums."""
-    enums = {}
-    if protocol.custom_types is None:
-        return enums
-    for ct_name, definition in protocol.custom_types.items():
-        if not definition.startswith("enum "):
-            continue
-        result = re.search(r"\{([^}]*)\}", definition)
-        if not result:
-            msg = f"Error parsing enum fields from: {definition}"
-            raise ValueError(msg)
-        fields = {}
-        for enum in filter(None, result.group(1).strip().split(";")):
-            name, number = enum.split("=")
-            fields[name.strip()] = number.strip()
-        enums[ct_name[3:]] = fields
-    return enums
-
-
-def get_docstring_index(node: ast.stmt):
-    """Get docstring index."""
-
-    def is_docstring(stmt: ast.stmt):
-        return isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Str)
-
-    return next((i + 1 for i, stmt in enumerate(node.body) if is_docstring(stmt)), 0)
-
-
-def get_raise_statement(stmt) -> ast.stmt:
-    """Get raise statement."""
-    return next(
-        statement
-        for statement in stmt.body
-        if isinstance(statement, ast.Raise)
-        and isinstance(statement.exc, ast.Name)
-        and statement.exc.id == "NotImplementedError"
+    return ProtocolSpecification(
+        path=filepath,
+        metadata=metadata,
+        custom_definitions=custom_definitions,
+        interaction_model=interaction_model,
     )
 
 
-class EnumModifier:
-    """Class for modifying and augmenting enum definitions in protocol files.
+def run_cli_cmd(command: list[str], cwd: Path | None = None):
+    """Run CLI command helper function."""
 
-    Args:
-    ----
-        protocol_path: Path to the protocol directory.
-        logger: Logger instance for output and debugging.
+    result = subprocess.run(
+        command,
+        shell=False,
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=cwd or Path.cwd(),
+    )
+    if result.returncode != 0:
+        msg = f"Failed: {command}:\n{result.stderr}"
+        raise ValueError(msg)
 
-    """
 
-    def __init__(self, protocol_path: Path, logger):
-        self.protocol_path = protocol_path
-        self.protocol = read_protocol(protocol_path / "README.md")
-        self.logger = logger
+def run_aea_generate_protocol(protocol_path: Path, language: str, agent_dir: Path) -> None:
+    """Run `aea generate protocol`."""
+    command = ["aea", "-s", "generate", "protocol", str(protocol_path), "--l", language]
+    run_cli_cmd(command, cwd=agent_dir)
 
-    def augment_enums(self) -> None:
-        """Agument enums."""
-        enums = parse_enums(self.protocol)
-        if not enums:
-            return
 
-        custom_types_path = self.protocol_path / "custom_types.py"
-        content = custom_types_path.read_text()
-        root = ast.parse(content)
+def run_push_local_protocol(protocol: ProtocolSpecification, agent_dir: Path) -> None:
+    """Run `aea push --local protocol`."""
+    command = ["aea", "push", "--local", "protocol", protocol.metadata.protocol_specification_id]
+    run_cli_cmd(command, cwd=agent_dir)
 
-        new_import = ast.ImportFrom(module="enum", names=[ast.alias(name="Enum", asname=None)], level=0)
-        root.body.insert(get_docstring_index(root), new_import)
 
-        for node in root.body:
-            if isinstance(node, ast.ClassDef) and node.name in enums:
-                self._process_enum(node, enums)
+def generate_readme(protocol, template):
+    """Generate protocol README.md file."""
+    readme = protocol.outpath / "README.md"
+    Path(protocol.path).read_text(encoding="utf-8")
+    content = template.render(**protocol.template_context.model_dump())
+    readme.write_text(content.strip())
 
-        modified_code = ast.unparse(root)
-        updated_content = self._update_content(content, modified_code)
-        self._format_and_write_to_file(custom_types_path, updated_content)
-        self.logger.info(f"Updated: {custom_types_path}")
 
-    def _update_content(self, content: str, modified_code: str):
-        i = content.find(modified_code.split("\n")[0])
-        return content[:i] + modified_code
+def generate_custom_types(protocol: ProtocolSpecification):
+    """Generate custom_types.py and tests/test_custom_types.py."""
 
-    def _format_and_write_to_file(self, file_path: Path, content: str) -> None:
-        file_path.write_text(content)
-        Formatter(verbose=False, remote=False).format(file_path)
+    proto_inpath = protocol.outpath / f"{protocol.name}.proto"
+    file = Parser().parse(proto_inpath.read_text())
 
-    def _process_enum(self, node: ast.ClassDef, enums) -> None:
-        camel_to_snake(node.name)
-        node.bases = [ast.Name(id="Enum", ctx=ast.Load())]
+    # extract custom type messages from AEA framework "wrapper" message
+    main_message = file.file_elements.pop(1)
+    custom_type_names = {name.removeprefix("ct:") for name in protocol.custom_definitions}
+    for element in main_message.elements:
+        if isinstance(element, ast.Message) and element.name in custom_type_names:
+            file.file_elements.append(element)
 
-        class_attrs = self._create_class_attributes(enums[node.name], node)
-        docstring_index = get_docstring_index(node)
-        node.body = node.body[:docstring_index] + class_attrs + node.body[docstring_index:]
-        self._update_methods(node)
+    proto = Generator().generate(file)
+    tmp_proto_path = protocol.outpath / f"tmp_{proto_inpath.name}"
+    tmp_proto_path.write_text(proto)
 
-    def _create_class_attributes(self, enum_values: dict[str, str], node: ast.ClassDef):
-        def to_ast_assign(attr_name: str, attr_value: str):
-            return ast.Assign(
-                targets=[ast.Name(id=attr_name, ctx=ast.Store())],
-                value=ast.Constant(value=int(attr_value)),
-                lineno=node.lineno,
-            )
-
-        return list(starmap(to_ast_assign, enum_values.items()))
-
-    def _update_methods(self, node: ast.ClassDef) -> None:
-        to_remove = []
-        for i, stmt in enumerate(node.body):
-            if isinstance(stmt, ast.FunctionDef):
-                if stmt.name in {"__init__", "__eq__"}:
-                    to_remove.append(i)
-                elif stmt.name == "encode":
-                    self._modify_encode_function(stmt, node)
-                elif stmt.name == "decode":
-                    self._modify_decode_function(stmt, node)
-
-        for i in sorted(to_remove, reverse=True):
-            node.body.pop(i)
-
-    def _modify_encode_function(self, stmt: ast.stmt, node: ast.ClassDef) -> None:
-        name = camel_to_snake(node.name)
-        statement = get_raise_statement(stmt)
-        j = stmt.body.index(statement)
-        stmt.body[j] = ast.Expr(
-            value=ast.Assign(
-                targets=[
-                    ast.Attribute(
-                        value=ast.Name(id=f"{name}_protobuf_object", ctx=ast.Load()), attr=name, ctx=ast.Store()
-                    )
-                ],
-                value=ast.Attribute(value=ast.Name(id=f"{name}_object", ctx=ast.Load()), attr="value", ctx=ast.Load()),
-                lineno=statement.lineno,
-            )
+    proto_pb2 = protocol.outpath / f"{protocol.name}_pb2.py"
+    backup_pb2 = proto_pb2.with_suffix(".bak")
+    shutil.move(str(proto_pb2), str(backup_pb2))
+    with file_swapper(proto_inpath, tmp_proto_path):
+        protodantic.create(
+            proto_inpath=proto_inpath,
+            code_outpath=protocol.code_outpath,
+            test_outpath=protocol.test_outpath,
         )
+    shutil.move(str(backup_pb2), str(proto_pb2))
+    pb2_content = proto_pb2.read_text()
+    pb2_content = protodantic._remove_runtime_version_code(pb2_content)  # noqa: SLF001
+    proto_pb2.write_text(pb2_content)
+    tmp_proto_path.unlink()
 
-    def _modify_decode_function(self, stmt: ast.stmt, node: ast.ClassDef) -> None:
-        name = camel_to_snake(node.name)
-        statement = get_raise_statement(stmt)
-        j = stmt.body.index(statement)
-        stmt.body[j] = ast.Return(
-            value=ast.Call(
-                func=ast.Name(id=node.name, ctx=ast.Load()),
-                args=[
-                    ast.Attribute(
-                        value=ast.Name(id=f"{name}_protobuf_object", ctx=ast.Load()), attr=name, ctx=ast.Load()
-                    )
-                ],
-                keywords=[],
-            )
+
+def post_enum_processing(protocol: ProtocolSpecification):
+    """AST-based in-place flattening of enum-only message classes."""
+
+    # Dynamically import the generated models to detect enum-only message classes
+    spec = importlib.util.spec_from_file_location("generated_models", protocol.code_outpath)
+    models_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(models_mod)
+
+    def is_enum_only_model(cls: type[BaseModel]) -> bool:
+        nested = [member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum)]
+        fields = list(cls.model_fields)
+        return len(nested) == 1 and len(fields) == 1
+
+    def inject_comment(src: str, comment: str) -> str:
+        # Matches the whole leading import block (one or more import lines + trailing blank lines)
+        pattern = re.compile(r"^((?:(?:import|from)\s.*\n)+\n*)", re.MULTILINE)
+        replacement = r"\1" + comment.rstrip() + "\n\n"
+        return pattern.sub(replacement, src, count=1)
+
+    enum_only_names = {
+        name
+        for name, cls in inspect.getmembers(models_mod, inspect.isclass)
+        if cls.__module__ == models_mod.__name__ and issubclass(cls, BaseModel) and is_enum_only_model(cls)
+    }
+
+    # Pre-generate flat enum class source snippets
+    flat_src_map: dict[str, str] = {}
+    for name in enum_only_names:
+        snake_name = camel_to_snake(name)
+        cls = getattr(models_mod, name)
+        enum = next(member for _, member in inspect.getmembers(cls, inspect.isclass) if issubclass(member, IntEnum))
+        clean_members = []
+        prefix = camel_to_snake(enum.__name__).upper()
+        for member_name, member in enum.__members__.items():
+            clean = member_name.removeprefix(f"{prefix}_")
+            clean_members.append(f"{clean} = {member.value}")
+
+        snippet = FLAT_ENUM_TEMPLATE.format(
+            name=name,
+            clean_members="\n    ".join(clean_members),
+            snake_name=snake_name,
         )
+        flat_src_map[name] = snippet.strip()
+
+    # AST-transformer that replaces those ClassDefs
+    class EnumFlattener(pyast.NodeTransformer):
+        def visit_ClassDef(self, node: pyast.ClassDef):  # noqa: N802
+            if node.name in flat_src_map:
+                new_node = pyast.parse(flat_src_map[node.name]).body[0]
+                return pyast.copy_location(new_node, node)
+            return node
+
+    # Apply transformation
+    tree = pyast.parse(protocol.code_outpath.read_text())
+    new_tree = EnumFlattener().visit(tree)
+    pyast.fix_missing_locations(new_tree)
+
+    # Re-write out custom_types.py with the entire transformed module
+    full_code = pyast.unparse(new_tree)
+    with protocol.code_outpath.open("w") as out:
+        out.write(inject_comment(full_code, CUSTOM_TYPE_COMMENT))
 
 
-class CommentSplitter(ast.NodeVisitor):
-    """CommentSplitter for parsing AST."""
-
-    def __init__(self, max_line_length=120):
-        self.max_line_length = max_line_length
-        self.result = []
-
-    def split_docstring(self, docstring):
-        """Split docstring."""
-        split_lines = []
-        for line in docstring.splitlines():
-            if len(line) > self.max_line_length:
-                indentation = len(line) - len(line.lstrip())
-                wrapped_lines = textwrap.wrap(line, width=self.max_line_length, subsequent_indent=" " * indentation)
-                split_lines.extend(wrapped_lines)
-            else:
-                split_lines.append(line)
-        return "\n".join(split_lines)
-
-    def visit_FunctionDef(self, node):  # noqa
-        """Process the function's docstring."""
-        if ast.get_docstring(node):
-            original_docstring = ast.get_docstring(node, clean=False)
-            split_docstring = self.split_docstring(original_docstring)
-            node.body[0].value = ast.Str(s=split_docstring)
-
-        # Continue visiting the rest of the function
-        self.generic_visit(node)
-
-    def visit_Module(self, node):  # noqa
-        """Process the module-level docstring."""
-        if ast.get_docstring(node):
-            original_docstring = ast.get_docstring(node, clean=False)
-            split_docstring = self.split_docstring(original_docstring)
-            node.body[0].value = ast.Str(s=split_docstring)
-
-        # Continue visiting the rest of the module
-        self.generic_visit(node)
+def rewrite_test_custom_types(protocol: ProtocolSpecification) -> None:
+    """Rewrite custom_types.py import to accomodate aea message wrapping during .proto generation."""
+    content = protocol.test_outpath.read_text()
+    a = f"packages.{protocol.author}.protocols.{protocol.name} import {protocol.name}_pb2"
+    b = f"packages.{protocol.author}.protocols.{protocol.name}.{protocol.name}_pb2 import {protocol.camel_name}Message as {protocol.name}_pb2  # noqa: N813"  # noqa: E501
+    protocol.test_outpath.write_text(content.replace(a, b))
 
 
-def split_long_comment_lines(code: str, max_line_length: int = 120) -> str:
-    """Split long comment lines given a code string."""
-    tree = ast.parse(code)
-    splitter = CommentSplitter(max_line_length=max_line_length)
-    splitter.visit(tree)
-    return ast.unparse(tree)
+def generate_dialogues(protocol: ProtocolSpecification, template):
+    """Generate dialogues.py."""
+    output = template.render(**protocol.template_context.model_dump())
+    dialogues = protocol.outpath / "dialogues.py"
+    dialogues.write_text(output)
 
 
-PROTOBUF_TO_PYTHON = {
-    "string": "str",
-    "int32": "int",
-    "int64": "int",
-    "float": "float",
-    "bool": "bool",
-}
+def generate_tests_init(protocol: ProtocolSpecification) -> None:
+    """Generate tests/__init__.py."""
+    test_init_file = protocol.outpath / "tests" / "__init__.py"
+    test_init_file.write_text(f'"""Test module for the {protocol.name} protocol."""')
 
 
-def parse_protobuf_type(protobuf_type, required_type_imports=None):
-    """Parse protobuf type into python type."""
-    if required_type_imports is None:
-        required_type_imports = []
-    output = {}
-
-    if protobuf_type.startswith("repeated"):
-        repeated_type = protobuf_type.split()[1]
-        attr_name = protobuf_type.split()[2]
-        output["name"] = attr_name
-        if repeated_type in PROTOBUF_TO_PYTHON:
-            output["type"] = f"List[{PROTOBUF_TO_PYTHON[repeated_type]}] = []"
-        else:
-            output["type"] = f"List[{repeated_type}] = []"
-        required_type_imports.append("List")
-    elif protobuf_type.startswith("map"):
-        attr_name = protobuf_type.split()[2]
-        key_val_part = protobuf_type.split(">")[0]
-        key_type_raw, val_type = key_val_part.split(", ")
-        key_type = key_type_raw.split("<")[1]
-        output["name"] = attr_name
-        output["type"] = f"Dict[{PROTOBUF_TO_PYTHON[key_type]}, {PROTOBUF_TO_PYTHON[val_type]}] = {{}}"
-        required_type_imports.append("Dict")
-    elif protobuf_type.startswith("optional"):
-        attr_name = protobuf_type.split()[2]
-
-        output["name"] = attr_name
-        output["type"] = f"Optional[{PROTOBUF_TO_PYTHON[protobuf_type.split()[1]]}] = None"
-        required_type_imports.append("Optional")
-    else:
-        _type = protobuf_type.split()[0]
-        try:
-            attr_name = protobuf_type.split()[1]
-        except IndexError as err:
-            msg = f"Error parsing attribute name from: {protobuf_type}"
-            raise ValueError(msg) from err
-
-        output["name"] = attr_name
-        output["type"] = PROTOBUF_TO_PYTHON.get(_type, _type)
-    return output
+def generate_performative_messages(protocol: ProtocolSpecification, template) -> None:
+    """Generate performatives for hypothesis strategy generation."""
+    output = template.render(**protocol.template_context.model_dump())
+    test_dialogues = protocol.outpath / "tests" / "performatives.py"
+    test_dialogues.write_text(output)
 
 
-class ProtocolScaffolder:
-    """Class for scaffolding protocol components.
+def generate_test_dialogues(protocol: ProtocolSpecification, template) -> None:
+    """Generate tests/test_dialogue.py."""
+    output = template.render(**protocol.template_context.model_dump())
+    test_dialogues = protocol.outpath / "tests" / f"test_{protocol.name}_dialogues.py"
+    test_dialogues.write_text(output)
+
+
+def generate_test_messages(protocol: ProtocolSpecification, template) -> None:
+    """Generate tests/test_messages.py."""
+    output = template.render(**protocol.template_context.model_dump())
+    test_messages = protocol.outpath / "tests" / f"test_{protocol.name}_messages.py"
+    test_messages.write_text(output)
+
+
+def update_yaml(protocol, dependencies: dict[str, dict[str, str]]) -> None:
+    """Update protocol.yaml dependencies."""
+    protocol_yaml = protocol.outpath / "protocol.yaml"
+    content = yaml.safe_load(protocol_yaml.read_text())
+    for package_name, package_info in dependencies.items():
+        content["dependencies"][package_name] = package_info
+        content["dependencies"][package_name] = package_info
+    protocol_yaml.write_text(yaml.dump(content, sort_keys=False))
+
+
+def run_adev_fmt(protocol) -> None:
+    """Run `adev -v fmt`."""
+    command = ["adev", "-v", "fmt", "-p", str(protocol.outpath)]
+    run_cli_cmd(command)
+
+
+def run_adev_lint(protocol) -> None:
+    """Run `adev -v lint`."""
+    command = ["adev", "-v", "lint", "-p", str(protocol.outpath)]
+    run_cli_cmd(command)
+
+
+def run_aea_fingerprint(protocol) -> None:
+    """Run `aea fingerprint protocol`."""
+    command = ["aea", "fingerprint", "protocol", protocol.metadata.protocol_specification_id]
+    run_cli_cmd(command)
+
+
+def protocol_scaffolder(protocol_specification_path: str, language, logger, verbose: bool = True):  # noqa: ARG001
+    """Scaffolding protocol components.
 
     Args:
     ----
@@ -344,570 +458,57 @@ class ProtocolScaffolder:
 
     """
 
-    def __init__(self, protocol_specification_path: str, language, logger, verbose: bool = True):
-        self.logger = logger or get_logger()
-        self.verbose = verbose
-        self.protocol_specification_path = protocol_specification_path
-        self.language = language
-        self.env = Environment(loader=FileSystemLoader(JINJA_TEMPLATE_FOLDER), autoescape=False)  # noqa
-        self.logger.info(f"Read protocol specification: {protocol_specification_path}")
+    jinja_templates = JinjaTemplates.load()
 
-    def generate(self) -> None:
-        """Generate protocol."""
-        command = f"aea -s generate protocol {self.protocol_specification_path} --l {self.language}"
-        result = subprocess.run(command, shell=True, capture_output=True, check=False)
-        if result.returncode != 0:
-            msg = f"Protocol scaffolding failed: {result.stderr}"
-            raise ValueError(msg)
+    agent_dir = Path.cwd()
 
-        protocol = read_protocol(self.protocol_specification_path)
-        protocol_author = protocol.metadata["author"]
-        protocol_name = protocol.metadata["name"]
-        protocol_version = protocol.metadata["version"]
+    # 1. Read spec data
+    protocol = read_protocol_spec(protocol_specification_path)
 
-        protocol_path = Path.cwd() / "protocols" / protocol_name
+    # 2. AEA generate protocol
+    run_aea_generate_protocol(protocol.path, language=language, agent_dir=agent_dir)
 
-        readme = protocol_path / "README.md"
-        protocol_definition = Path(self.protocol_specification_path).read_text(encoding=DEFAULT_ENCODING)
-        kwargs = {
-            "name": " ".join(map(str.capitalize, protocol_name.split("_"))),
-            "protocol_definition": protocol_definition,
-        }
-        content = README_TEMPLATE.format(**kwargs)
-        readme.write_text(content.strip(), encoding=DEFAULT_ENCODING)
+    # Ensures `protocol.outpath` exists, required for correct import path generation
+    # TODO: on error during any part of this process, clean up (remove) `protocol.outpath`  # noqa: FIX002, TD002, TD003
+    run_push_local_protocol(protocol, agent_dir)
 
-        EnumModifier(protocol_path, self.logger).augment_enums()
+    # 3. create README.md
+    generate_readme(protocol, jinja_templates.README)
 
-        self.cleanup_protocol(protocol_path, protocol_author, protocol_definition, protocol_name, protocol)
-        if protocol.custom_types is not None:
-            self.generate_pydantic_models(protocol_path, protocol_name, protocol)
-            self.clean_tests(
-                protocol_path,
-                protocol,
-            )
-        self.generate_base_models(protocol_path, protocol_name, protocol)
+    # 4. Generate custom_types.py and test_custom_types.py
+    generate_custom_types(protocol)
+    post_enum_processing(protocol)
 
-        # We now update the protocol.yaml dependencies key to include 'pydantic'
+    # 5. rewrite test_custom_types to patch the import
+    rewrite_test_custom_types(protocol)
 
-        protocol_yaml = protocol_path / "protocol.yaml"
-        # We keey the order of the yaml file
-        content = yaml.safe_load(
-            protocol_yaml.read_text(encoding=DEFAULT_ENCODING),
-        )
-        content["dependencies"]["pydantic"] = {}
-        protocol_yaml.write_text(yaml.dump(content, sort_keys=False), encoding=DEFAULT_ENCODING)
+    # 6. Dialogues
+    generate_dialogues(protocol, jinja_templates.dialogues)
 
-        command = f"aea fingerprint protocol {protocol_author}/{protocol_name}:{protocol_version}"
-        result = subprocess.run(command, shell=True, capture_output=True, check=False)
-        if result.returncode != 0:
-            msg = f"Protocol fingerprinting failed: {result.stderr}"
-            raise ValueError(msg)
+    # 7. generate __init__.py in tests folder
+    generate_tests_init(protocol)
 
-        protocol_path = Path.cwd() / "protocols" / protocol_name
+    # 8. generate performatives
+    generate_performative_messages(protocol, jinja_templates.performatives)
 
-        self.logger.info(f"New protocol scaffolded at {protocol_path}")
+    # 9. Test dialogues
+    generate_test_dialogues(protocol, jinja_templates.test_dialogues)
 
-    def cleanup_protocol(self, protocol_path, protocol_author, protocol_definition, protocol_name, protocol) -> None:
-        """Cleanup protocol."""
-        # We add in some files. that are necessary for the protocol to pass linting...
-        test_init = protocol_path / "tests" / "__init__.py"
-        test_init.touch()
+    # 10. Test messages
+    generate_test_messages(protocol, jinja_templates.test_messages)
 
-        # We template in the necessary copywrite information
-        test_init.write_text(
-            HEADER.format(
-                author=protocol_author,
-                year=datetime.datetime.now(tz=currenttz()).year,
-                docstring='"""\nTests for the protocol.\n"""\n',
-            ),
-            encoding=DEFAULT_ENCODING,
-        )
-        # We make a protocol_spec.yaml file
-        protocol_spec = protocol_path / "protocol_spec.yaml"
-        protocol_spec.write_text(protocol_definition, encoding=DEFAULT_ENCODING)
+    # 11. Update YAML
+    dependencies = {"pydantic": {}, "hypothesis": {}}
+    update_yaml(protocol, dependencies)
 
-        pb2_file = protocol_path / f"{protocol_name}_pb2.py"
+    # 12. fmt
+    run_adev_fmt(protocol)
 
-        content = pb2_file.read_text(encoding=DEFAULT_ENCODING)
-        content_ast = ast.parse(content)
+    # 13. lint
+    run_adev_lint(protocol)
 
-        # we remve the import of the `_runtime_version` google protobuf module
-        new_body = []
-        for node in content_ast.body:
-            if all(
-                [
-                    isinstance(node, ast.ImportFrom),
-                ]
-            ):
-                if node.names[0].name == "runtime_version":
-                    continue
-            elif (
-                all(
-                    [
-                        isinstance(node, ast.Expr),
-                        isinstance(getattr(node, "value", None), ast.Call),
-                    ]
-                )
-                and node.value.func.value.id == "_runtime_version"
-            ):
-                continue
-            new_body.append(node)
+    # 14. Fingerprint
+    run_aea_fingerprint(protocol)
 
-        content_ast.body = new_body
-
-        updated_content = ast.unparse(content_ast)
-        pb2_file.write_text(updated_content, encoding=DEFAULT_ENCODING)
-
-        if protocol.custom_types:
-            custom_types = protocol_path / "custom_types.py"
-            content = custom_types.read_text(encoding=DEFAULT_ENCODING)
-            updated_content = split_long_comment_lines(content)
-            custom_types.write_text(updated_content, encoding=DEFAULT_ENCODING)
-
-    def generate_base_models(self, protocol_path, protocol_name, protocol):
-        """Generate base models."""
-        custom_types = protocol_path / "dialogues.py"
-        content = custom_types.read_text(encoding=DEFAULT_ENCODING)
-        # We want to add to the imports
-
-        new_imports = [
-            "from aea.skills.base import Model",
-        ]
-
-        content = content.replace(
-            f"class {snake_to_camel(protocol_name.capitalize())}Dialogues(Dialogues, ABC):",
-            f"class Base{snake_to_camel(protocol_name.capitalize())}Dialogues(Dialogues, ABC):",
-        )
-
-        if len(protocol.speech_acts["roles"]) > 1:
-            self.logger.error("We do not fully generate all dilogiues classes only support one role in the protocol.")
-        role = next(iter(protocol.speech_acts["roles"].keys()))
-
-        content = content.replace(
-            "role_from_first_message: Callable[[Message, Address], Dialogue.Role],",
-            "role_from_first_message: Callable[[Message, Address], Dialogue.Role] = _role_from_first_message,",
-        )
-
-        dialogues_class_str = textwrap.dedent(f"""
-        def _role_from_first_message(message: Message, sender: Address) -> Dialogue.Role:
-            '''Infer the role of the agent from an incoming/outgoing first message'''
-            del sender, message
-            return {snake_to_camel(protocol_name.capitalize())}Dialogue.Role.{role.upper()}
-        """)
-        dialogues_class_ast = ast.parse(dialogues_class_str)
-
-        content_ast = ast.parse(content)
-
-        final_import, initial_class = 0, 0
-        for ix, node in enumerate(content_ast.body):
-            if isinstance(node, ast.Import):
-                final_import = ix
-            if isinstance(node, ast.ClassDef):
-                initial_class = ix
-                break
-
-        for import_line in new_imports:
-            import_ast = ast.parse(import_line)
-            content_ast.body.insert(final_import + 1, import_ast)
-
-        # We insert the dialogues class after the imports
-        dialogues_class_ast = ast.parse(dialogues_class_str)
-
-        content_ast.body.insert(initial_class + len(new_imports), dialogues_class_ast)
-        content_ast = self.update_doc_strings(content_ast)
-
-        updated_content = ast.unparse(content_ast)
-
-        content_lines = updated_content.split("\n")
-
-        base_cls_name = f"Base{snake_to_camel(protocol_name.capitalize())}"
-
-        dialogues_class_str = textwrap.dedent(f"""
-        class {snake_to_camel(protocol_name.capitalize())}Dialogues({base_cls_name}Dialogues, Model):
-            '''This class defines the dialogues used in {protocol_name.capitalize()}.'''
-            def __init__(self, **kwargs):
-                '''Initialize dialogues.'''
-                Model.__init__(self, keep_terminal_state_dialogues=False, **kwargs)
-                Base{snake_to_camel(protocol_name.capitalize())}Dialogues.__init__(self,
-                self_address=str(self.context.skill_id),
-                role_from_first_message=_role_from_first_message,)
-
-        """)
-
-        dialogues_class_ast = ast.parse(dialogues_class_str)
-        dialogues_class_str = ast.unparse(dialogues_class_ast)
-
-        content_ast.body.append(dialogues_class_ast)
-
-        updated_content = content_lines + dialogues_class_str.split("\n")
-        custom_types.write_text("\n".join(updated_content), encoding=DEFAULT_ENCODING)
-
-        # We also need to update the dialogues tests
-        dialogues_tests = protocol_path / "tests" / f"test_{protocol_name}_dialogues.py"
-        content = dialogues_tests.read_text(encoding=DEFAULT_ENCODING)
-        dialogues_tests.write_text(content, encoding=DEFAULT_ENCODING)
-
-        # We just need to perform a simple updating of the dialogues.
-
-        Formatter(verbose=False, remote=False).format(dialogues_tests)
-        Formatter(verbose=False, remote=False).format(custom_types)
-
-    def _get_definition_of_custom_types(self, protocol, required_type_imports=None):
-        """Get the definition of data types."""
-        if required_type_imports is None:
-            required_type_imports = ["Any"]
-        raw_classes = []
-        all_dummy_data = {}
-        enums = parse_enums(protocol)
-        if not protocol.custom_types:
-            return raw_classes, all_dummy_data, enums
-        for custom_type, definition in protocol.custom_types.items():
-            if definition.startswith("enum "):
-                PROTOBUF_TO_PYTHON[custom_type.split(":")[1]] = custom_type.split(":")[1]
-        for custom_type, definition in protocol.custom_types.items():
-            if definition.startswith("enum "):
-                continue
-            class_data = {
-                "name": custom_type.split(":")[1],
-                "fields": [
-                    parse_protobuf_type(field, required_type_imports) for field in definition.split(";\n") if field
-                ],
-                "type": "data",
-            }
-            raw_classes.append(class_data)
-
-            dummy_data = {field["name"]: get_dummy_data(field) for field in class_data["fields"]}
-
-            all_dummy_data[class_data["name"]] = dummy_data
-        return raw_classes, all_dummy_data, enums
-
-    def update_doc_strings(self, content_ast: ast.AST) -> None:
-        """Function to update all docstrings to conform to the pydoclint format.
-
-        Args:
-        ----
-            content_ast: the ast of the content to update.
-
-        Returns:
-        -------
-            content_ast: the updated ast.
-
-        """
-
-        def convert_param_to_args(docstring: str) -> str:
-            """Convert the param to args."""
-            args = []  # list of tuples (name, type, description)
-            text = []
-            returns = []
-            for ix, line in enumerate(docstring.split("\n")):
-                if ":param" in line:
-                    name, description = line.split(":param")[1].split(":")
-                    args.append((name, description))
-                elif ":return:" in line:
-                    name, description = f"return{ix}", line.split(":return:")[1]
-                else:
-                    text.append(line)
-
-            text = "\n".join(text)
-            args = "\n".join([f"      {arg[0]}: {arg[1]}" for arg in args])
-            returns = "\n".join([f"      {name}: {description}" for name, description in returns])
-
-            args = f"\n\nArgs:\n{args}" if args else ""
-            if returns:
-                returns = f"\n\nReturns:\n{returns}"
-
-            return NEW_DOCSTRING.format(text=text, args=args, returns=returns)
-
-        for node in content_ast.body:
-            # we only want to execute for function definitions
-            if isinstance(node, ast.ClassDef):
-                for n in [n for n in node.body if isinstance(n, ast.FunctionDef)]:
-                    docstring = ast.get_docstring(n)
-                    if docstring:
-                        new_docstring = convert_param_to_args(docstring)
-                        n.body[0].value = ast.Str(s=new_docstring)
-
-        return content_ast
-
-    def generate_pydantic_models(self, protocol_path, protocol_name, protocol):
-        """Generate data classes."""
-        env = Environment(loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER) / "protocols"), autoescape=True)
-
-        required_type_imports = ["Any"]
-
-        raw_classes, all_dummy_data, enums = self._get_definition_of_custom_types(protocol, required_type_imports)
-
-        # We need to generate the data class
-        template = env.get_template("data_class.jinja")
-        pydantic_output = template.render(
-            classes=raw_classes,
-            enums=enums.keys(),
-            protocol_name=protocol_name,
-        )
-
-        # We write this to a yaml file in the protocol folder
-        dummy_data_path = protocol_path / "tests" / "dummy_data.yaml"
-        dummy_data_path.write_text(yaml.dump(all_dummy_data), encoding=DEFAULT_ENCODING)
-
-        self.output_pydantic_models(
-            pydantic_output,
-            protocol_path,
-            required_type_imports,
-        )
-
-    def output_pydantic_models(
-        self,
-        pydantic_output,
-        protocol_path,
-        required_type_imports,
-    ):
-        """Ouput the pydantic models to the custom_types.py file."""
-        new_ast = ast.parse(pydantic_output)
-        new_imports = {}
-        new_classes = {}
-        new_assignments = {}
-
-        for node in new_ast.body:
-            if isinstance(node, ast.Import):
-                new_imports[node.names[0].name] = node
-                continue
-            if isinstance(node, ast.Assign):
-                new_assignments[node.targets[0].id] = node
-                continue
-            if isinstance(node, ast.ClassDef):
-                new_classes[node.name] = node
-                continue
-            msg = f"Unknown node type: {node}"
-            raise ValueError(msg)
-
-        # We now read in the custom_types.py file
-        custom_types_path = protocol_path / "custom_types.py"
-        content = custom_types_path.read_text()
-        root = ast.parse(content)
-
-        # We now update the classes
-
-        classes = {}
-        assignments = {}
-        imports = {}
-
-        for node in root.body:
-            if isinstance(node, ast.ImportFrom):
-                imports[node.names[0].name] = node
-                continue
-            if isinstance(node, ast.ClassDef):
-                classes[node.name] = node
-                continue
-            if isinstance(node, ast.Assign):
-                assignments[node.targets[0].id] = node
-                continue
-            if isinstance(node, ast.Expr):
-                continue
-
-        # We now create a set of new  data, such that the new data is added to the custom_types.py file
-
-        new_body = (
-            [i for i in imports.values() if i.names[0].name not in new_imports]
-            + list(new_imports.values())
-            + [i for i in classes.values() if i.name not in new_classes]
-            + list(new_classes.values())
-            + [i for i in assignments.values() if i.targets[0].id not in new_assignments]
-            + list(new_assignments.values())
-        )
-
-        root.body = new_body
-
-        root = self.update_doc_strings(root)
-        # We now write the updated content to the custom_types.py file
-        updated_content = ast.unparse(root)
-        # We add in the imports
-        typing_import_line = textwrap.dedent(
-            """
-        '''Custom types for the protocol.'''
-        from enum import Enum
-        from pydantic import BaseModel
-        """
-        )
-
-        if required_type_imports:
-            typing_import_line += f"\nfrom typing import {', '.join(set(required_type_imports))}"
-
-        updated_content_lines = updated_content.split("\n")
-        updated_content_lines.insert(0, typing_import_line)
-
-        updated_content = "\n".join(updated_content_lines)
-        custom_types_path.write_text(updated_content)
-        Formatter(verbose=False, remote=False).format(custom_types_path)
-
-    def clean_tests(
-        self,
-        protocol_path,
-        protocol,
-    ) -> None:
-        """Clean tests."""
-        self.clean_tests_messages(protocol_path, protocol)
-        self.clean_tests_dialogues(protocol_path, protocol)
-
-    def clean_tests_messages(
-        self,
-        protocol_path,
-        protocol,
-    ) -> None:
-        """Clean tests."""
-        # We need to remove the test files
-        tests_path = protocol_path / "tests" / f"test_{protocol_path.name}_messages.py"
-
-        # We ensure that all enum instances are instantiated with 0 in this file.
-        content = tests_path.read_text()
-
-        test_data_loader = textwrap.dedent(
-            """
-            import os
-            import yaml
-            def load_data(custom_type):
-                '''Load test data.'''
-                with open(f"{os.path.dirname(__file__)}/dummy_data.yaml", "r", encoding="utf-8") as f:
-                    return yaml.safe_load(f)[custom_type]
-
-            """
-        )
-
-        for custom_type in protocol.custom_types:
-            if protocol.custom_types[custom_type].startswith("enum"):
-                ct_name = custom_type.split(":")[1]
-                content = content.replace(f"{ct_name}()", f"{ct_name}(0)")
-                continue
-            # We build the line to load the data types;
-            ct_name = custom_type[3:]
-            replace_line = f"{ct_name}(**load_data('{ct_name}'))"
-            search_line = f"{ct_name}()"
-            content = content.replace(search_line, replace_line)
-
-        # We need to insert this at the top of the file just above the first class definition
-        original_content = content.split("\n")
-        new_content = []
-        start_line = 0
-        for ix, line in enumerate(original_content):
-            if line.startswith("class"):
-                break
-            start_line = ix
-
-        import_defs = textwrap.dedent(
-            """
-            from typing import Any
-            """
-        )
-        function_defs = test_data_loader.split("\n")
-        new_content.extend(original_content[:start_line])
-        new_content.extend([import_defs])
-        new_content.extend(function_defs)
-        new_content.extend(original_content[start_line:])
-
-        # We drop everyuthing from the start of the line begining `build_inconsistent(self)` to the end of the file
-
-        content = "\n".join(new_content)
-
-        drop_from = content.find("    def build_inconsistent(self)")
-
-        content = content[:drop_from]
-        # We then add a single function to the class
-        content += textwrap.dedent(
-            """
-            ----def build_inconsistent(self):
-            ----    '''Build inconsistent message.'''
-            ----    return []
-            """
-        )
-
-        content = content.replace("----", "    ")
-
-        # We also make a dummy init file in the tests folder
-        tests_init = protocol_path / "tests" / "__init__.py"
-        tests_init.touch()
-        tests_init.write_text(
-            HEADER.format(
-                author=protocol.metadata["author"],
-                year=datetime.datetime.now(tz=currenttz()).year,
-                docstring='"""\nTests for the protocol.\n"""\n',
-            ),
-            encoding=DEFAULT_ENCODING,
-        )
-
-        tests_path.write_text(content, encoding=DEFAULT_ENCODING)
-        Formatter(verbose=False, remote=False).format(tests_path)
-
-    def clean_tests_dialogues(
-        self,
-        protocol_path,
-        protocol,
-    ) -> None:
-        """Clean tests."""
-        # We need to remove the test files
-        tests_path = protocol_path / "tests" / f"test_{protocol_path.name}_dialogues.py"
-
-        content = tests_path.read_text()
-
-        # We just need to find the custom types, and make sure that we use the new data loader function
-
-        enum_imports = []
-
-        for custom_type in protocol.custom_types:
-            if protocol.custom_types[custom_type].startswith("enum"):
-                ct_name = custom_type.split(":")[1]
-                content = content.replace(f"{ct_name}()", f"{ct_name}(0)")
-                msg = (
-                    f"from packages.{protocol.metadata['author']}"
-                    + f".protocols.{protocol_path.name}.custom_types import {ct_name}"
-                )
-                enum_imports.append(msg)
-                continue
-            # We build the line to load the data types;
-            ct_name = custom_type[3:]
-            replace_line = f"{ct_name}(**load_data('{ct_name}'))"
-            search_line = f"{ct_name}()"
-            content = content.replace(search_line, replace_line)
-
-        # We update the import to import the BaseDialogues class
-
-        for string, replace_line in [
-            (
-                f"{snake_to_camel(protocol_path.name.capitalize())}Dialogues",
-                f"Base{snake_to_camel(protocol_path.name.capitalize())}Dialogues",
-            ),
-        ]:
-            content = content.replace(
-                string,
-                replace_line,
-            )
-
-        # We update the imports
-        original_content = content.split("\n")
-        new_content = []
-        start_line = 0
-        for ix, line in enumerate(original_content):
-            if line.startswith("class"):
-                break
-            start_line = ix
-
-        test_data_loader = textwrap.dedent(
-            """
-            import os
-            import yaml
-            def load_data(custom_type):
-                '''Load test data.'''
-                with open(f"{os.path.dirname(__file__)}/dummy_data.yaml", "r", encoding="utf-8") as f:
-                    return yaml.safe_load(f)[custom_type]
-
-            """
-        )
-
-        new_content.extend(original_content[:start_line])
-        new_content.extend(enum_imports)
-        new_content.extend(test_data_loader.split("\n"))
-        new_content.extend(original_content[start_line:])
-        content = "\n".join(new_content)
-
-        # We write the updated content to the file
-        tests_path.write_text(content, encoding=DEFAULT_ENCODING)
-
-        Formatter(verbose=False, remote=False).format(tests_path)
+    # Hurray's are in order
+    logger.info(f"New protocol scaffolded at {protocol.outpath}")

@@ -1,0 +1,35 @@
+"""Module containing tests for the pydantic models generated from the .proto file."""
+
+from hypothesis import given
+from hypothesis import strategies as st
+
+from {{ import_paths.message }} import {{ messages_pb2 }}
+
+from {{ import_paths.strategies }} import (
+    {%- for primitive in float_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+    {%- for primitive in integer_primitives %}
+    {{ primitive.__name__ }},
+    {%- endfor %}
+)
+from {{ import_paths.models }} import (
+    {%- for enum in file.enums %}
+    {{ enum.name }},
+    {%- endfor %}
+    {%- for message in file.messages %}
+    {{ message.name }},
+    {%- endfor %}
+)
+
+{# Define tests for each message #}
+{%- for message in file.messages %}
+@given(st.from_type({{ message.name }}))
+def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
+    """Test {{ message.name }}"""
+    assert isinstance({{ message.name|lower }}, {{ message.name }})
+    proto_obj = {{ messages_pb2 }}.{{ message.name }}()
+    {{ message.name|lower }}.encode(proto_obj, {{ message.name|lower }})
+    result = {{ message.name }}.decode(proto_obj)
+    assert {{ message.name|lower }} == result
+{% endfor %}

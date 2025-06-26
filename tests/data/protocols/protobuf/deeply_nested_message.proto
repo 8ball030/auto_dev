@@ -1,0 +1,30 @@
+// deeply_nested_message.proto
+
+syntax = "proto3";
+
+message DeeplyNestedMessage {
+  NestedLevel1 nested = 1;
+  int32 int32_field = 2;
+  optional int32 optional_int32_field = 3;
+  repeated int32 repeated_int32_field = 4;
+
+  message NestedLevel1 {
+    NestedLevel2 nested = 1;
+    int32 level1_int32_field = 2;
+    optional int32 level1_optional_int32_field = 3;
+    repeated int32 level1_repeated_int32_field = 4;
+
+    message NestedLevel2 {
+      NestedLevel3 nested = 1;
+      int32 level2_int32_field = 2;
+      optional int32 level2_optional_int32_field = 3;
+      repeated int32 level2_repeated_int32_field = 4;
+
+      message NestedLevel3 {
+        int32 level3_int32_field = 2;
+        optional int32 level3_optional_int32_field = 3;
+        repeated int32 level3_repeated_int32_field = 4;
+      }
+    }
+  }
+}

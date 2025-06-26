@@ -1,0 +1,12 @@
+// optional_message.proto
+
+syntax = "proto3";
+
+message OptionalOuterMessage {}
+
+message OptionalMessage {
+  message OptionalInnerMessage {}
+
+  optional OptionalOuterMessage optional_outer_message = 1;
+  optional OptionalInnerMessage optional_inner_message = 2;
+}

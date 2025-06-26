@@ -1,0 +1,59 @@
+{{ header }}
+
+"""Test dialogues module for the {{ snake_name }} protocol."""
+
+from unittest.mock import MagicMock
+
+from pydantic import BaseModel
+from hypothesis import given
+from hypothesis import strategies as st
+from aea.configurations.data_types import PublicId
+
+from packages.{{ author }}.protocols.{{ snake_name }}.dialogues import (
+    {{ camel_name }}Dialogue,
+    {{ camel_name }}Dialogues,
+)
+from packages.{{ author }}.protocols.{{ snake_name }}.message import {{ camel_name }}Message
+from packages.{{ author }}.protocols.{{ snake_name }}.tests.performatives import (
+    {%- for performative in initial_performatives %}
+    {{ snake_to_camel(performative) }},
+    {%- endfor %}
+)
+
+
+def shallow_dump(model: BaseModel) -> dict:
+    """Shallow dump pydantic model."""
+
+    return {name: getattr(model, name) for name in model.__class__.model_fields}
+
+
+def validate_dialogue(performative, model):
+    """Validate successful dialogue instantiation."""
+
+    skill_context = MagicMock()
+    skill_context.skill_id = PublicId(
+        name="mock_name",
+        author="mock_author",
+    )
+
+    dialogues = {{ camel_name }}Dialogues(
+        name="test_{{ snake_name }}_dialogues",
+        skill_context=skill_context,
+    )
+
+    dialogue = dialogues.create(
+        counterparty="dummy_counterparty",
+        performative=performative,
+        **shallow_dump(model),
+    )
+
+    assert dialogue is not None
+
+
+{%- for initial_performative in initial_performatives %}
+@given(st.from_type({{ snake_to_camel(initial_performative) }}))
+def test_{{ initial_performative }}_dialogues(model):
+    """Test for the '{{ initial_performative|upper }}' protocol."""
+    validate_dialogue({{ camel_name }}Message.Performative.{{ initial_performative|upper }}, model)
+
+{% endfor %}

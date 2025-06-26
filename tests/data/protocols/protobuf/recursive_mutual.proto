@@ -1,0 +1,11 @@
+// recursive_mutual.proto
+
+syntax = "proto3";
+
+message A {
+  optional B b = 1;
+}
+
+message B {
+  optional A a = 1;
+}

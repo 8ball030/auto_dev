@@ -1,0 +1,13 @@
+// repeated_enum.proto
+
+syntax = "proto3";
+
+enum Role {
+  USER = 0;
+  ADMIN = 1;
+  GUEST = 2;
+}
+
+message RepeatedEnum {
+  repeated Role roles = 1;
+}
