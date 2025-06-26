@@ -10,7 +10,12 @@ import yaml
 import rich_click as click
 from rich import print_json
 from aea.helpers.cid import to_v1
-from aea.configurations.base import PublicId, ComponentType, _get_default_configuration_file_name_from_type  # noqa
+from aea.configurations.base import (  # noqa
+    PublicId,
+    PackageId,
+    ComponentType,
+    _get_default_configuration_file_name_from_type,  # noqa: PLC2701
+)
 from aea_cli_ipfs.ipfs_utils import IPFSTool
 from aea.configurations.constants import (
     AGENT,
@@ -241,7 +246,24 @@ def build_dependency_tree_for_metadata_components(component: str) -> dict:
     public_id = PublicId(component_author, component_name.split(":")[0])
     component_path = f"packages/{public_id.author}/{component_type}s/{public_id.name}"
 
-    return DependencyBuilder.build_dependency_tree_for_component(component_path, component_type)
+    wanted_keys = [
+        "protocol",
+        "contract",
+        "connection",
+        "skill",
+        "agent",
+        "custom",
+    ]
+
+    dependency_set = DependencyBuilder.build_dependency_tree_for_component(component_path, component_type)
+
+    type_to_component = {k: v for k, v in dependency_set.items() if k in wanted_keys and v}
+
+    all_components = []
+    for _type, components in type_to_component.items():
+        all_components += [PackageId(package_type=_type, public_id=PublicId.from_str(c)) for c in components]
+
+    return all_components
 
 
 @cli.command()
@@ -282,7 +304,10 @@ def render_metadata(metadata, verbose=False) -> bool:
     """Render metadata for a package."""
     self_component = Dependency.from_str("/".join(metadata["name"].split("/")[1:]))
     self_component.component_type = metadata["name"].split("/")[0]
-    self_component_status, self_component_id = check_component_status(self_component)
+
+    self_component_status, self_component_id = check_component_status(
+        PackageId.from_uri_path(metadata["name"].replace(":", "/"))
+    )
     dependencies = build_dependency_tree_for_metadata_components(metadata["name"])
 
     if verbose:
@@ -316,13 +341,12 @@ def render_metadata(metadata, verbose=False) -> bool:
             "\nDependencies:",
         )
     mint_status = {}
-    for dependency, path in dependencies.items():
+    for dependency in dependencies:
         component_status, component_id = check_component_status(dependency)
         mint_status[component_id] = component_status
-        # we use a sexy emjoji to show the status of the minting.
         status_emjoji = "✅" if component_status == "MINTED" else "❌"
         if verbose:
-            click.echo(f"Status: {status_emjoji} {component_id or ''} {component_status} - {path}")
+            click.echo(f"Status: {status_emjoji} {component_id or ''} {component_status} - {dependency} ")
 
     # we print the self mint status
     # we first check that all the dependencies are minted.
@@ -353,7 +377,7 @@ def render_metadata(metadata, verbose=False) -> bool:
     return self_component_status == "MINTED"
 
 
-def check_component_status(component_id):
+def check_component_status(component_id: PackageId) -> tuple[str, str]:
     """We check the status of the component by reading the mapping.txt file in the mints folder.
     ➤ cat mints/mapping.txt
     token_id-"component_id"
@@ -374,7 +398,8 @@ def check_component_status(component_id):
     with open("mints/mapping.txt", encoding=DEFAULT_ENCODING) as file:
         lines = file.readlines()
     status, token_id = "NOT MINTED", "?"
-    path = f"{component_id.component_type}/{component_id.author}/{component_id.name}"
+    path = f"{component_id.to_uri_path}".replace(":", "/")
+
     for line in lines:
         if path in line and line.split("-")[0].isnumeric():
             status = "MINTED"
