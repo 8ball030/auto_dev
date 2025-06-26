@@ -64,6 +64,7 @@ PARAM_TO_STR_MAPPING = {
     ParamType.UINT256_ARRAY: "List[int]",
     ParamType.UINT256_2_ARRAY: "List[int]",
     ParamType.UINT256_3_ARRAY: "List[int]",
+    ParamType.BOOL_ARRAY: "List[bool]",
 }
 
 

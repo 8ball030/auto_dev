@@ -10,6 +10,8 @@ import responses
 from auto_dev.constants import DEFAULT_ENCODING, Network
 from auto_dev.exceptions import APIError
 from auto_dev.commands.scaffold import BlockExplorer, ContractScaffolder
+from auto_dev.contracts.param_type import ParamType
+from auto_dev.contracts.utils import PARAM_TO_STR_MAPPING
 
 
 KNOWN_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # checksum address
@@ -143,3 +145,10 @@ def test_scaffolder_extracts_events(scaffolder, test_filesystem):
     new_contract = scaffolder.from_abi(str(path), KNOWN_ADDRESS, "new_contract")
     new_contract.parse_events()
     assert new_contract.events
+
+
+def test_all_param_types_mapped():
+    """Test that all ParamType values are mapped to strings."""
+    for param_type in ParamType:
+        assert param_type in PARAM_TO_STR_MAPPING, f"ParamType {param_type} is not mapped"
+        assert isinstance(PARAM_TO_STR_MAPPING[param_type], str), f"Mapping for {param_type} is not a string"
