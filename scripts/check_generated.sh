@@ -16,7 +16,6 @@ poetry lock --no-cache -vv || exit 0
 echo installing
 poetry install
 poetry check --lock
-cp poetry.lock ../auto_dev/data/repo/templates/autonomy/
 cd ../
 rm -rf $REPO_NAME
 echo 'done autonomy'
