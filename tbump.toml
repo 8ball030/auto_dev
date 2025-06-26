@@ -27,8 +27,6 @@ src = "pyproject.toml"
 [[file]]
 src = "auto_dev/commands/deps.py"
 [[file]]
-src = "auto_dev/data/repo/templates/autonomy/pyproject.toml.template"
-[[file]]
 src = "auto_dev/data/repo/templates/python/pyproject.toml.template"
 [[file]]
 src = "auto_dev/data/repo/templates/autonomy/adev_config.yaml"
