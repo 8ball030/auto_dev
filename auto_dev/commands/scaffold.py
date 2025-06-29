@@ -16,7 +16,7 @@ import rich_click as click
 from web3 import Web3
 from jinja2 import Environment, FileSystemLoader
 from aea.configurations.constants import DEFAULT_AEA_CONFIG_FILE, PROTOCOL_LANGUAGE_PYTHON, SUPPORTED_PROTOCOL_LANGUAGES
-from aea.configurations.data_types import PublicId
+from aea.configurations.data_types import PublicId, SKILL
 
 from auto_dev.base import build_cli
 from auto_dev.enums import FileType, BehaviourTypes
@@ -717,20 +717,34 @@ def dialogues(
 
 
 @scaffold.command()
+@click.option("--component-type", 
+    type=click.Choice([
+        SKILL,
+    ]),
+    required=True,
+    help="The type of component to scaffold.",
+    default=SKILL,
+)
 @click.pass_context
 def tests(
     ctx,
+    component_type,
 ) -> None:
-    """Generate tests for an aea component in the current directory
-    AEA handler from an OpenAPI 3 specification.
     """
+    Scaffold tests for generated components.
+    Expects the component to be generated first.
+    Expects to be in the working directory of the component.
+    """
+
+    # we assume we are templating for an fsm skill.
     logger = ctx.obj["LOGGER"]
     verbose = ctx.obj["VERBOSE"]
-    env = Environment(loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER, "tests", "customs")), autoescape=True)
-    template = env.get_template("test_custom.jinja")
-    output = template.render(
-        name="test",
-    )
+    env = Environment(
+        loader=FileSystemLoader(Path(JINJA_TEMPLATE_FOLDER,
+                                     "tests", component_type + "s")), 
+                                     autoescape=True)
+    template = env.get_template("tests.jinja")
+    output = template.render()
     if verbose:
         logger.info(f"Generated tests: {output}")
 
