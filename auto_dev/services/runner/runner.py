@@ -267,6 +267,7 @@ class DevAgentRunner(AgentRunner):
 
         self._env_vars = overrides
         self._env_vars.update(generate_env_vars(self))
+        self._env_vars['PYTHONPATH'] = '.'
 
     def manage_keys(
         self,
