@@ -35,9 +35,9 @@ exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-open-autonomy = "==0.19.7"
+open-autonomy = "==0.19.11"
 open-aea = "==1.65.0"
-open-aea-test-autonomy = "==0.19.7"
+open-aea-test-autonomy = "==0.19.11"
 open-aea-ledger-ethereum = "==1.65.0"
 open-aea-ledger-solana = "==1.65.0"
 open-aea-ledger-cosmos = "==1.65.0"
