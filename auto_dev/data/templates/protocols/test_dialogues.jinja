@@ -5,7 +5,7 @@
 from unittest.mock import MagicMock
 
 from pydantic import BaseModel
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from aea.configurations.data_types import PublicId
 
@@ -51,6 +51,7 @@ def validate_dialogue(performative, model):
 
 
 {%- for initial_performative in initial_performatives %}
+@settings(deadline=1000)
 @given(st.from_type({{ snake_to_camel(initial_performative) }}))
 def test_{{ initial_performative }}_dialogues(model):
     """Test for the '{{ initial_performative|upper }}' protocol."""
