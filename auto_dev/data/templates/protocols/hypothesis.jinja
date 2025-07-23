@@ -1,6 +1,6 @@
 """Module containing tests for the pydantic models generated from the .proto file."""
 
-from hypothesis import given
+from hypothesis import given, HealthCheck, settings
 from hypothesis import strategies as st
 
 from {{ import_paths.message }} import {{ messages_pb2 }}
@@ -24,6 +24,7 @@ from {{ import_paths.models }} import (
 
 {# Define tests for each message #}
 {%- for message in file.messages %}
+@settings(suppress_health_check=[HealthCheck.too_slow])
 @given(st.from_type({{ message.name }}))
 def test_{{ message.name|lower }}({{ message.name|lower }}: {{ message.name }}):
     """Test {{ message.name }}"""
