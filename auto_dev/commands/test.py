@@ -110,7 +110,7 @@ def test(ctx, path, watch, coverage_report) -> None:
             raise OperationError(msg)
 
     try:
-        packages = get_packages() if not path else [path]
+        packages = get_packages() if not path else path.rglob("test_*.py")
     except FileNotFoundError as error:
         msg = f"Unable to get packages are you in the right directory? {error}"
         raise click.ClickException(msg) from error
