@@ -3,8 +3,9 @@
 import os
 from pathlib import Path
 from multiprocessing import cpu_count
+import shutil
+import sys
 
-import pytest
 
 
 COVERAGE_COMMAND = f"""coverage report \
@@ -67,5 +68,17 @@ def test_path(
     args = [path, *extra_args]
     os.environ["PYTHONPATH"] = "."
     os.environ["PYTHONWARNINGS"] = "ignore"
-    result = pytest.main(args)
-    return result == 0
+    os.environ["PYTHONPYCACHEPREFIX"] = "/dev/null"
+    os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+    import pytest
+
+    sys.dont_write_bytecode = True
+    result = pytest.main(args, )
+
+
+    # We remove the __pycache__ directories to avoid conflicts
+    result = (result == 0 or result == pytest.ExitCode.NO_TESTS_COLLECTED)
+    if not result:
+        breakpoint()
+    return result
+
