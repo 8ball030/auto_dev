@@ -99,6 +99,8 @@ def test(ctx, path, watch, coverage_report) -> None:
 
     """
     verbose = ctx.obj["VERBOSE"]
+
+    num_processes = int(ctx.obj["NUM_PROCESSES"])
     click.echo(
         f"Testing path: `{path or 'All dev packages/packages.json'}` ⌛",
     )
@@ -117,7 +119,7 @@ def test(ctx, path, watch, coverage_report) -> None:
     results = {}
     for package in range(len(packages)):
         click.echo(f"Testing {packages[package]} {package + 1}/{len(packages)}")
-        result = test_path(str(packages[package]), verbose=verbose, watch=watch, multiple=True)
+        result = test_path(str(packages[package]), verbose=verbose, watch=watch, multiple=True if num_processes != 1 else False)
         results[packages[package]] = result
         click.echo(f"{'👌' if result else '❗'} - {packages[package]}")
 

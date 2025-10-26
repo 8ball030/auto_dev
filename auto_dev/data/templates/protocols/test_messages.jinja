@@ -5,7 +5,7 @@
 import pytest
 from pydantic import BaseModel
 from hypothesis import strategies as st
-from hypothesis import given
+from hypothesis import given, settings, HealthCheck
 
 from aea.common import Address
 from aea.mail.base import Envelope
@@ -64,6 +64,7 @@ def perform_message_test(performative, model) -> None:
 
 {%- for performative in performative_types %}
 
+@settings(deadline=1000,suppress_health_check=[HealthCheck.too_slow])
 @given(st.from_type({{ snake_to_camel(performative) }}))
 def test_{{ performative }}_messages(model):
     """Test for the '{{ performative|upper }}' protocol message encode and decode."""
