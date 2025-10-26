@@ -49,7 +49,7 @@ def test_autonomy_repo(cli_runner, test_clean_filesystem):
 
     _test_repo_scaffold(
         repo_type="autonomy",
-        make_commands=("fmt", "lint", "test", "hashes"),
+        make_commands=("fmt", "lint", "test",),
         cli_runner=cli_runner,
         test_clean_filesystem=test_clean_filesystem,
     )

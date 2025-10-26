@@ -1,4 +1,0 @@
-block_explorer_url: "https://api-goerli.arbiscan.io"
-contracts:
-    otoken: "0x820348368b5707fD804E98c8286b9af64Eb71A70"
-    beyond_pricer: "0xc939df369C0Fc240C975A6dEEEE77d87bCFaC259"
