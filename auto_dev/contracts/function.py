@@ -18,10 +18,14 @@ class Function:
     def to_string(self):
         """Returns the function as a string."""
         spacer = ",\n" + (" " * 8)
-        returns = spacer.join([param.to_str_return() for param in self.outputs])
-        args = spacer.join([param.to_str_arg() for param in self.inputs])
+        args = spacer.join([param.to_str_arg() for param in sorted(self.inputs, key=lambda x: x.name)])
         params = spacer.join([param.to_str_params() for param in self.inputs])
         function_template = FUNCTION_TO_TEMPLATE_MAPPING[self.function_type]
+        if len(self.outputs) > 1:
+            returns = spacer.join([param.to_str_return() + f"[{ix}]" for ix, param in enumerate(self.outputs)])
+        else:
+            returns = spacer.join([param.to_str_return() for param in self.outputs])
+
         return function_template.substitute(
             name=self.name if self.name != "" else "constructor",
             camel_name=self.camel_case_name if self.name != "" else "constructor",
