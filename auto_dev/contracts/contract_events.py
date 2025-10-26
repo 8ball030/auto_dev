@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from auto_dev.utils import camel_to_snake
 from auto_dev.contracts.utils import SOLIDITY_TO_PYTHON_TYPES
 from auto_dev.contracts.variable import Variable
-from auto_dev.contracts.contract_templates import EVENT_TEMPLATE
+from auto_dev.contracts.contract_templates import EVENT_TEMPLATE, GENERIC_EVENT_TEMPLATE
 
 
 @dataclass
@@ -35,11 +35,18 @@ class ContractEvent:
 
     def to_string(self):
         """Return the event as a string."""
-        return EVENT_TEMPLATE.substitute(
-            name=camel_to_snake(self.name),
-            params=("=None,".join([var.to_str_params() for var in self.vars()])) + "=None",
+        kwargs = {}
+        if self.vars():
+            kwargs=dict(params=("=None,".join([var.to_str_params() for var in self.vars()])) + "=None",
             args=",".join([var.to_str_arg() for var in self.vars()]),
+            keywords=", ".join(v.to_key_value() for v in self.vars()))
+            template = EVENT_TEMPLATE
+        else:
+            template = GENERIC_EVENT_TEMPLATE
+
+        return template.substitute(
+            name=camel_to_snake(self.name),
             python_names=",".join([var.python_name() for var in self.vars()]),
-            keywords=", ".join(v.to_key_value() for v in self.vars()),
             camel_name=self.name,
+            **kwargs
         )

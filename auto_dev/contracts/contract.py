@@ -4,6 +4,7 @@ import ast
 import json
 from copy import deepcopy
 from pathlib import Path
+from textwrap import dedent
 
 import yaml
 from web3 import Web3
@@ -204,12 +205,29 @@ class Contract:
         self.update_contract_yaml()
         self.update_contract_py()
         self.update_contract_init__()
+        self.ensure_test_file()
 
         # format and lint the contract
         paths = get_paths(self.path)
         single_thread_lint(paths, verbose=True, logger=get_logger())
         single_thread_fmt(paths, verbose=True, logger=get_logger())
         single_thread_lint(paths, verbose=True, logger=get_logger())
+
+    def ensure_test_file(self) -> None:
+        """Ensure the test file exists."""
+        test_path = self.path / "tests" / f"test_{self.name}.py"
+        if test_path.exists():
+            return
+        test_path.parent.mkdir(parents=True, exist_ok=True)
+
+        test_template = dedent(f"""{HEADER}
+'''This module contains the tests for the {self.name} contract.'''
+def test_{self.name.lower()}_contract():
+    '''Test the {self.name} contract.'''
+    assert True
+        """)
+
+        write_to_file(str(test_path), test_template, FileType.TEXT)
 
     def scaffold_read_function(self, function):
         """Scaffold a read function."""
