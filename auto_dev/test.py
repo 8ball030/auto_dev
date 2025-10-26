@@ -1,8 +1,11 @@
 """Module for testing the project."""
 
+import sys
 import os
 from pathlib import Path
 from multiprocessing import cpu_count
+from importlib import invalidate_caches
+
 
 import pytest
 
@@ -20,7 +23,7 @@ def get_test_cpu_count() -> str:
 
 
 def test_path(
-    path: str,
+    path: str | list[str],
     verbose: bool = False,
     watch: bool = False,
     multiple: bool = False,
@@ -53,7 +56,10 @@ def test_path(
             - Integrates with coverage reporting
 
     """
-    extra_args = ["--cache-clear"]
+    extra_args = ["--cache-clear", 
+                  "--disable-warnings", 
+                  "--import-mode=importlib"
+                  ]
 
     if verbose:
         extra_args.append("-v")
@@ -65,7 +71,8 @@ def test_path(
         extra_args.extend(("-n", get_test_cpu_count()))
 
     args = [path, *extra_args]
-    os.environ["PYTHONPATH"] = "."
     os.environ["PYTHONWARNINGS"] = "ignore"
+    sys.path.insert(0, os.getcwd())
+    print(f"Running tests with pytest args: {args}")
     result = pytest.main(args)
     return result == 0
