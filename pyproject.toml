@@ -35,20 +35,20 @@ exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-open-autonomy = "==0.19.11"
-open-aea = "==1.65.0"
-open-aea-test-autonomy = "==0.19.11"
-open-aea-ledger-ethereum = "==1.65.0"
-open-aea-ledger-solana = "==1.65.0"
-open-aea-ledger-cosmos = "==1.65.0"
-open-aea-cli-ipfs = "==1.65.0"
+open-aea = { version = "==2.0.6", extras = ["all"] }
+open-aea-ledger-ethereum = "==2.0.6"
+open-aea-ledger-solana= "==2.0.6"
+open-aea-ledger-cosmos= "==2.0.6"
+open-aea-cli-ipfs = "==2.0.6"
+open-aea-test-autonomy = "==0.21.5"
+open-autonomy = "==0.21.5"
 web3 = ">=6.0.0,<8.0.0"
 ipfshttpclient = "==0.8.0a2"
 typing_extensions = ">=3.10.0.2"
 protobuf = ">=3.19.1,<4.25.0"
 hypothesis = "==6.122.3"
 toml = "==0.10.2"
-tomte = { version = "==0.2.17", extras = ["cli", "tests", "ledgers", "black"] }
+tomte = {version = "0.4.0", extras = ["all"]}
 
 py-multibase = "==1.0.3"
 py-multicodec = "==0.2.1"
@@ -56,8 +56,6 @@ py-eth-sig-utils = "*"
 grpcio = "==1.69.0"
 asn1crypto = "<1.5.0,>=1.4.0"
 
-eth-utils = "==2.3.1"
-eth-abi = "==5.1.0"
 pycryptodome = "==3.20.0"
 
 rich-click = "^1.8.2"
