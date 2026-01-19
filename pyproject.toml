@@ -37,7 +37,6 @@ exclude = "/(\n    \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox
 python = ">=3.10,<3.13"
 open-aea = { version = "==2.0.6", extras = ["all"] }
 open-aea-ledger-ethereum = "==2.0.6"
-open-aea-ledger-solana= "==2.0.6"
 open-aea-ledger-cosmos= "==2.0.6"
 open-aea-cli-ipfs = "==2.0.6"
 open-aea-test-autonomy = "==0.21.5"
